@@ -1,0 +1,14 @@
+{
+  "name": "safe-space-app",
+  "version": "1.0.0",
+  "scripts": {
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "build-client": "cd client && npm run build",
+    "start": "node server/index.js",
+    "vercel-build": "cd client && npm install && npm run build && cd ../server && npm install"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
