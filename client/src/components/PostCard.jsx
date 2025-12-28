@@ -82,7 +82,9 @@ const PostCard = ({ post, mutate }) => {
               return;
           }
       }
-      navigate(`/profile/${post.identity.handle.replace('@', '')}`);
+      if (post.identity.handle) {
+          navigate(`/profile/${post.identity.handle.replace('@', '')}`);
+      }
   };
 
   return (

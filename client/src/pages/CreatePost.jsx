@@ -3,6 +3,7 @@ import { useIdentity } from '../context/IdentityContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Image, X } from 'lucide-react';
+import Avatar from '../components/Avatar';
 
 const CreatePost = () => {
   const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
@@ -113,10 +114,13 @@ const CreatePost = () => {
                   <div key={id._id} className="relative group">
                       <button
                         onClick={() => selectIdentity(id._id)}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
                       >
-                          <span className="text-sm font-bold">{id.name}</span>
-                          <span className="text-[10px] opacity-75 uppercase tracking-wider">{id.type}</span>
+                          <Avatar identity={id} size="sm" />
+                          <div className="flex flex-col items-start leading-none">
+                              <span className="text-sm font-bold">{id.name}</span>
+                              <span className="text-[9px] opacity-75 uppercase tracking-wider mt-0.5">{id.type}</span>
+                          </div>
                       </button>
                       {id.type === 'pseudonym' && (
                           <button
@@ -128,8 +132,8 @@ const CreatePost = () => {
                       )}
                   </div>
               ))}
-              <button onClick={() => setShowNewIdentity(!showNewIdentity)} className="text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap px-2">
-                  + New
+              <button onClick={() => setShowNewIdentity(!showNewIdentity)} className="text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap px-4 py-2 border border-dashed border-slate-300 rounded-full hover:bg-slate-50 transition">
+                  + New Pseudonym
               </button>
           </div>
 

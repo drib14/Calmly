@@ -38,7 +38,7 @@ const registerUser = async (req, res) => {
         user: user._id,
         type: 'anonymous',
         name: 'Anonymous',
-        handle: null,
+        handle: `@anon_${user._id.toString().slice(-6)}`, // Generate unique-ish handle
       });
 
       // Send verification email
