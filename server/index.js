@@ -27,6 +27,8 @@ app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/journal', require('./routes/journalRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/comments', require('./routes/commentRoutes'));
+app.use('/api/search', require('./routes/searchRoutes'));
+app.use('/api/profile', require('./routes/profileRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Safe Space API is running...');

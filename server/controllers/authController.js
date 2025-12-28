@@ -1,18 +1,9 @@
 const User = require('../models/User');
 const Identity = require('../models/Identity');
 const { generateAccessToken, generateRefreshToken } = require('../utils/generateToken');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-
-// Setup email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const sendEmail = require('../utils/sendEmail');
 
 const registerUser = async (req, res) => {
   const { email, password, realName } = req.body;
@@ -53,27 +44,28 @@ const registerUser = async (req, res) => {
       // Send verification email
       const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
 
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
+      const emailSent = await sendEmail({
         to: email,
-        subject: 'Verify your account - Safe Space',
-        html: `<p>Please click this link to verify your account: <a href="${verificationUrl}">${verificationUrl}</a></p>`,
-      };
+        subject: 'Welcome to Calmly - Verify Your Account',
+        html: `
+          <h2>Welcome to your safe space.</h2>
+          <p>We are honored to have you here. Please verify your email to start your journey.</p>
+          <a href="${verificationUrl}" class="button" style="color: white;">Verify Account</a>
+          <p style="margin-top: 20px; font-size: 12px; color: #888;">Or click here: <a href="${verificationUrl}">${verificationUrl}</a></p>
+        `
+      });
 
-      try {
-        await transporter.sendMail(mailOptions);
+      if (emailSent) {
         res.status(201).json({
             _id: user._id,
             email: user.email,
-            message: 'Registration successful! Please check your email to verify.',
+            message: 'Registration successful! Please check your email.',
         });
-      } catch (emailError) {
-          console.error("Email send error:", emailError);
-           // Still return success for user creation, but warn
-          res.status(201).json({
+      } else {
+        res.status(201).json({
             _id: user._id,
             email: user.email,
-            message: 'Registration successful! But email failed to send. Contact support.',
+            message: 'Registration successful! But email failed to send.',
         });
       }
 
@@ -178,28 +170,22 @@ const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Send email
-    const message = `
-      <h1>Password Reset Request</h1>
-      <p>Your password reset code is:</p>
-      <h2 style="letter-spacing: 5px; background: #f0f0f0; padding: 10px; display: inline-block;">${resetCode}</h2>
-      <p>This code expires in 10 minutes.</p>
-    `;
+    const emailSent = await sendEmail({
+      to: user.email,
+      subject: 'Reset Password Code',
+      html: `
+        <p>You requested to reset your password. Use the code below to proceed.</p>
+        <div class="code">${resetCode}</div>
+        <p>This code expires in 10 minutes. If you didn't request this, please ignore this email.</p>
+      `
+    });
 
-    try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject: 'Your Password Reset Code',
-        html: message,
-      });
-
+    if (emailSent) {
       res.status(200).json({ success: true, message: 'Reset code sent to email' });
-    } catch (error) {
+    } else {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
-
-      console.error("Email send error:", error);
       return res.status(500).json({ message: 'Email could not be sent' });
     }
   } catch (error) {
