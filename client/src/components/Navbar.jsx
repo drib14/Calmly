@@ -1,48 +1,66 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Home, Search, PenTool, MessageCircle, User, BookOpen } from 'lucide-react';
+import { motion } from 'framer-motion';
+import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
-import { PenTool, LogOut, User, PlusCircle } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const location = useLocation();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
-  };
+  if (!user && location.pathname === '/') return null; // Don't show on landing if not logged in
+
+  const navItems = [
+    { icon: Home, label: 'Home', path: '/feed' },
+    { icon: Search, label: 'Search', path: '/search' },
+    { icon: PenTool, label: 'Create', path: '/create' },
+    { icon: BookOpen, label: 'Journal', path: '/journal' },
+    { icon: MessageCircle, label: 'Chat', path: '/chat' },
+    // { icon: User, label: 'Profile', path: '/profile/me' }, // Will add later
+  ];
 
   return (
-    <nav className="bg-white shadow-sm py-4">
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link to={user ? "/feed" : "/"} className="text-2xl font-serif font-semibold text-soft-dark hover:text-muted-gold transition">
-          Safe Space
-        </Link>
+    <nav className="fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border md:top-0 md:left-0 md:bottom-auto md:w-20 md:h-screen md:border-t-0 md:border-r z-40 flex md:flex-col justify-between items-center py-2 md:py-8 px-6 md:px-0 shadow-lg md:shadow-none">
 
-        <div className="flex items-center space-x-6">
-          {user ? (
-            <>
-              <Link to="/feed" className="hover:text-muted-gold transition">Feed</Link>
-              <Link to="/messages" className="hover:text-muted-gold transition">Inbox</Link>
-              <Link to="/journal" className="hover:text-muted-gold transition">Journal</Link>
-              <Link to="/create" className="flex items-center space-x-1 text-sage hover:text-green-700 transition">
-                <PenTool size={18} />
-                <span>Write</span>
-              </Link>
-              <button onClick={handleLogout} className="flex items-center space-x-1 hover:text-red-500 transition">
-                <LogOut size={18} />
-                <span>Logout</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="hover:text-muted-gold transition">Login</Link>
-              <Link to="/register" className="px-4 py-2 bg-soft-dark text-white rounded-md hover:bg-gray-700 transition">
-                Join
-              </Link>
-            </>
-          )}
-        </div>
+      {/* Logo (Desktop Only) */}
+      <div className="hidden md:block mb-8">
+        <div className="w-10 h-10 rounded-full bg-accent text-white flex items-center justify-center font-serif font-bold text-lg">C</div>
+      </div>
+
+      {/* Nav Items */}
+      <div className="flex md:flex-col w-full md:w-auto justify-between md:justify-start md:space-y-8">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                clsx(
+                  "relative group flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300",
+                  isActive ? "text-accent bg-slate-100" : "text-gray-400 hover:text-primary hover:bg-slate-50"
+                )
+              }
+            >
+              <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+
+              {/* Tooltip (Desktop) */}
+              <span className="absolute left-14 bg-accent text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block pointer-events-none">
+                {item.label}
+              </span>
+
+              {/* Label (Mobile - Optional, hiding for clean look) */}
+              {/* <span className="text-[10px] mt-1 md:hidden">{item.label}</span> */}
+            </NavLink>
+          );
+        })}
+      </div>
+
+      {/* User / Settings (Desktop) */}
+      <div className="hidden md:flex flex-col items-center space-y-4">
+        {/* Placeholder for user avatar */}
+        <div className="w-8 h-8 rounded-full bg-gray-200"></div>
       </div>
     </nav>
   );

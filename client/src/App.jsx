@@ -2,7 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { IdentityProvider } from './context/IdentityContext';
-import Navbar from './components/Navbar';
+import Layout from './components/Layout';
+import Loader from './components/Loader';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -12,10 +13,12 @@ import VerifyEmail from './pages/VerifyEmail';
 import Journal from './pages/Journal';
 import Messages from './pages/Messages';
 import ForgotPassword from './pages/ForgotPassword';
+import SearchPage from './pages/SearchPage';
+import Profile from './pages/Profile';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" />;
   return children;
 };
@@ -25,15 +28,25 @@ function App() {
     <AuthProvider>
       <IdentityProvider>
         <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <div className="min-h-screen bg-soft-light text-soft-dark font-sans">
-            <Navbar />
-            <div className="container mx-auto px-4 py-8">
+          <Layout>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email/:token" element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                <Route path="/search" element={
+                  <ProtectedRoute>
+                    <SearchPage />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/profile/:handle" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
 
                 <Route path="/feed" element={
                   <ProtectedRoute>
@@ -47,7 +60,7 @@ function App() {
                   </ProtectedRoute>
                 } />
 
-                <Route path="/messages" element={
+                <Route path="/chat" element={
                   <ProtectedRoute>
                     <Messages />
                   </ProtectedRoute>
@@ -59,8 +72,7 @@ function App() {
                   </ProtectedRoute>
                 } />
               </Routes>
-            </div>
-          </div>
+          </Layout>
         </Router>
       </IdentityProvider>
     </AuthProvider>
