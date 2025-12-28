@@ -30,9 +30,10 @@ app.use('/api/messages', require('./routes/messageRoutes'));
 app.use('/api/comments', require('./routes/commentRoutes'));
 app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
+app.use('/api/stats', require('./routes/statsRoutes'));
 
 app.get('/', (req, res) => {
-  res.send('Safe Space API is running...');
+  res.send('Calmly API is running...');
 });
 
 const PORT = process.env.PORT || 5000;
