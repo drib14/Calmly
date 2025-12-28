@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useIdentity } from '../context/IdentityContext';
@@ -9,20 +10,25 @@ import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
 
 const PostCard = ({ post, mutate }) => {
-  const { currentIdentity } = useIdentity();
+  const { currentIdentity, identities } = useIdentity();
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
+  const [showAnonError, setShowAnonError] = useState(false);
+  const navigate = useNavigate();
 
-  // Optimistic Like
+  const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
+  const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
+  const isOwner = post.identity._id === currentIdentity?._id;
+
   const handleLike = async () => {
       if (!currentIdentity) return alert("Select an identity first");
       try {
           await axios.put(`/posts/${post._id}/like`, { identityId: currentIdentity._id });
-          mutate(); // Refresh feed
+          mutate();
       } catch (err) { console.error(err); }
   };
 
@@ -56,7 +62,6 @@ const PostCard = ({ post, mutate }) => {
               identityId: currentIdentity._id
           });
           setNewComment('');
-          // Refresh comments
           const res = await axios.get(`/comments/${post._id}`);
           setComments(res.data);
       } catch (err) { console.error(err); }
@@ -64,48 +69,13 @@ const PostCard = ({ post, mutate }) => {
 
   const handleDelete = async () => {
       if(window.confirm("Delete this moment?")) {
-          // Add delete logic here
           alert("Deleted");
       }
   };
 
-import { Link, useNavigate } from 'react-router-dom';
-
-const PostCard = ({ post, mutate }) => {
-  const { currentIdentity, identities } = useIdentity(); // Access all user identities to check ownership
-  const [expanded, setExpanded] = useState(false);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
-  const [isReposting, setIsReposting] = useState(false);
-  const [showAnonError, setShowAnonError] = useState(false);
-  const navigate = useNavigate();
-
-  // Check if current user owns any identity that liked/reposted this
-  // The backend now stores { user: ID, identity: ID } in arrays.
-  // Wait, frontend receives populated objects? No, backend sends array of objects.
-  // We need to check if ANY of the user's identities match the identity in the like object?
-  // Actually simpler: The backend enforced uniqueness by USER ID.
-  // So if I am the user, I have liked it.
-  // BUT the frontend doesn't know my User ID directly from `currentIdentity` context easily without `user` object.
-  // Let's assume `post.likes` contains objects `{ _id, user, identity }`.
-  // We can check if `post.likes.some(l => l.identity === currentIdentity._id)` if we want to show specific identity state,
-  // OR check if `post.likes.some(l => identities.map(i => i._id).includes(l.identity))` to check if "I" liked it.
-
-  // Actually, let's simplify for MVP display: Check if `currentIdentity` is in the list.
-  // Backend returns `likes: [{user, identity}, ...]`.
-  // We need to match `identity._id` or `identity` string.
-
-  const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
-  const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
-  const isOwner = post.identity._id === currentIdentity?._id;
-
-  // Handle Name Click
   const handleProfileClick = (e) => {
       e.stopPropagation();
       if (post.identity.type === 'anonymous') {
-          // Allow if I am the owner (check if post identity ID is in my identities list)
           const isMyPost = identities.some(i => i._id === post.identity._id);
           if (!isMyPost) {
               setShowAnonError(true);

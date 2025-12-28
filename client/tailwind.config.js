@@ -15,6 +15,11 @@ export default {
         danger: '#ef4444',
         success: '#22c55e',
         'soft-border': '#e2e8f0',
+        // Legacy colors for compatibility
+        'soft-light': '#fdfaf6',
+        'soft-dark': '#2c2c2c',
+        'sage': '#a3b18a',
+        'muted-gold': '#dda15e',
       },
       fontFamily: {
         serif: ['Merriweather', 'serif'],
