@@ -95,10 +95,19 @@ const Landing = () => {
                             {/* Explicit width/height to prevent Recharts -1/-1 error during initial render/animation */}
                             <ResponsiveContainer width="100%" height={200}>
                                 <LineChart data={stats.postsPerDay}>
-                                    <XAxis dataKey="_id" hide />
+                                    <XAxis
+                                        dataKey="_id"
+                                        tickFormatter={(date) => {
+                                            const d = new Date(date);
+                                            return `${d.toLocaleString('default', { month: 'short' })} ${d.getDate()}`;
+                                        }}
+                                        tick={{ fontSize: 10, fill: '#94a3b8' }}
+                                        axisLine={false}
+                                        tickLine={false}
+                                    />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        labelStyle={{ display: 'none' }}
+                                        labelFormatter={(date) => new Date(date).toLocaleDateString()}
                                     />
                                     <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={3} dot={{ fill: '#6366f1', r: 4 }} activeDot={{ r: 6 }} />
                                 </LineChart>

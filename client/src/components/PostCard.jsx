@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
@@ -14,17 +15,33 @@ import Modal from './Modal';
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
   const [expanded, setExpanded] = useState(false);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [loadingComments, setLoadingComments] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
+
+  // Comment Input State
+  const [newComment, setNewComment] = useState('');
+  const [commentMedia, setCommentMedia] = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(null);
+  const [replyTo, setReplyTo] = useState(null); // { id: commentId, name: identityName }
+
+  // Modals
   const [showAnonError, setShowAnonError] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
+
   const optionsRef = useRef(null);
   const navigate = useNavigate();
+
+  // SWR for Comments (Real-time polling when expanded)
+  const { data: comments, mutate: mutateComments } = useSWR(
+      expanded ? `/comments/${post._id}` : null,
+      async (url) => {
+          const res = await axios.get(url);
+          return res.data;
+      },
+      { refreshInterval: 3000 }
+  );
 
   const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
   const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
@@ -45,7 +62,7 @@ const PostCard = ({ post, mutate }) => {
       if (!currentIdentity) return toast.error("Select an identity first");
       try {
           await axios.put(`/posts/${post._id}/like`, { identityId: currentIdentity._id });
-          mutate();
+          mutate(); // Update post data
       } catch (err) { console.error(err); }
   };
 
@@ -60,37 +77,55 @@ const PostCard = ({ post, mutate }) => {
       finally { setIsReposting(false); }
   };
 
-  const toggleComments = async () => {
-      setExpanded(!expanded);
-      if (!expanded && comments.length === 0) {
-          setLoadingComments(true);
-          try {
-              const res = await axios.get(`/comments/${post._id}`);
-              setComments(res.data);
-          } catch (err) { console.error(err); }
-          finally { setLoadingComments(false); }
+  const handleCommentLike = async (commentId) => {
+      if (!currentIdentity) return toast.error("Select an identity first");
+      try {
+          await axios.put(`/comments/${commentId}/like`, { identityId: currentIdentity._id });
+          mutateComments();
+      } catch (err) { console.error(err); }
+  };
+
+  const handleCommentFile = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          setCommentMedia(file);
+          setMediaPreview(URL.createObjectURL(file));
       }
   };
 
   const submitComment = async () => {
-      if (!newComment.trim()) return;
+      if (!newComment.trim() && !commentMedia) return;
+      if (!currentIdentity) return toast.error("Select an identity first");
+
       try {
-          await axios.post(`/comments/${post._id}`, {
-              content: newComment,
-              identityId: currentIdentity._id
+          const formData = new FormData();
+          formData.append('content', newComment);
+          formData.append('identityId', currentIdentity._id);
+          if (commentMedia) formData.append('media', commentMedia);
+          if (replyTo) formData.append('parentCommentId', replyTo.id);
+
+          await axios.post(`/comments/${post._id}`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
           });
+
           setNewComment('');
-          const res = await axios.get(`/comments/${post._id}`);
-          setComments(res.data);
-          toast.success("Comment added");
-      } catch (err) { console.error(err); }
+          setCommentMedia(null);
+          setMediaPreview(null);
+          setReplyTo(null);
+
+          mutateComments(); // Refresh comments immediately
+          toast.success(replyTo ? "Reply sent" : "Comment added");
+      } catch (err) {
+          console.error(err);
+          toast.error("Failed to post comment");
+      }
   };
 
   const handleDelete = async () => {
       try {
           await axios.delete(`/posts/${post._id}`);
           toast.success("Post deleted");
-          mutate(); // In real list this might need to remove from list directly or re-fetch
+          mutate();
       } catch (err) {
           console.error(err);
           toast.error("Failed to delete post");
@@ -112,21 +147,14 @@ const PostCard = ({ post, mutate }) => {
 
   const handleProfileClick = (e) => {
       e.stopPropagation();
-
-      // Check if user is the owner (needs identities loaded)
-      // We need to find the "real" identity of the current user to redirect correctly if it's their own anon post
       const myRealIdentity = identities?.find(i => i.type === 'real');
-
-      // Check if this post's identity matches ANY of the current user's identities
       const isMyPost = identities?.some(i => i._id === post.identity._id);
 
       if (post.identity.type === 'anonymous') {
           if (isMyPost && myRealIdentity) {
-              // Redirect owner to their real profile
               navigate(`/profile/${myRealIdentity.handle.replace('@', '')}`);
               return;
           } else {
-            // Not owner -> Block
             setShowAnonError(true);
             return;
           }
@@ -137,7 +165,6 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
-  // Type specific styles
   const getTypeStyles = () => {
       switch (post.type) {
           case 'poetry': return 'border-l-4 border-l-purple-400';
@@ -185,6 +212,12 @@ const PostCard = ({ post, mutate }) => {
                    <span>{post.identity.type}</span>
                    <span>•</span>
                    <span>{formatDistanceToNow(new Date(post.createdAt))} ago</span>
+
+                   {/* Visibility Icon */}
+                   {post.visibility === 'public' && <Globe size={12} className="text-slate-400" />}
+                   {post.visibility === 'unlisted' && <EyeOff size={12} className="text-slate-400" />}
+                   {post.visibility === 'private' && <Lock size={12} className="text-slate-400" />}
+
                    {post.type !== 'mood' && (
                        <>
                         <span>•</span>
@@ -305,11 +338,11 @@ const PostCard = ({ post, mutate }) => {
               </button>
 
               <button
-                onClick={toggleComments}
+                onClick={() => setExpanded(!expanded)}
                 className="flex items-center space-x-2 text-slate-500 hover:text-blue-500 transition group"
               >
                   <MessageCircle size={20} />
-                  <span className="text-xs font-bold">{comments.length > 0 ? comments.length : (post.commentCount || 0)}</span>
+                  <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
               </button>
 
               <button
@@ -333,21 +366,79 @@ const PostCard = ({ post, mutate }) => {
               >
                   <div className="mt-4 pt-4 border-t border-slate-50 bg-slate-50/50 -mx-6 px-6 pb-6">
                       <div className="space-y-3 mb-4 max-h-60 overflow-y-auto custom-scrollbar">
-                          {comments.map(c => (
-                              <div key={c._id} className="flex space-x-3">
-                                  <Avatar identity={c.identity} size="sm" />
-                                  <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-slate-100">
-                                      <span className="font-bold text-slate-800 text-xs block mb-1">{c.identity.name}</span>
-                                      <span className="text-slate-600">{c.content}</span>
-                                  </div>
-                              </div>
-                          ))}
+                          {!comments ? (
+                              <div className="text-center py-4 text-slate-400 text-xs">Loading comments...</div>
+                          ) : comments.length === 0 ? (
+                              <div className="text-center py-4 text-slate-400 text-xs">No comments yet. Be the first.</div>
+                          ) : (
+                              comments.map(c => {
+                                  const isCommentLiked = c.likes?.some(id => id === currentIdentity?._id);
+                                  return (
+                                    <div key={c._id} className={clsx("flex space-x-3", c.parentComment && "ml-8")}>
+                                        <Avatar identity={c.identity} size="sm" />
+                                        <div className="flex-1">
+                                            <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-slate-100 inline-block max-w-full">
+                                                <span className="font-bold text-slate-800 text-xs block mb-1">{c.identity.name}</span>
+                                                {c.content && <span className="text-slate-600 block whitespace-pre-wrap">{c.content}</span>}
+                                                {c.media && c.media.length > 0 && (
+                                                    <div className="mt-2 rounded-lg overflow-hidden max-w-[200px]">
+                                                        {c.media[0].type === 'video' ? (
+                                                            <MediaPlayer src={c.media[0].url} />
+                                                        ) : (
+                                                            <img src={c.media[0].url} className="w-full h-full object-cover" />
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center space-x-4 mt-1 ml-2 text-[10px] text-slate-400">
+                                                <span>{formatDistanceToNow(new Date(c.createdAt))} ago</span>
+                                                <button
+                                                    onClick={() => handleCommentLike(c._id)}
+                                                    className={clsx("font-bold hover:text-red-500 transition flex items-center space-x-1", isCommentLiked && "text-red-500")}
+                                                >
+                                                    <Heart size={10} className={clsx(isCommentLiked && "fill-current")} />
+                                                    <span>{c.likes?.length || 0}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setReplyTo({ id: c._id, name: c.identity.name })}
+                                                    className="font-bold hover:text-blue-500 transition"
+                                                >
+                                                    Reply
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                  );
+                              })
+                          )}
                       </div>
 
-                      <div className="flex items-center space-x-2 bg-white p-1.5 pl-4 rounded-full border border-slate-200 focus-within:ring-2 ring-slate-100 transition-shadow">
+                      {/* Comment Media Preview */}
+                      {mediaPreview && (
+                          <div className="mb-2 relative inline-block">
+                              <img src={mediaPreview} className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
+                              <button onClick={() => { setCommentMedia(null); setMediaPreview(null); }} className="absolute -top-1 -right-1 bg-black text-white rounded-full p-0.5">
+                                  <X size={10} />
+                              </button>
+                          </div>
+                      )}
+
+                      {/* Reply Indicator */}
+                      {replyTo && (
+                          <div className="flex items-center justify-between bg-blue-50 p-2 px-3 rounded-lg mb-2 text-xs text-blue-600">
+                              <span>Replying to <b>{replyTo.name}</b></span>
+                              <button onClick={() => setReplyTo(null)}><X size={12}/></button>
+                          </div>
+                      )}
+
+                      <div className="flex items-center space-x-2 bg-white p-1.5 pl-2 rounded-full border border-slate-200 focus-within:ring-2 ring-slate-100 transition-shadow">
+                          <label className="p-2 cursor-pointer text-slate-400 hover:text-slate-600 transition rounded-full hover:bg-slate-50">
+                              <input type="file" className="hidden" accept="image/*,video/*" onChange={handleCommentFile} />
+                              <ImageIcon size={18} />
+                          </label>
                           <input
                             className="flex-1 text-sm bg-transparent outline-none placeholder:text-slate-400"
-                            placeholder="Send a supportive message..."
+                            placeholder={replyTo ? "Write a reply..." : "Send a supportive message..."}
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && submitComment()}
