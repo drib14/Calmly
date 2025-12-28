@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { PenTool, Heart, Shield, Lock, Ghost, Users, Activity } from 'lucide-react';
 import axios from 'axios';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import Avatar from '../components/Avatar';
 
 const Landing = () => {
@@ -94,20 +94,14 @@ const Landing = () => {
                          <div className="h-[200px] w-full min-h-[200px]">
                             {/* Explicit width/height to prevent Recharts -1/-1 error during initial render/animation */}
                             <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart data={stats.postsPerDay}>
-                                    <defs>
-                                        <linearGradient id="colorPosts" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
+                                <LineChart data={stats.postsPerDay}>
                                     <XAxis dataKey="_id" hide />
                                     <Tooltip
                                         contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                         labelStyle={{ display: 'none' }}
                                     />
-                                    <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorPosts)" />
-                                </AreaChart>
+                                    <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={3} dot={{ fill: '#6366f1', r: 4 }} activeDot={{ r: 6 }} />
+                                </LineChart>
                             </ResponsiveContainer>
                          </div>
                     </div>
