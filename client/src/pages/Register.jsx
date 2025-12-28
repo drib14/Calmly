@@ -32,7 +32,7 @@ const Register = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded-lg shadow-sm">
-      <h2 className="text-3xl font-serif mb-2 text-center">Join Safe Space</h2>
+      <h2 className="text-3xl font-serif mb-2 text-center">Join Calmly</h2>
       <p className="text-center text-gray-500 mb-6 text-sm">Create an account to start your journey.</p>
 
       {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}

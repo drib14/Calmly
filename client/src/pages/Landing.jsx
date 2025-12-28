@@ -1,9 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { PenTool, Heart, Shield, Lock, Ghost, Users } from 'lucide-react';
+import { PenTool, Heart, Shield, Lock, Ghost, Users, Activity } from 'lucide-react';
+import axios from 'axios';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import Avatar from '../components/Avatar';
 
 const Landing = () => {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get('/stats/public');
+        setStats(res.data);
+      } catch (err) {
+        console.error("Failed to fetch stats", err);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white overflow-hidden relative">
 
@@ -33,7 +50,7 @@ const Landing = () => {
             transition={{ duration: 0.8 }}
           >
               <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold tracking-wide uppercase mb-6 border border-blue-100">
-                  A Safe Space for Your Soul
+                  A Calm Space for Your Soul
               </span>
               <h1 className="text-5xl md:text-7xl font-serif font-bold text-slate-900 leading-[1.1] mb-8 tracking-tight">
                   Speak Freely.<br/>
@@ -54,12 +71,102 @@ const Landing = () => {
               </div>
           </motion.div>
 
+          {/* Stats Section */}
+          {stats && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-20 max-w-5xl mx-auto"
+            >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                    {/* Activity Graph */}
+                    <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100">
+                         <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-2xl font-bold text-slate-900">{stats.totalPosts}</h3>
+                                <p className="text-slate-500 text-sm">Total Stories Shared</p>
+                            </div>
+                            <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center">
+                                <PenTool size={20} />
+                            </div>
+                         </div>
+                         <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={stats.postsPerDay}>
+                                    <defs>
+                                        <linearGradient id="colorPosts" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="_id" hide />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        labelStyle={{ display: 'none' }}
+                                    />
+                                    <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorPosts)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                         </div>
+                    </div>
+
+                    {/* Active Users */}
+                    <div className="bg-white/80 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                         <div className="flex items-center justify-between mb-8">
+                            <div className="text-left">
+                                <h3 className="text-4xl font-serif font-bold text-slate-900">{stats.activeUsers}</h3>
+                                <p className="text-slate-500">Active Community Members</p>
+                            </div>
+                            <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center">
+                                <Users size={32} />
+                            </div>
+                         </div>
+                         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                             <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: '100%' }}
+                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                className="h-full bg-emerald-400"
+                             />
+                         </div>
+                         <p className="text-left text-xs text-slate-400 mt-2">Growing stronger every day</p>
+                    </div>
+                </div>
+
+                {/* Feedbacks */}
+                <div className="text-left mb-8">
+                    <h3 className="text-2xl font-serif font-bold text-slate-900 mb-6 text-center">Community Voices</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {stats.feedbacks.map((fb) => (
+                            <div key={fb._id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-center space-x-3 mb-4">
+                                    {/* Mock Avatar or Initials if none */}
+                                    <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold">
+                                        {fb.user.avatar ? <img src={fb.user.avatar} className="w-full h-full rounded-full object-cover" /> : fb.user.name[0]}
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm text-slate-900">{fb.user.name}</p>
+                                        <div className="flex text-amber-400">
+                                            {[...Array(fb.rating)].map((_, i) => <span key={i} className="text-xs">★</span>)}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-slate-600 text-sm leading-relaxed">"{fb.comment || "No comment provided."}"</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+            </motion.div>
+          )}
+
           {/* Features Grid */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-32 max-w-5xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 max-w-5xl mx-auto"
           >
               {[
                   { icon: Ghost, title: "Total Anonymity", desc: "Post anonymously with our Incognito identity system. Your secrets are safe." },

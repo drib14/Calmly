@@ -4,6 +4,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Image, X } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import { toast } from 'react-hot-toast';
+import Modal from '../components/Modal';
+import FeedbackModal from '../components/FeedbackModal';
 
 const CreatePost = () => {
   const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
@@ -20,6 +23,11 @@ const CreatePost = () => {
   const [previews, setPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
 
+  // Modals
+  const [showDeleteIdentityModal, setShowDeleteIdentityModal] = useState(false);
+  const [identityToDelete, setIdentityToDelete] = useState(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
   // Specialized Fields
   const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
   const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
@@ -30,7 +38,7 @@ const CreatePost = () => {
       { id: 'classic', label: 'Classic', class: 'bg-amber-50 border-amber-100 text-amber-900' },
       { id: 'parchment', label: 'Parchment', class: 'bg-[#f0e6d2] border-[#e6dcc0] text-[#5c4b35]' },
       { id: 'dark', label: 'Midnight', class: 'bg-slate-900 border-slate-800 text-slate-200' },
-      { id: 'lined', label: 'Notebook', class: 'bg-white border-blue-100 text-slate-800' }, // CSS for lines can be added later
+      { id: 'lined', label: 'Notebook', class: 'bg-white border-blue-100 text-slate-800' },
   ];
 
   const poemBackgrounds = [
@@ -45,7 +53,7 @@ const CreatePost = () => {
   const handleFileChange = (e) => {
       const selectedFiles = Array.from(e.target.files);
       if (selectedFiles.length + files.length > 4) {
-          alert("Max 4 files allowed");
+          toast.error("Max 4 files allowed");
           return;
       }
       setFiles([...files, ...selectedFiles]);
@@ -60,21 +68,31 @@ const CreatePost = () => {
       setFiles(newFiles);
 
       const newPreviews = [...previews];
-      URL.revokeObjectURL(newPreviews[index]); // Cleanup
+      URL.revokeObjectURL(newPreviews[index]);
       newPreviews.splice(index, 1);
       setPreviews(newPreviews);
+  };
+
+  const checkFeedbackEligibility = () => {
+      const postsCount = parseInt(localStorage.getItem('calmly_posts_count') || '0', 10) + 1;
+      localStorage.setItem('calmly_posts_count', postsCount.toString());
+
+      // Trigger on 1st, then every 3rd (1, 4, 7, 10...)
+      if (postsCount === 1 || (postsCount - 1) % 3 === 0) {
+          setShowFeedbackModal(true);
+          return true;
+      }
+      return false;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation: Must have content OR media (Unless it's a letter/poem which relies on content)
     if (!content.trim() && files.length === 0) {
-        return alert("Please add text or media to your post.");
+        return toast.error("Please add text or media to your post.");
     }
 
     if (visibility === 'private') {
-        // Journal Logic
         try {
             await axios.post('/journal', {
                 title: title || 'Untitled',
@@ -83,13 +101,14 @@ const CreatePost = () => {
                 tags: [],
                 isLocked: false
             });
+            toast.success("Journal entry saved");
             navigate('/journal');
         } catch (error) {
             console.error(error);
-            alert("Failed to save journal entry");
+            toast.error("Failed to save journal entry");
         }
     } else {
-        if (!currentIdentity) return;
+        if (!currentIdentity) return toast.error("Select an identity");
         setUploading(true);
 
         try {
@@ -111,10 +130,23 @@ const CreatePost = () => {
             await axios.post('/posts', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            navigate('/feed');
+
+            const needsFeedback = checkFeedbackEligibility();
+            if (!needsFeedback) {
+                navigate('/feed');
+            } else {
+                // Wait for modal close to navigate? Or navigate immediately?
+                // Modal is separate. Let's keep user here or show modal ON feed.
+                // Better UX: Show modal here, then navigate on close.
+                // However, `showFeedbackModal` is local state. If we navigate, component unmounts.
+                // So we delay navigation OR just navigate and handle feedback globally.
+                // Instructions: "ask them for feedback with a feedback modal".
+                // I'll stay on page to show modal, then navigate on close.
+            }
+
         } catch (error) {
             console.error(error);
-            alert("Failed to post");
+            toast.error("Failed to post");
         } finally {
             setUploading(false);
         }
@@ -127,6 +159,21 @@ const CreatePost = () => {
       if (res.success) {
           setShowNewIdentity(false);
           setNewIdentityName('');
+          toast.success("Identity created");
+      }
+  };
+
+  const confirmDeleteIdentity = (id) => {
+      setIdentityToDelete(id);
+      setShowDeleteIdentityModal(true);
+  };
+
+  const executeDeleteIdentity = async () => {
+      if (identityToDelete) {
+          await deleteIdentity(identityToDelete);
+          setShowDeleteIdentityModal(false);
+          setIdentityToDelete(null);
+          toast.success("Identity removed");
       }
   };
 
@@ -152,7 +199,7 @@ const CreatePost = () => {
                       </button>
                       {id.type === 'pseudonym' && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); if(window.confirm('Remove this identity?')) deleteIdentity(id._id); }}
+                            onClick={(e) => { e.stopPropagation(); confirmDeleteIdentity(id._id); }}
                             className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                           >
                               <X size={10} />
@@ -207,8 +254,13 @@ const CreatePost = () => {
         </div>
 
         {type === 'letter' ? (
-            <div className={`space-y-4 p-6 rounded-lg border shadow-sm transition-colors ${paperStyles.find(s => s.id === letterFields.paperType)?.class}`}>
-                <div className="flex justify-end space-x-2 mb-2">
+            <div className={`space-y-4 p-6 rounded-lg border shadow-sm transition-colors relative overflow-hidden ${paperStyles.find(s => s.id === letterFields.paperType)?.class}`}>
+                {/* Texture overlay for parchment */}
+                {letterFields.paperType === 'parchment' && (
+                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')]"></div>
+                )}
+
+                <div className="flex justify-end space-x-2 mb-2 relative z-10">
                     {paperStyles.map(s => (
                         <button
                             key={s.id}
@@ -223,21 +275,21 @@ const CreatePost = () => {
                     type="text"
                     value={letterFields.header}
                     onChange={e => setLetterFields({...letterFields, header: e.target.value})}
-                    className="w-full bg-transparent border-b border-current/20 focus:outline-none font-serif text-lg placeholder-current/50"
+                    className="w-full bg-transparent border-b border-current/20 focus:outline-none font-serif text-lg placeholder-current/50 relative z-10"
                     placeholder="Dear..."
                 />
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={8}
-                    className="w-full bg-transparent border-none focus:ring-0 font-serif text-lg leading-relaxed placeholder-current/50 resize-none"
+                    className="w-full bg-transparent border-none focus:ring-0 font-serif text-lg leading-relaxed placeholder-current/50 resize-none relative z-10"
                     placeholder="Write your letter..."
                 />
                 <input
                     type="text"
                     value={letterFields.footer}
                     onChange={e => setLetterFields({...letterFields, footer: e.target.value})}
-                    className="w-full bg-transparent border-t border-current/20 pt-2 focus:outline-none font-serif text-right placeholder-current/50"
+                    className="w-full bg-transparent border-t border-current/20 pt-2 focus:outline-none font-serif text-right placeholder-current/50 relative z-10"
                     placeholder="Sincerely,"
                 />
             </div>
@@ -334,6 +386,27 @@ const CreatePost = () => {
              </button>
         </div>
       </form>
+
+      {/* Identity Delete Modal */}
+      <Modal isOpen={showDeleteIdentityModal} onClose={() => setShowDeleteIdentityModal(false)}>
+          <div className="text-center">
+              <h3 className="text-xl font-bold mb-2">Delete Identity?</h3>
+              <p className="text-slate-500 mb-6 text-sm">This will mark the identity as deleted. Your posts will remain but attribution will be anonymized.</p>
+              <div className="flex space-x-3">
+                  <button onClick={() => setShowDeleteIdentityModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg">Cancel</button>
+                  <button onClick={executeDeleteIdentity} className="flex-1 py-2 bg-red-500 text-white rounded-lg">Delete</button>
+              </div>
+          </div>
+      </Modal>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+            setShowFeedbackModal(false);
+            navigate('/feed');
+        }}
+      />
     </div>
   );
 };
