@@ -154,22 +154,37 @@ const PostCard = ({ post, mutate }) => {
 
       {/* Content */}
       <div className="pl-13">
-          {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-slate-900">{post.title}</h3>}
-          <div className="text-slate-700 leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4">
-              {post.content}
-          </div>
-
-          {/* Media Grid */}
-          {post.media && post.media.length > 0 && (
-              <div className={clsx("grid gap-2 mb-4 rounded-2xl overflow-hidden", post.media.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-                  {post.media.map((file, idx) => (
-                      file.type === 'video' ? (
-                          <MediaPlayer key={idx} src={file.url} />
-                      ) : (
-                          <img key={idx} src={file.url} className="w-full h-full object-cover aspect-square" />
-                      )
-                  ))}
+          {post.type === 'letter' ? (
+              <div className={`p-6 rounded-lg mb-4 shadow-sm border border-amber-100 ${post.letterFields?.paperType === 'classic' ? 'bg-amber-50' : 'bg-white'}`}>
+                  <div className="font-serif text-amber-900 text-lg font-bold mb-4">{post.letterFields?.header}</div>
+                  <div className="font-serif text-amber-900 text-base leading-loose whitespace-pre-wrap mb-6">{post.content}</div>
+                  <div className="font-serif text-amber-900 text-lg font-bold text-right">{post.letterFields?.footer}</div>
               </div>
+          ) : post.type === 'poetry' ? (
+              <div className={`p-8 rounded-lg mb-4 shadow-sm ${post.style?.backgroundColor} ${post.style?.align}`}>
+                  {post.title && <h3 className="text-2xl font-serif font-bold mb-4">{post.title}</h3>}
+                  <div className={`whitespace-pre-wrap leading-relaxed text-lg ${post.style?.font}`}>{post.content}</div>
+              </div>
+          ) : (
+              <>
+                  {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-slate-900">{post.title}</h3>}
+                  <div className="text-slate-700 leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4">
+                      {post.content}
+                  </div>
+
+                  {/* Media Grid */}
+                  {post.media && post.media.length > 0 && (
+                      <div className={clsx("grid gap-2 mb-4 rounded-2xl overflow-hidden", post.media.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+                          {post.media.map((file, idx) => (
+                              file.type === 'video' ? (
+                                  <MediaPlayer key={idx} src={file.url} />
+                              ) : (
+                                  <img key={idx} src={file.url} className="w-full h-full object-cover aspect-square" />
+                              )
+                          ))}
+                      </div>
+                  )}
+              </>
           )}
 
           <div className="flex flex-wrap gap-2 mb-6">

@@ -7,7 +7,7 @@ const { upload } = require('../utils/cloudinary');
 
 // Create a post
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
-  const { identityId, type, content, mood, visibility, title, tags } = req.body;
+  const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
   let media = [];
 
   if (req.files) {
@@ -24,16 +24,21 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
       return res.status(403).json({ message: 'Invalid identity' });
     }
 
-    const post = await Post.create({
+    const postData = {
       identity: identityId,
       type,
       content,
       mood,
       visibility,
       title,
-      tags: tags ? (Array.isArray(tags) ? tags : JSON.parse(tags)) : [], // Handle multipart form data array
+      tags: tags ? (Array.isArray(tags) ? tags : JSON.parse(tags)) : [],
       media
-    });
+    };
+
+    if (letterFields) postData.letterFields = typeof letterFields === 'string' ? JSON.parse(letterFields) : letterFields;
+    if (style) postData.style = typeof style === 'string' ? JSON.parse(style) : style;
+
+    const post = await Post.create(postData);
 
     res.status(201).json(post);
   } catch (error) {

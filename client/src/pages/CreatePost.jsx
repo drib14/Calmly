@@ -20,6 +20,10 @@ const CreatePost = () => {
   const [previews, setPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
 
+  // Specialized Fields
+  const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,' });
+  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
+
   const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
 
   const handleFileChange = (e) => {
@@ -48,7 +52,7 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation: Must have content OR media
+    // Validation: Must have content OR media (Unless it's a letter/poem which relies on content)
     if (!content.trim() && files.length === 0) {
         return alert("Please add text or media to your post.");
     }
@@ -58,7 +62,7 @@ const CreatePost = () => {
         try {
             await axios.post('/journal', {
                 title: title || 'Untitled',
-                content: content || '[Media Entry]', // Fallback content for Journal model requirement
+                content: content || '[Media Entry]',
                 mood,
                 tags: [],
                 isLocked: false
@@ -77,9 +81,12 @@ const CreatePost = () => {
             formData.append('identityId', currentIdentity._id);
             formData.append('type', type);
             formData.append('mood', mood);
-            formData.append('content', content); // Can be empty string
+            formData.append('content', content);
             formData.append('visibility', visibility);
             if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
+
+            if (type === 'letter') formData.append('letterFields', JSON.stringify(letterFields));
+            if (type === 'poetry') formData.append('style', JSON.stringify(poemStyle));
 
             files.forEach(file => {
                 formData.append('media', file);
@@ -183,33 +190,75 @@ const CreatePost = () => {
             </div>
         </div>
 
-        {(type === 'poetry' || type === 'letter') && (
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+        {type === 'letter' ? (
+            <div className="space-y-4 bg-amber-50 p-6 rounded-lg border border-amber-100 shadow-sm">
+                <input
+                    type="text"
+                    value={letterFields.header}
+                    onChange={e => setLetterFields({...letterFields, header: e.target.value})}
+                    className="w-full bg-transparent border-b border-amber-200 focus:outline-none font-serif text-lg text-amber-900"
+                    placeholder="Dear..."
+                />
+                <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={8}
+                    className="w-full bg-transparent border-none focus:ring-0 font-serif text-lg leading-relaxed text-amber-900 placeholder-amber-800/50 resize-none"
+                    placeholder="Write your letter..."
+                />
+                <input
+                    type="text"
+                    value={letterFields.footer}
+                    onChange={e => setLetterFields({...letterFields, footer: e.target.value})}
+                    className="w-full bg-transparent border-t border-amber-200 pt-2 focus:outline-none font-serif text-right text-amber-900"
+                    placeholder="Sincerely,"
+                />
+            </div>
+        ) : type === 'poetry' ? (
+            <div className={`space-y-4 p-6 rounded-lg transition-colors ${poemStyle.backgroundColor}`}>
+                <div className="flex space-x-2 mb-4 justify-end">
+                    <select onChange={e => setPoemStyle({...poemStyle, backgroundColor: e.target.value})} className="text-xs border rounded p-1">
+                        <option value="bg-white">White</option>
+                        <option value="bg-slate-900 text-white">Dark</option>
+                        <option value="bg-gradient-to-br from-indigo-100 to-purple-100">Dreamy</option>
+                        <option value="bg-gradient-to-br from-orange-100 to-amber-100">Warm</option>
+                    </select>
+                    <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1">
+                        <option value="text-left">Left</option>
+                        <option value="text-center">Center</option>
+                        <option value="text-right">Right</option>
+                    </select>
+                </div>
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
-                    placeholder={type === 'letter' ? 'Dear...' : 'Untitled'}
+                    className={`w-full bg-transparent border-b border-gray-200 focus:outline-none text-2xl font-serif mb-4 placeholder-gray-400 ${poemStyle.align}`}
+                    placeholder="Untitled Poem"
+                />
+                <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={10}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} ${poemStyle.align}`}
+                    placeholder="Verses go here..."
+                />
+            </div>
+        ) : (
+            <div>
+                <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    required={files.length === 0}
+                    rows={6}
+                    className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none font-serif text-lg"
+                    placeholder="Write here..."
                 />
             </div>
         )}
 
-        <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-            <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
-                rows={8}
-                className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none font-serif text-lg"
-                placeholder="Write here..."
-            />
-        </div>
-
-        {/* Media Preview */}
-        {previews.length > 0 && (
+        {/* Media Preview (Hidden for Letters/Poems as requested) */}
+        {type !== 'letter' && type !== 'poetry' && previews.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mb-4">
                 {previews.map((src, i) => (
                     <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
@@ -237,10 +286,12 @@ const CreatePost = () => {
                      </select>
                  </div>
 
-                 <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
-                     <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
-                     <Image size={20} />
-                 </label>
+                 {type !== 'letter' && type !== 'poetry' && (
+                     <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
+                         <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
+                         <Image size={20} />
+                     </label>
+                 )}
              </div>
 
              <button

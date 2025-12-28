@@ -17,6 +17,16 @@ const postSchema = new mongoose.Schema({
   content: {
     type: String,
   },
+  letterFields: {
+      header: String,
+      footer: String,
+      paperType: { type: String, default: 'classic' }
+  },
+  style: {
+      backgroundColor: String, // For poetry
+      font: String, // For poetry
+      align: String, // For poetry
+  },
   mood: {
     type: String,
     required: true, // e.g., "Melancholy", "Hopeful"

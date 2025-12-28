@@ -1,73 +1,175 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
-import { Mail, MessageCircle, Send, User, Search } from 'lucide-react';
+import { MessageCircle, Send, Search } from 'lucide-react';
 import useSWR from 'swr';
 import clsx from 'clsx';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useIdentity } from '../context/IdentityContext';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
 const Messages = () => {
-  const { data: messages, error } = useSWR('/messages/inbox', fetcher, {
-      refreshInterval: 2000 // Poll every 2 seconds for real-time effect
-  });
+  const { currentIdentity } = useIdentity();
+  const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', fetcher, { refreshInterval: 5000 });
 
-  const isLoading = !messages && !error;
+  const [activeChat, setActiveChat] = useState(null); // The other user identity
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
+  // Poll active chat messages
+  useSWR(
+      activeChat && currentIdentity ? `/messages/conversation?identity1=${currentIdentity._id}&identity2=${activeChat._id}` : null,
+      fetcher,
+      {
+          refreshInterval: 2000,
+          onSuccess: (data) => setChatMessages(data)
+      }
+  );
+
+  React.useEffect(() => {
+      const delayDebounceFn = setTimeout(async () => {
+          if (searchQuery) {
+              try {
+                  const res = await axios.get(`/search?q=${searchQuery}`);
+                  setSearchResults(res.data.identities || []);
+              } catch (err) { console.error(err); }
+          } else { setSearchResults([]); }
+      }, 500);
+      return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const sendMessage = async () => {
+      if (!newMessage.trim() || !activeChat || !currentIdentity) return;
+      try {
+          const res = await axios.post('/messages', {
+              senderIdentityId: currentIdentity._id,
+              recipientIdentityId: activeChat._id,
+              content: newMessage
+          });
+          setChatMessages([...chatMessages, res.data]);
+          setNewMessage('');
+          mutateInbox(); // Update sidebar preview
+      } catch (err) { console.error(err); }
+  };
+
+  const startChat = (identity) => {
+      setActiveChat(identity);
+      setSearchQuery('');
+      setSearchResults([]);
+  };
+
+  const selectConversation = (msg) => {
+      // Determine the "other" person
+      const isSender = msg.sender._id === currentIdentity?._id;
+      setActiveChat(isSender ? msg.recipient : msg.sender);
+  };
 
   return (
-    <div className="max-w-4xl mx-auto h-[80vh] flex flex-col md:flex-row bg-surface rounded-2xl shadow-sm overflow-hidden border border-soft-border">
+    <div className="max-w-5xl mx-auto h-[80vh] flex flex-col md:flex-row bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
 
-      {/* Sidebar (List) */}
-      <div className="w-full md:w-1/3 border-r border-soft-border bg-slate-50 flex flex-col">
-          <div className="p-4 border-b border-soft-border space-y-4">
-              <h2 className="text-xl font-serif text-accent font-bold">Messages</h2>
+      {/* Sidebar */}
+      <div className="w-full md:w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
+          <div className="p-4 border-b border-slate-200 space-y-4">
+              <h2 className="text-xl font-serif text-slate-900 font-bold">Messages</h2>
               <div className="relative">
                   <input
                     type="text"
                     placeholder="Search people..."
                     className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={searchQuery}
                   />
                   <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
               </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-            {isLoading ? (
-                <p className="text-center text-gray-400 py-4 text-sm">Loading conversations...</p>
-            ) : messages?.length === 0 ? (
-                <div className="text-center py-10 opacity-60">
-                    <MessageCircle className="mx-auto text-gray-300 mb-2" size={32} />
-                    <p className="text-sm text-gray-500">No messages yet.</p>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+            {searchResults.length > 0 ? (
+                <div>
+                    <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide px-2">Search Results</p>
+                    {searchResults.map(user => (
+                        <div key={user._id} onClick={() => startChat(user)} className="p-3 hover:bg-slate-100 rounded-xl cursor-pointer flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-xs">{user.name[0]}</div>
+                            <div><p className="text-sm font-bold text-slate-800">{user.name}</p><p className="text-xs text-slate-500">@{user.handle?.replace('@','')}</p></div>
+                        </div>
+                    ))}
                 </div>
             ) : (
-                messages?.map((msg) => (
-                    <motion.div
-                        key={msg._id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="p-3 bg-white rounded-xl border border-soft-border cursor-pointer hover:bg-white/80 transition shadow-sm"
-                    >
-                       <div className="flex justify-between items-start mb-1">
-                           <span className="font-semibold text-accent text-sm">
-                               {msg.sender.name}
-                           </span>
-                           <span className="text-[10px] text-gray-400">{formatDistanceToNow(new Date(msg.createdAt))} ago</span>
-                       </div>
-                       <p className="text-gray-500 text-xs line-clamp-1">{msg.content}</p>
-                    </motion.div>
-                ))
+                inbox?.map((msg) => {
+                    const isSender = msg.sender._id === currentIdentity?._id;
+                    const otherUser = isSender ? msg.recipient : msg.sender;
+                    const isActive = activeChat?._id === otherUser._id;
+                    return (
+                        <div
+                            key={msg._id}
+                            onClick={() => selectConversation(msg)}
+                            className={clsx("p-3 rounded-xl cursor-pointer transition flex items-center space-x-3", isActive ? "bg-white shadow-sm border border-slate-200" : "hover:bg-slate-100")}
+                        >
+                           <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 overflow-hidden">
+                               {otherUser.avatar ? <img src={otherUser.avatar} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full text-slate-500">{otherUser.name[0]}</div>}
+                           </div>
+                           <div className="flex-1 min-w-0">
+                               <div className="flex justify-between items-baseline">
+                                   <span className="text-sm font-bold text-slate-800 truncate">{otherUser.name}</span>
+                                   <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(msg.createdAt))}</span>
+                               </div>
+                               <p className="text-xs text-slate-500 truncate">{isSender ? 'You: ' : ''}{msg.content || 'Media'}</p>
+                           </div>
+                        </div>
+                    );
+                })
             )}
           </div>
       </div>
 
-      {/* Chat Area (Placeholder for MVP, full chat logic would go here) */}
-      <div className="hidden md:flex w-2/3 items-center justify-center bg-white">
-          <div className="text-center opacity-40">
-              <Mail size={48} className="mx-auto text-primary mb-4" />
-              <h3 className="text-lg font-serif text-accent">Select a conversation</h3>
-              <p className="text-sm text-gray-500">Or send a DM from someone's profile</p>
-          </div>
+      {/* Chat Area */}
+      <div className="hidden md:flex flex-col w-2/3 bg-white">
+          {activeChat ? (
+              <>
+                  {/* Chat Header */}
+                  <div className="p-4 border-b border-slate-100 flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-slate-200 rounded-full overflow-hidden">
+                          {activeChat.avatar ? <img src={activeChat.avatar} className="w-full h-full object-cover"/> : <div className="h-full flex items-center justify-center text-xs text-slate-500">{activeChat.name[0]}</div>}
+                      </div>
+                      <span className="font-bold text-slate-800">{activeChat.name}</span>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar flex flex-col-reverse">
+                      {[...chatMessages].reverse().map((msg, i) => { // Reverse to show latest at bottom if flex-col-reverse
+                          const isMe = msg.sender._id === currentIdentity?._id;
+                          return (
+                              <div key={i} className={clsx("flex max-w-[80%]", isMe ? "self-end justify-end" : "self-start")}>
+                                  <div className={clsx("p-3 rounded-2xl text-sm", isMe ? "bg-slate-900 text-white rounded-tr-none" : "bg-slate-100 text-slate-800 rounded-tl-none")}>
+                                      {msg.content}
+                                  </div>
+                              </div>
+                          );
+                      })}
+                  </div>
+
+                  {/* Input */}
+                  <div className="p-4 border-t border-slate-100">
+                      <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                          <input
+                            className="flex-1 bg-transparent outline-none px-2 text-sm"
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                          />
+                          <button onClick={sendMessage} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"><Send size={16} /></button>
+                      </div>
+                  </div>
+              </>
+          ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
+                  <MessageCircle size={48} className="mb-4" />
+                  <p>Select a conversation to start chatting</p>
+              </div>
+          )}
       </div>
     </div>
   );
