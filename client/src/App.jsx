@@ -36,21 +36,15 @@ function App() {
                 <Route path="/verify-email/:token" element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
-                <Route path="/search" element={
-                  <ProtectedRoute>
-                    <SearchPage />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/profile/:handle" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-
                 <Route path="/feed" element={
                   <ProtectedRoute>
                     <Feed />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/search" element={
+                  <ProtectedRoute>
+                    <SearchPage />
                   </ProtectedRoute>
                 } />
 
@@ -63,6 +57,12 @@ function App() {
                 <Route path="/chat" element={
                   <ProtectedRoute>
                     <Messages />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/profile/:handle" element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 } />
 
