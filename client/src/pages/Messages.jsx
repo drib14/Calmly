@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Send, Search } from 'lucide-react';
+import { MessageCircle, Send, Search, Mic, Paperclip, X, StopCircle } from 'lucide-react';
 import useSWR from 'swr';
 import clsx from 'clsx';
 import { useIdentity } from '../context/IdentityContext';
+import MediaPlayer from '../components/MediaPlayer';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -12,11 +13,20 @@ const Messages = () => {
   const { currentIdentity } = useIdentity();
   const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', fetcher, { refreshInterval: 5000 });
 
-  const [activeChat, setActiveChat] = useState(null); // The other user identity
+  const [activeChat, setActiveChat] = useState(null);
   const [chatMessages, setChatMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+
+  // Media State
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  // Voice State
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const [audioChunks, setAudioChunks] = useState([]);
 
   // Poll active chat messages
   useSWR(
@@ -40,18 +50,72 @@ const Messages = () => {
       return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  const sendMessage = async () => {
-      if (!newMessage.trim() || !activeChat || !currentIdentity) return;
+  const startRecording = async () => {
       try {
-          const res = await axios.post('/messages', {
-              senderIdentityId: currentIdentity._id,
-              recipientIdentityId: activeChat._id,
-              content: newMessage
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+
+          mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) setAudioChunks((prev) => [...prev, e.data]);
+          };
+
+          mediaRecorder.start();
+          setIsRecording(true);
+      } catch (err) {
+          console.error("Mic access denied", err);
+          alert("Microphone access denied");
+      }
+  };
+
+  const stopRecording = () => {
+      if (mediaRecorderRef.current) {
+          mediaRecorderRef.current.stop();
+          setIsRecording(false);
+          mediaRecorderRef.current.onstop = () => {
+              const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+              const audioFile = new File([audioBlob], "voice_message.webm", { type: 'audio/webm' });
+              setFiles([...files, audioFile]);
+              setAudioChunks([]);
+          };
+      }
+  };
+
+  const handleFileSelect = (e) => {
+      if (e.target.files) {
+          setFiles([...files, ...Array.from(e.target.files)]);
+      }
+  };
+
+  const removeFile = (index) => {
+      const newFiles = [...files];
+      newFiles.splice(index, 1);
+      setFiles(newFiles);
+  };
+
+  const sendMessage = async () => {
+      if ((!newMessage.trim() && files.length === 0) || !activeChat || !currentIdentity) return;
+      setUploading(true);
+      try {
+          const formData = new FormData();
+          formData.append('senderIdentityId', currentIdentity._id);
+          formData.append('recipientIdentityId', activeChat._id);
+          formData.append('content', newMessage);
+
+          files.forEach(file => {
+              formData.append('media', file);
           });
+
+          const res = await axios.post('/messages', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+          });
+
           setChatMessages([...chatMessages, res.data]);
           setNewMessage('');
-          mutateInbox(); // Update sidebar preview
+          setFiles([]);
+          mutateInbox();
       } catch (err) { console.error(err); }
+      finally { setUploading(false); }
   };
 
   const startChat = (identity) => {
@@ -138,29 +202,68 @@ const Messages = () => {
 
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar flex flex-col-reverse">
-                      {[...chatMessages].reverse().map((msg, i) => { // Reverse to show latest at bottom if flex-col-reverse
+                      {[...chatMessages].reverse().map((msg, i) => {
                           const isMe = msg.sender._id === currentIdentity?._id;
                           return (
-                              <div key={i} className={clsx("flex max-w-[80%]", isMe ? "self-end justify-end" : "self-start")}>
-                                  <div className={clsx("p-3 rounded-2xl text-sm", isMe ? "bg-slate-900 text-white rounded-tr-none" : "bg-slate-100 text-slate-800 rounded-tl-none")}>
-                                      {msg.content}
+                              <div key={i} className={clsx("flex flex-col max-w-[70%]", isMe ? "self-end items-end" : "self-start items-start")}>
+                                  <div className={clsx("p-3 rounded-2xl text-sm overflow-hidden", isMe ? "bg-slate-900 text-white rounded-tr-none" : "bg-slate-100 text-slate-800 rounded-tl-none")}>
+                                      {msg.media && msg.media.map((m, idx) => (
+                                          <div key={idx} className="mb-2 rounded-lg overflow-hidden">
+                                              {m.type === 'video' ? <MediaPlayer src={m.url} /> : m.type === 'audio' ? <audio controls src={m.url} className="w-full h-8" /> : <img src={m.url} className="max-w-full" />}
+                                          </div>
+                                      ))}
+                                      {msg.content && <p>{msg.content}</p>}
                                   </div>
+                                  <span className="text-[10px] text-slate-400 mt-1 px-1">{formatDistanceToNow(new Date(msg.createdAt))} ago</span>
                               </div>
                           );
                       })}
                   </div>
 
-                  {/* Input */}
+                  {/* Input Area */}
                   <div className="p-4 border-t border-slate-100">
-                      <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                      {/* File Preview */}
+                      {files.length > 0 && (
+                          <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                              {files.map((file, i) => (
+                                  <div key={i} className="relative bg-slate-100 rounded-lg p-2 flex items-center space-x-2 text-xs border border-slate-200">
+                                      <span className="truncate max-w-[100px]">{file.name}</span>
+                                      <button onClick={() => removeFile(i)} className="hover:text-red-500"><X size={12} /></button>
+                                  </div>
+                              ))}
+                          </div>
+                      )}
+
+                      <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 focus-within:ring-2 ring-slate-100 transition-shadow">
+                          {/* Attach Button */}
+                          <label className="p-2 text-slate-400 hover:text-slate-600 cursor-pointer rounded-full hover:bg-slate-200 transition">
+                              <input type="file" multiple className="hidden" onChange={handleFileSelect} />
+                              <Paperclip size={20} />
+                          </label>
+
                           <input
-                            className="flex-1 bg-transparent outline-none px-2 text-sm"
+                            className="flex-1 bg-transparent outline-none px-2 text-sm placeholder:text-slate-400"
                             placeholder="Type a message..."
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                            onKeyDown={(e) => e.key === 'Enter' && !uploading && sendMessage()}
                           />
-                          <button onClick={sendMessage} className="p-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition"><Send size={16} /></button>
+
+                          {/* Voice Recorder */}
+                          <button
+                            onClick={isRecording ? stopRecording : startRecording}
+                            className={clsx("p-2 rounded-full transition", isRecording ? "text-red-500 bg-red-50 animate-pulse" : "text-slate-400 hover:text-slate-600 hover:bg-slate-200")}
+                          >
+                              {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
+                          </button>
+
+                          <button
+                            onClick={sendMessage}
+                            disabled={uploading}
+                            className="p-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition disabled:opacity-50"
+                          >
+                              <Send size={18} />
+                          </button>
                       </div>
                   </div>
               </>

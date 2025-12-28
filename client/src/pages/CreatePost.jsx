@@ -21,10 +21,26 @@ const CreatePost = () => {
   const [uploading, setUploading] = useState(false);
 
   // Specialized Fields
-  const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,' });
+  const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
   const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
 
   const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
+
+  const paperStyles = [
+      { id: 'classic', label: 'Classic', class: 'bg-amber-50 border-amber-100 text-amber-900' },
+      { id: 'parchment', label: 'Parchment', class: 'bg-[#f0e6d2] border-[#e6dcc0] text-[#5c4b35]' },
+      { id: 'dark', label: 'Midnight', class: 'bg-slate-900 border-slate-800 text-slate-200' },
+      { id: 'lined', label: 'Notebook', class: 'bg-white border-blue-100 text-slate-800' }, // CSS for lines can be added later
+  ];
+
+  const poemBackgrounds = [
+      { id: 'white', class: 'bg-white text-slate-900 border border-slate-100' },
+      { id: 'dark', class: 'bg-slate-900 text-white' },
+      { id: 'sunset', class: 'bg-gradient-to-br from-orange-100 to-rose-200 text-rose-900' },
+      { id: 'ocean', class: 'bg-gradient-to-tr from-cyan-100 to-blue-200 text-blue-900' },
+      { id: 'forest', class: 'bg-gradient-to-b from-emerald-50 to-teal-100 text-teal-900' },
+      { id: 'midnight', class: 'bg-gradient-to-r from-slate-900 to-indigo-950 text-indigo-100' },
+  ];
 
   const handleFileChange = (e) => {
       const selectedFiles = Array.from(e.target.files);
@@ -191,39 +207,54 @@ const CreatePost = () => {
         </div>
 
         {type === 'letter' ? (
-            <div className="space-y-4 bg-amber-50 p-6 rounded-lg border border-amber-100 shadow-sm">
+            <div className={`space-y-4 p-6 rounded-lg border shadow-sm transition-colors ${paperStyles.find(s => s.id === letterFields.paperType)?.class}`}>
+                <div className="flex justify-end space-x-2 mb-2">
+                    {paperStyles.map(s => (
+                        <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => setLetterFields({...letterFields, paperType: s.id})}
+                            className={`w-6 h-6 rounded-full border border-slate-300 ${s.class.split(' ')[0]} ${letterFields.paperType === s.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                            title={s.label}
+                        />
+                    ))}
+                </div>
                 <input
                     type="text"
                     value={letterFields.header}
                     onChange={e => setLetterFields({...letterFields, header: e.target.value})}
-                    className="w-full bg-transparent border-b border-amber-200 focus:outline-none font-serif text-lg text-amber-900"
+                    className="w-full bg-transparent border-b border-current/20 focus:outline-none font-serif text-lg placeholder-current/50"
                     placeholder="Dear..."
                 />
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={8}
-                    className="w-full bg-transparent border-none focus:ring-0 font-serif text-lg leading-relaxed text-amber-900 placeholder-amber-800/50 resize-none"
+                    className="w-full bg-transparent border-none focus:ring-0 font-serif text-lg leading-relaxed placeholder-current/50 resize-none"
                     placeholder="Write your letter..."
                 />
                 <input
                     type="text"
                     value={letterFields.footer}
                     onChange={e => setLetterFields({...letterFields, footer: e.target.value})}
-                    className="w-full bg-transparent border-t border-amber-200 pt-2 focus:outline-none font-serif text-right text-amber-900"
+                    className="w-full bg-transparent border-t border-current/20 pt-2 focus:outline-none font-serif text-right placeholder-current/50"
                     placeholder="Sincerely,"
                 />
             </div>
         ) : type === 'poetry' ? (
-            <div className={`space-y-4 p-6 rounded-lg transition-colors ${poemStyle.backgroundColor}`}>
-                <div className="flex space-x-2 mb-4 justify-end">
-                    <select onChange={e => setPoemStyle({...poemStyle, backgroundColor: e.target.value})} className="text-xs border rounded p-1">
-                        <option value="bg-white">White</option>
-                        <option value="bg-slate-900 text-white">Dark</option>
-                        <option value="bg-gradient-to-br from-indigo-100 to-purple-100">Dreamy</option>
-                        <option value="bg-gradient-to-br from-orange-100 to-amber-100">Warm</option>
-                    </select>
-                    <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1">
+            <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
+                <div className="flex space-x-4 mb-4 justify-between items-center">
+                    <div className="flex space-x-2">
+                        {poemBackgrounds.map(bg => (
+                            <button
+                                key={bg.id}
+                                type="button"
+                                onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
+                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.class.split(' ')[0] === 'bg-gradient-to-br' ? 'bg-gradient-to-br from-orange-100 to-rose-200' : bg.class.split(' ')[0]} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                            />
+                        ))}
+                    </div>
+                    <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
                         <option value="text-left">Left</option>
                         <option value="text-center">Center</option>
                         <option value="text-right">Right</option>
@@ -233,14 +264,14 @@ const CreatePost = () => {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={`w-full bg-transparent border-b border-gray-200 focus:outline-none text-2xl font-serif mb-4 placeholder-gray-400 ${poemStyle.align}`}
+                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl font-serif mb-4 placeholder-current/40 ${poemStyle.align}`}
                     placeholder="Untitled Poem"
                 />
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={10}
-                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} ${poemStyle.align}`}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} ${poemStyle.align} placeholder-current/40`}
                     placeholder="Verses go here..."
                 />
             </div>
