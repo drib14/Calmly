@@ -8,18 +8,21 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     const res = await login(email, password);
     if (res.success) {
       navigate('/feed');
     } else {
       setError(res.message);
     }
+    setLoading(false);
   };
 
   return (
@@ -56,9 +59,10 @@ const Login = () => {
         </div>
         <button
           type="submit"
-          className="w-full bg-soft-dark text-white py-2 rounded-md hover:bg-gray-800 transition"
+          disabled={loading}
+          className="w-full bg-soft-dark text-white py-2 rounded-md hover:bg-gray-800 transition disabled:opacity-50"
         >
-          Log In
+          {loading ? 'Logging in...' : 'Log In'}
         </button>
       </form>
       <div className="mt-4 flex flex-col items-center space-y-2 text-sm">
