@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Image, X } from 'lucide-react';
 
 const CreatePost = () => {
-  const { identities, currentIdentity, selectIdentity, createPseudonym } = useIdentity();
+  const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
   const navigate = useNavigate();
 
   const [type, setType] = useState('confession');
@@ -106,21 +106,30 @@ const CreatePost = () => {
       <h2 className="text-2xl font-serif mb-6">Share a Moment</h2>
 
       {/* Identity Selector */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <label className="block text-xs uppercase tracking-wide text-gray-500 mb-2">Posting As</label>
-          <div className="flex items-center space-x-4 overflow-x-auto pb-2">
+      <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">Posting As</label>
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
               {identities.map(id => (
-                  <button
-                    key={id._id}
-                    onClick={() => selectIdentity(id._id)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-soft-dark text-white border-soft-dark' : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'}`}
-                  >
-                      <span className="text-sm font-medium">{id.name}</span>
-                      <span className="text-xs opacity-75">({id.type})</span>
-                  </button>
+                  <div key={id._id} className="relative group">
+                      <button
+                        onClick={() => selectIdentity(id._id)}
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                      >
+                          <span className="text-sm font-bold">{id.name}</span>
+                          <span className="text-[10px] opacity-75 uppercase tracking-wider">{id.type}</span>
+                      </button>
+                      {id.type === 'pseudonym' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); if(window.confirm('Remove this identity?')) deleteIdentity(id._id); }}
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                          >
+                              <X size={10} />
+                          </button>
+                      )}
+                  </div>
               ))}
-              <button onClick={() => setShowNewIdentity(!showNewIdentity)} className="text-sm text-sage hover:underline whitespace-nowrap">
-                  + New Pseudonym
+              <button onClick={() => setShowNewIdentity(!showNewIdentity)} className="text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap px-2">
+                  + New
               </button>
           </div>
 
@@ -228,7 +237,7 @@ const CreatePost = () => {
              <button
                 type="submit"
                 disabled={uploading}
-                className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2"
+                className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2 font-medium"
              >
                  {uploading ? <span>Publishing...</span> : <span>Post</span>}
              </button>

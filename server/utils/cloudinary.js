@@ -10,10 +10,12 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'calmly_uploads',
-    resource_type: 'auto', // Allow images and videos
-    allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'webm'],
+  params: async (req, file) => {
+    return {
+      folder: 'calmly_uploads',
+      resource_type: 'auto',
+      allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'webm'],
+    };
   },
 });
 

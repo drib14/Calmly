@@ -27,7 +27,8 @@ export const AuthProvider = ({ children }) => {
         response => response,
         async (error) => {
             const originalRequest = error.config;
-            if (error.response?.status === 401 && !originalRequest._retry) {
+            // Only retry if 401 and we haven't retried yet AND it's not the refresh endpoint itself
+            if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/refresh')) {
                 originalRequest._retry = true;
                 try {
                     const res = await axios.get('/auth/refresh');
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }) => {
                     originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
                     return axios(originalRequest);
                 } catch (refreshError) {
-                    // Logout if refresh fails
+                    // If refresh fails (403/401), clear everything and redirect
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('user');
                     setUser(null);

@@ -42,13 +42,27 @@ export const IdentityProvider = ({ children }) => {
     }
   };
 
+  const deleteIdentity = async (id) => {
+      try {
+          await axios.delete(`/identities/${id}`);
+          setIdentities(identities.filter(i => i._id !== id));
+          if (currentIdentity?._id === id) {
+              const real = identities.find(i => i.type === 'real');
+              setCurrentIdentity(real || null);
+          }
+          return { success: true };
+      } catch (error) {
+          return { success: false, message: error.response?.data?.message };
+      }
+  };
+
   const selectIdentity = (id) => {
     const identity = identities.find(i => i._id === id);
     if (identity) setCurrentIdentity(identity);
   };
 
   return (
-    <IdentityContext.Provider value={{ identities, currentIdentity, selectIdentity, createPseudonym }}>
+    <IdentityContext.Provider value={{ identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity }}>
       {children}
     </IdentityContext.Provider>
   );

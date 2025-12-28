@@ -204,7 +204,7 @@ const PostCard = ({ post, mutate }) => {
                             onClick={submitComment}
                             className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform"
                           >
-                              <Send size={14} className="-ml-0.5 mt-0.5" />
+                              <Send size={14} className="-ml-0.5 mt-0.5 text-white" />
                           </button>
                       </div>
                   </div>

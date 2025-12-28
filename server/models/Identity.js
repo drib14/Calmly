@@ -31,6 +31,10 @@ const identitySchema = new mongoose.Schema({
     type: Boolean,
     default: false, // If true, cannot be edited/deleted easily
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

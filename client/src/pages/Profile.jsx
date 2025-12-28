@@ -35,7 +35,7 @@ const Profile = () => {
                       <p className="text-slate-500 text-sm">{identity.handle}</p>
                   </div>
                   <button className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition flex items-center space-x-2">
-                      <MessageCircle size={16} />
+                      <MessageCircle size={16} className="text-white" />
                       <span>Message</span>
                   </button>
               </div>
