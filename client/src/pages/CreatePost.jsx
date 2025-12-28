@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useIdentity } from '../context/IdentityContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Image, X } from 'lucide-react';
 
 const CreatePost = () => {
   const { identities, currentIdentity, selectIdentity, createPseudonym } = useIdentity();
@@ -14,13 +15,40 @@ const CreatePost = () => {
   const [visibility, setVisibility] = useState('public');
   const [showNewIdentity, setShowNewIdentity] = useState(false);
   const [newIdentityName, setNewIdentityName] = useState('');
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
 
+  const handleFileChange = (e) => {
+      const selectedFiles = Array.from(e.target.files);
+      if (selectedFiles.length + files.length > 4) {
+          alert("Max 4 files allowed");
+          return;
+      }
+      setFiles([...files, ...selectedFiles]);
+
+      const newPreviews = selectedFiles.map(file => URL.createObjectURL(file));
+      setPreviews([...previews, ...newPreviews]);
+  };
+
+  const removeFile = (index) => {
+      const newFiles = [...files];
+      newFiles.splice(index, 1);
+      setFiles(newFiles);
+
+      const newPreviews = [...previews];
+      URL.revokeObjectURL(newPreviews[index]); // Cleanup
+      newPreviews.splice(index, 1);
+      setPreviews(newPreviews);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // For journals, identity is not strictly required (uses user), but for posts it is.
+
     if (visibility === 'private') {
+        // Journal Logic (Skipping file upload for Journal MVP to keep it simple, or can add if needed)
         try {
             await axios.post('/journal', {
                 title: title || 'Untitled',
@@ -36,19 +64,30 @@ const CreatePost = () => {
         }
     } else {
         if (!currentIdentity) return;
+        setUploading(true);
+
         try {
-            await axios.post('/posts', {
-                identityId: currentIdentity._id,
-                type,
-                mood,
-                content,
-                title: (type === 'poetry' || type === 'letter') ? title : undefined,
-                visibility
+            const formData = new FormData();
+            formData.append('identityId', currentIdentity._id);
+            formData.append('type', type);
+            formData.append('mood', mood);
+            formData.append('content', content);
+            formData.append('visibility', visibility);
+            if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
+
+            files.forEach(file => {
+                formData.append('media', file);
+            });
+
+            await axios.post('/posts', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
             navigate('/feed');
         } catch (error) {
             console.error(error);
             alert("Failed to post");
+        } finally {
+            setUploading(false);
         }
     }
   };
@@ -151,24 +190,47 @@ const CreatePost = () => {
             />
         </div>
 
+        {/* Media Preview */}
+        {previews.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 mb-4">
+                {previews.map((src, i) => (
+                    <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                        <img src={src} className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => removeFile(i)} className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-0.5">
+                            <X size={12} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        )}
+
         <div className="flex justify-between items-center pt-4 border-t">
-             <div className="flex items-center space-x-2">
-                 <label className="text-sm text-gray-600">Visibility:</label>
-                 <select
-                    value={visibility}
-                    onChange={(e) => setVisibility(e.target.value)}
-                    className="text-sm border-none bg-transparent focus:ring-0"
-                 >
-                     <option value="public">Public</option>
-                     <option value="unlisted">Unlisted</option>
-                     <option value="private">Private (Journal)</option>
-                 </select>
+             <div className="flex items-center space-x-4">
+                 <div className="flex items-center space-x-2">
+                     <label className="text-sm text-gray-600">Visibility:</label>
+                     <select
+                        value={visibility}
+                        onChange={(e) => setVisibility(e.target.value)}
+                        className="text-sm border-none bg-transparent focus:ring-0"
+                     >
+                         <option value="public">Public</option>
+                         <option value="unlisted">Unlisted</option>
+                         <option value="private">Private (Journal)</option>
+                     </select>
+                 </div>
+
+                 <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
+                     <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
+                     <Image size={20} />
+                 </label>
              </div>
+
              <button
                 type="submit"
-                className="bg-soft-dark text-white px-8 py-2 rounded-md hover:bg-gray-800 transition"
+                disabled={uploading}
+                className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2"
              >
-                 Post
+                 {uploading ? <span>Publishing...</span> : <span>Post</span>}
              </button>
         </div>
       </form>

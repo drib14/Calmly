@@ -3,10 +3,19 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
+const { upload } = require('../utils/cloudinary');
 
 // Create a post
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, upload.array('media', 4), async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags } = req.body;
+  let media = [];
+
+  if (req.files) {
+      media = req.files.map(file => ({
+          url: file.path,
+          type: file.mimetype.startsWith('video') ? 'video' : 'image'
+      }));
+  }
 
   try {
     // Verify identity belongs to user
@@ -22,7 +31,8 @@ router.post('/', protect, async (req, res) => {
       mood,
       visibility,
       title,
-      tags
+      tags: tags ? (Array.isArray(tags) ? tags : JSON.parse(tags)) : [], // Handle multipart form data array
+      media
     });
 
     res.status(201).json(post);
@@ -68,6 +78,28 @@ router.put('/:id/like', protect, async (req, res) => {
         }
         await post.save();
         res.json(post.likes);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Toggle Repost
+router.put('/:id/repost', protect, async (req, res) => {
+    const { identityId } = req.body;
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
+        if (!identity) return res.status(403).json({ message: 'Invalid identity' });
+
+        if (post.reposts.includes(identityId)) {
+            post.reposts = post.reposts.filter(id => id.toString() !== identityId);
+        } else {
+            post.reposts.push(identityId);
+        }
+        await post.save();
+        res.json(post.reposts);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

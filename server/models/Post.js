@@ -32,6 +32,14 @@ const postSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Identity'
   }],
+  reposts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Identity'
+  }],
+  media: [{
+    url: String,
+    type: { type: String, enum: ['image', 'video'] }
+  }],
   contentWarnings: [String], // e.g. "Self-harm mention"
   burnAfter: {
     type: Date, // Auto-delete date
