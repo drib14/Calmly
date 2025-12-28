@@ -12,7 +12,6 @@ import VerifyEmail from './pages/VerifyEmail';
 import Journal from './pages/Journal';
 import Messages from './pages/Messages';
 import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -35,7 +34,6 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email/:token" element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
 
                 <Route path="/feed" element={
                   <ProtectedRoute>

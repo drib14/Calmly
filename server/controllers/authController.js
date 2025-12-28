@@ -168,36 +168,38 @@ const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(20).toString('hex');
-    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    // Generate 6-digit OTP
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetTokenHash = crypto.createHash('sha256').update(resetCode).digest('hex');
 
     // Save hashed token to DB
     user.resetPasswordToken = resetTokenHash;
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
-    await user.save({ validateBeforeSave: false }); // Skip other validation
+    await user.save({ validateBeforeSave: false });
 
     // Send email
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
     const message = `
-      <h1>You have requested a password reset</h1>
-      <p>Please go to this link to reset your password:</p>
-      <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
+      <h1>Password Reset Request</h1>
+      <p>Your password reset code is:</p>
+      <h2 style="letter-spacing: 5px; background: #f0f0f0; padding: 10px; display: inline-block;">${resetCode}</h2>
+      <p>This code expires in 10 minutes.</p>
     `;
 
     try {
       await transporter.sendMail({
+        from: process.env.EMAIL_USER,
         to: user.email,
-        subject: 'Password Reset Request',
+        subject: 'Your Password Reset Code',
         html: message,
       });
 
-      res.status(200).json({ success: true, data: 'Email sent' });
+      res.status(200).json({ success: true, message: 'Reset code sent to email' });
     } catch (error) {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
 
+      console.error("Email send error:", error);
       return res.status(500).json({ message: 'Email could not be sent' });
     }
   } catch (error) {
@@ -205,20 +207,43 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-const resetPassword = async (req, res) => {
-  const resetTokenHash = crypto.createHash('sha256').update(req.params.resetToken).digest('hex');
+const verifyCode = async (req, res) => {
+  const { email, code } = req.body;
+  const resetTokenHash = crypto.createHash('sha256').update(code).digest('hex');
 
   try {
     const user = await User.findOne({
+      email,
       resetPasswordToken: resetTokenHash,
       resetPasswordExpire: { $gt: Date.now() },
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid token' });
+      return res.status(400).json({ message: 'Invalid or expired code' });
     }
 
-    user.password = req.body.password;
+    res.status(200).json({ success: true, message: 'Code verified' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  const { email, code, password } = req.body;
+  const resetTokenHash = crypto.createHash('sha256').update(code).digest('hex');
+
+  try {
+    const user = await User.findOne({
+      email,
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired code' });
+    }
+
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
@@ -226,7 +251,7 @@ const resetPassword = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      data: 'Password reset success',
+      message: 'Password reset success',
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -251,4 +276,4 @@ const logoutUser = async (req, res) => {
     res.sendStatus(204);
 }
 
-module.exports = { registerUser, loginUser, verifyEmail, logoutUser, refreshToken, forgotPassword, resetPassword };
+module.exports = { registerUser, loginUser, verifyEmail, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword };
