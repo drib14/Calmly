@@ -15,7 +15,10 @@ router.get('/:handle', async (req, res) => {
     }
 
     if (identity.type === 'anonymous') {
-        return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
+        // Only allow owner to view their own anonymous profile
+        if (identity.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
+        }
     }
 
     // Get Public Posts (Explicitly for this identity only)

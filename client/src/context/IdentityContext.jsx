@@ -24,8 +24,12 @@ export const IdentityProvider = ({ children }) => {
     try {
       const res = await axios.get('/identities');
       setIdentities(res.data);
-      if (res.data.length > 0 && !currentIdentity) {
-        setCurrentIdentity(res.data[0]); // Default to first (usually Real)
+      // Always default to 'real' identity if not set, or first available
+      if (res.data.length > 0) {
+          const real = res.data.find(i => i.type === 'real');
+          if (!currentIdentity) {
+              setCurrentIdentity(real || res.data[0]);
+          }
       }
     } catch (error) {
       console.error("Failed to fetch identities", error);
