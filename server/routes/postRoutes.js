@@ -50,4 +50,27 @@ router.get('/feed', async (req, res) => {
   }
 });
 
+// Toggle Like
+router.put('/:id/like', protect, async (req, res) => {
+    const { identityId } = req.body;
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Verify identity ownership
+        const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
+        if (!identity) return res.status(403).json({ message: 'Invalid identity' });
+
+        if (post.likes.includes(identityId)) {
+            post.likes = post.likes.filter(id => id.toString() !== identityId);
+        } else {
+            post.likes.push(identityId);
+        }
+        await post.save();
+        res.json(post.likes);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;

@@ -15,6 +15,19 @@ const commentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Identity'
+  }],
+  parentComment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Comment',
+    default: null
+  },
+  replies: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Comment'
+  }],
   createdAt: {
     type: Date,
     default: Date.now,

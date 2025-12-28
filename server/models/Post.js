@@ -28,9 +28,9 @@ const postSchema = new mongoose.Schema({
     enum: ['public', 'unlisted', 'private'],
     default: 'public',
   },
-  reactions: [{
+  likes: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Reaction'
+    ref: 'Identity'
   }],
   contentWarnings: [String], // e.g. "Self-harm mention"
   burnAfter: {
