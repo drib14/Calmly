@@ -50,6 +50,10 @@ const postSchema = new mongoose.Schema({
     type: { type: String, enum: ['image', 'video'] }
   }],
   contentWarnings: [String], // e.g. "Self-harm mention"
+  commentCount: {
+    type: Number,
+    default: 0
+  },
   burnAfter: {
     type: Date, // Auto-delete date
   },

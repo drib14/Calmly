@@ -2,11 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
-import { Send, Image, Mic, User, Plus, X, Search } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import { toast } from 'react-hot-toast';
+
+// Utility to format bytes
+const formatBytes = (bytes, decimals = 2) => {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+};
 
 const Messages = () => {
   const { currentIdentity, identities } = useIdentity();
@@ -14,23 +24,19 @@ const Messages = () => {
   const [messageText, setMessageText] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
-  const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef();
 
-  // Fetch Inbox
+  // Fetch Inbox (Polling)
   const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', async (url) => {
       try {
           const res = await axios.get(url);
           return res.data;
       } catch (err) {
-          if (err.response?.status !== 401) { // Ignore 401s here as auth might be loading
-             // toast.error("Failed to load inbox"); // Optional: don't spam toasts
-          }
           return [];
       }
-  });
+  }, { refreshInterval: 5000 });
 
-  // Fetch Conversation
+  // Fetch Conversation (Polling)
   const { data: messages, mutate: mutateMessages } = useSWR(
       activeConversation && currentIdentity ? `/messages/conversation?identity1=${currentIdentity._id}&identity2=${activeConversation._id}` : null,
       async (url) => {
@@ -38,12 +44,24 @@ const Messages = () => {
               const res = await axios.get(url);
               return res.data;
           } catch (err) {
-              console.error(err);
               return [];
           }
       },
       { refreshInterval: 3000 }
   );
+
+  // Mark as Read Effect
+  useEffect(() => {
+      if (activeConversation && messages?.length > 0) {
+          const markRead = async () => {
+              try {
+                  await axios.put('/messages/read', { otherIdentityId: activeConversation._id });
+                  mutateInbox(); // Refresh badge counts
+              } catch (err) { console.error(err); }
+          };
+          markRead();
+      }
+  }, [activeConversation, messages?.length]);
 
   useEffect(() => {
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,11 +94,22 @@ const Messages = () => {
   const handleFileSelect = (e) => {
       const files = Array.from(e.target.files);
       setMediaFiles([...mediaFiles, ...files]);
-      const newPreviews = files.map(f => URL.createObjectURL(f));
+      const newPreviews = files.map(f => f.type.startsWith('image') ? URL.createObjectURL(f) : null); // Only preview images
       setPreviews([...previews, ...newPreviews]);
   };
 
-  // Mock Identity Search for New Message (Simplified)
+  const removeFile = (index) => {
+      const newFiles = [...mediaFiles];
+      newFiles.splice(index, 1);
+      setMediaFiles(newFiles);
+
+      const newPreviews = [...previews];
+      if (newPreviews[index]) URL.revokeObjectURL(newPreviews[index]);
+      newPreviews.splice(index, 1);
+      setPreviews(newPreviews);
+  };
+
+  // Mock Identity Search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
 
@@ -128,7 +157,13 @@ const Messages = () => {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
               {inbox?.map(msg => {
-                  const other = msg.sender._id === currentIdentity?._id ? msg.recipient : msg.sender;
+                  // Guard clause for missing sender/recipient
+                  if (!msg.sender || !msg.recipient) return null;
+
+                  const isMe = msg.sender._id === currentIdentity?._id;
+                  const other = isMe ? msg.recipient : msg.sender;
+                  const isUnread = !isMe && !msg.read;
+
                   return (
                       <div
                         key={msg._id}
@@ -136,13 +171,18 @@ const Messages = () => {
                         className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition ${activeConversation?._id === other._id ? 'bg-slate-50' : ''}`}
                       >
                           <div className="flex items-center space-x-3">
-                              <Avatar identity={other} />
+                              <div className="relative">
+                                <Avatar identity={other} />
+                                {isUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+                              </div>
                               <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-baseline mb-1">
-                                      <span className="font-bold text-slate-800 text-sm truncate">{other.name}</span>
+                                      <span className={clsx("text-sm truncate", isUnread ? "font-bold text-slate-900" : "font-medium text-slate-700")}>{other.name}</span>
                                       <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
                                   </div>
-                                  <p className="text-xs text-slate-500 truncate">{msg.content || 'Sent a file'}</p>
+                                  <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-slate-800" : "text-slate-500")}>
+                                      {isMe ? 'You: ' : ''}{msg.content || 'Sent a file'}
+                                  </p>
                               </div>
                           </div>
                       </div>
@@ -171,15 +211,43 @@ const Messages = () => {
                           return (
                               <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
-                                  <div className={`max-w-[70%] rounded-2xl p-4 text-sm shadow-sm ${isMe ? 'bg-slate-900 text-white rounded-br-none' : 'bg-white text-slate-700 rounded-bl-none border border-slate-100'}`}>
-                                      {msg.content && <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
-                                      {msg.media?.length > 0 && (
-                                          <div className="grid gap-2 mt-2">
-                                              {msg.media.map((m, i) => (
-                                                  m.type === 'video' ? <MediaPlayer key={i} src={m.url} /> : <img key={i} src={m.url} className="rounded-lg" />
-                                              ))}
+                                  <div className={`max-w-[70%] space-y-2`}>
+                                      {/* Media Bubbles */}
+                                      {msg.media?.map((m, i) => (
+                                          <div key={i} className={clsx(
+                                              "overflow-hidden shadow-sm border",
+                                              m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-white border-slate-200" : "rounded-2xl border-transparent"
+                                          )}>
+                                              {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
+                                              {m.type === 'video' && <MediaPlayer src={m.url} />}
+                                              {m.type === 'audio' && <audio src={m.url} controls className="w-full" />}
+                                              {m.type === 'file' && (
+                                                  <>
+                                                      <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0 text-slate-500">
+                                                          <FileText size={20} />
+                                                      </div>
+                                                      <div className="flex-1 min-w-0">
+                                                          <p className="text-sm font-medium text-slate-700 truncate">{m.name}</p>
+                                                          <p className="text-[10px] text-slate-400">{m.size ? formatBytes(m.size) : 'File'}</p>
+                                                      </div>
+                                                      <a href={m.url} download target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition">
+                                                          <Download size={16} />
+                                                      </a>
+                                                  </>
+                                              )}
+                                          </div>
+                                      ))}
+
+                                      {/* Text Bubble */}
+                                      {msg.content && (
+                                          <div className={clsx(
+                                              "p-4 text-sm shadow-sm rounded-2xl",
+                                              isMe ? "bg-slate-900 text-white rounded-br-none" : "bg-white text-slate-700 rounded-bl-none border border-slate-100"
+                                          )}>
+                                              <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                           </div>
                                       )}
+
                                       <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-slate-300'}`}>
                                           {formatDistanceToNow(new Date(msg.createdAt))}
                                       </div>
@@ -191,15 +259,19 @@ const Messages = () => {
                   </div>
 
                   <div className="p-4 bg-white border-t border-slate-100">
-                      {previews.length > 0 && (
-                          <div className="flex space-x-2 mb-2 overflow-x-auto">
-                              {previews.map((src, i) => (
-                                  <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border">
-                                      <img src={src} className="w-full h-full object-cover" />
-                                      <button onClick={() => {
-                                          const newFiles = [...mediaFiles]; newFiles.splice(i,1); setMediaFiles(newFiles);
-                                          const newPrev = [...previews]; newPrev.splice(i,1); setPreviews(newPrev);
-                                      }} className="absolute top-0 right-0 bg-black text-white p-0.5 rounded-bl"><X size={10}/></button>
+                      {mediaFiles.length > 0 && (
+                          <div className="flex space-x-2 mb-2 overflow-x-auto p-2 bg-slate-50 rounded-xl">
+                              {mediaFiles.map((file, i) => (
+                                  <div key={i} className="relative group bg-white border rounded-lg p-1">
+                                      {file.type.startsWith('image') ? (
+                                          <img src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-md" />
+                                      ) : (
+                                          <div className="w-12 h-12 flex items-center justify-center text-slate-400">
+                                              <FileText size={20} />
+                                          </div>
+                                      )}
+                                      <div className="text-[8px] truncate w-12 text-center mt-1 text-slate-500">{formatBytes(file.size, 0)}</div>
+                                      <button onClick={() => removeFile(i)} className="absolute -top-1 -right-1 bg-black text-white p-0.5 rounded-full shadow-sm"><X size={8}/></button>
                                   </div>
                               ))}
                           </div>
@@ -207,7 +279,7 @@ const Messages = () => {
                       <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 focus-within:ring-2 ring-slate-200 transition-shadow">
                           <label className="p-2 text-slate-400 hover:text-slate-600 cursor-pointer transition">
                               <input type="file" multiple className="hidden" onChange={handleFileSelect} />
-                              <Image size={20} />
+                              <Plus size={20} />
                           </label>
                           <input
                               className="flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-400"

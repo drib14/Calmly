@@ -1,18 +1,30 @@
-import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-
-import { useState } from 'react';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import axios from 'axios';
+import useSWR from 'swr';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Poll for Unread Messages
+  const { data: unreadData } = useSWR(
+      user ? '/messages/unread-count' : null,
+      async (url) => {
+          try {
+              const res = await axios.get(url);
+              return res.data;
+          } catch (err) {
+              return { count: 0 };
+          }
+      },
+      { refreshInterval: 5000 } // Poll every 5s
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -26,7 +38,7 @@ const Navbar = () => {
     { icon: Search, label: 'Explore', path: '/search' },
     { icon: PenTool, label: 'Create', path: '/create' },
     { icon: BookOpen, label: 'Journal', path: '/journal' },
-    { icon: MessageCircle, label: 'Chat', path: '/chat' },
+    { icon: MessageCircle, label: 'Chat', path: '/chat', badge: unreadData?.count },
   ];
 
   return (
@@ -71,16 +83,32 @@ const Navbar = () => {
                 )
               }
             >
-              <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              <div className="relative">
+                  <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                  {/* Red Dot Badge */}
+                  {item.badge > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+                      </span>
+                  )}
+              </div>
 
               {isExpanded && (
-                  <span className="font-medium text-sm whitespace-nowrap">{item.label}</span>
+                  <span className="font-medium text-sm whitespace-nowrap flex-1 flex justify-between items-center">
+                      {item.label}
+                      {item.badge > 0 && (
+                          <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2">
+                              {item.badge > 99 ? '99+' : item.badge}
+                          </span>
+                      )}
+                  </span>
               )}
 
               {/* Tooltip (Collapsed Desktop Only) */}
               {!isExpanded && (
                 <span className="absolute left-16 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block pointer-events-none z-50">
-                    {item.label}
+                    {item.label} {item.badge > 0 && `(${item.badge})`}
                 </span>
               )}
             </NavLink>
