@@ -52,9 +52,12 @@ const Login = () => {
           Log In
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-gray-500">
-        Don't have an account? <Link to="/register" className="text-sage hover:underline">Register</Link>
-      </p>
+      <div className="mt-4 flex flex-col items-center space-y-2 text-sm">
+        <Link to="/forgot-password" className="text-gray-500 hover:text-soft-dark">Forgot Password?</Link>
+        <p className="text-gray-500">
+          Don't have an account? <Link to="/register" className="text-sage hover:underline">Register</Link>
+        </p>
+      </div>
     </div>
   );
 };

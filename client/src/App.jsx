@@ -11,6 +11,8 @@ import CreatePost from './pages/CreatePost';
 import VerifyEmail from './pages/VerifyEmail';
 import Journal from './pages/Journal';
 import Messages from './pages/Messages';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -23,7 +25,7 @@ function App() {
   return (
     <AuthProvider>
       <IdentityProvider>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <div className="min-h-screen bg-soft-light text-soft-dark font-sans">
             <Navbar />
             <div className="container mx-auto px-4 py-8">
@@ -32,6 +34,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email/:token" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
 
                 <Route path="/feed" element={
                   <ProtectedRoute>
