@@ -27,6 +27,10 @@ const identitySchema = new mongoose.Schema({
     type: String, // URL
     default: '',
   },
+  coverPhoto: {
+    type: String, // URL
+    default: '',
+  },
   isLocked: {
     type: Boolean,
     default: false, // If true, cannot be edited/deleted easily

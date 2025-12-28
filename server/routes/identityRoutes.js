@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const Identity = require('../models/Identity');
+const { upload } = require('../utils/cloudinary');
 
 // Get all identities for the logged in user (excluding deleted)
 router.get('/', protect, async (req, res) => {
@@ -19,7 +20,6 @@ router.post('/', protect, async (req, res) => {
   const handle = `@${name.replace(/\s+/g, '').toLowerCase()}`;
 
   try {
-    // Check duplication (Handle uniqueness)
     const exists = await Identity.findOne({ handle });
     if (exists) {
         return res.status(400).json({ message: 'Pseudonym already taken' });
@@ -39,15 +39,48 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-// Delete Identity (Soft Delete or Hard Delete logic if unused)
-// For MVP, we'll hard delete if no posts, or soft delete if posts exist?
-// User asked to delete pseudonym but keep posts. So we cannot hard delete if referenced.
-// However, if we delete the identity document, the population in Post will be null.
-// Solution: We should mark it as deleted in DB, and frontend should handle null identity.
-// Or we just block deletion if posts exist?
-// User said "post card that uses that pseudoname will remain". This implies keeping the data.
-// So we keep the identity but maybe mark `isDeleted: true` and remove it from the user's selection list.
+// Update Identity (Photo Uploads)
+router.put('/:id', protect, upload.fields([{ name: 'avatar', maxCount: 1 }, { name: 'coverPhoto', maxCount: 1 }]), async (req, res) => {
+    try {
+        const identity = await Identity.findOne({ _id: req.params.id, user: req.user._id });
+        if (!identity) return res.status(404).json({ message: 'Identity not found' });
 
+        if (req.files['avatar']) {
+            identity.avatar = req.files['avatar'][0].path;
+        }
+        if (req.files['coverPhoto']) {
+            identity.coverPhoto = req.files['coverPhoto'][0].path;
+        }
+
+        // Allow updating text fields too if sent
+        if (req.body.name) identity.name = req.body.name;
+        if (req.body.bio) identity.bio = req.body.bio;
+
+        await identity.save();
+        res.json(identity);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Remove Photo (Avatar or Cover)
+router.delete('/:id/photo', protect, async (req, res) => {
+    const { type } = req.query; // 'avatar' or 'coverPhoto'
+    try {
+        const identity = await Identity.findOne({ _id: req.params.id, user: req.user._id });
+        if (!identity) return res.status(404).json({ message: 'Identity not found' });
+
+        if (type === 'avatar') identity.avatar = '';
+        if (type === 'coverPhoto') identity.coverPhoto = '';
+
+        await identity.save();
+        res.json(identity);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete Identity (Soft Delete)
 router.delete('/:id', protect, async (req, res) => {
     try {
         const identity = await Identity.findOne({ _id: req.params.id, user: req.user._id });

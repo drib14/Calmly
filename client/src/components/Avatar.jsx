@@ -35,6 +35,9 @@ const Avatar = ({ identity, size = "md" }) => {
 
   // 2. Pseudonym: User Icon (Unified Color usually, or gray)
   if (identity.type === 'pseudonym') {
+      if (identity.avatar) {
+          return <img src={identity.avatar} className={`${sizeClasses[size]} rounded-full object-cover shadow-sm border border-slate-100`} />;
+      }
       return (
           <div className={`${sizeClasses[size]} rounded-full bg-slate-100 text-slate-500 flex items-center justify-center border border-slate-200 shadow-inner`}>
               <User size={size === 'sm' ? 14 : size === 'lg' ? 24 : 20} />
