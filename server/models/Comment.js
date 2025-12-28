@@ -13,8 +13,11 @@ const commentSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true,
   },
+  media: [{
+    url: String,
+    type: { type: String, enum: ['image', 'video'] }
+  }],
   likes: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Identity'

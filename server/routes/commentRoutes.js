@@ -21,9 +21,20 @@ router.get('/:postId', async (req, res) => {
   }
 });
 
-// Create a comment (or reply)
-router.post('/:postId', protect, async (req, res) => {
+const { upload } = require('../utils/cloudinary');
+
+// Create a comment (or reply) with media
+router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
   const { content, identityId, parentId } = req.body;
+  let media = [];
+
+  if (req.files) {
+      media = req.files.map(file => ({
+          url: file.path,
+          type: file.mimetype.startsWith('video') ? 'video' : 'image'
+      }));
+  }
+
   try {
      const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
      if (!identity) return res.status(403).json({ message: 'Invalid identity' });
@@ -32,6 +43,7 @@ router.post('/:postId', protect, async (req, res) => {
        post: req.params.postId,
        identity: identityId,
        content,
+       media,
        parentComment: parentId || null
      });
 

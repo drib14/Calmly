@@ -48,12 +48,17 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation: Must have content OR media
+    if (!content.trim() && files.length === 0) {
+        return alert("Please add text or media to your post.");
+    }
+
     if (visibility === 'private') {
-        // Journal Logic (Skipping file upload for Journal MVP to keep it simple, or can add if needed)
+        // Journal Logic
         try {
             await axios.post('/journal', {
                 title: title || 'Untitled',
-                content,
+                content: content || '[Media Entry]', // Fallback content for Journal model requirement
                 mood,
                 tags: [],
                 isLocked: false
@@ -72,7 +77,7 @@ const CreatePost = () => {
             formData.append('identityId', currentIdentity._id);
             formData.append('type', type);
             formData.append('mood', mood);
-            formData.append('content', content);
+            formData.append('content', content); // Can be empty string
             formData.append('visibility', visibility);
             if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
 

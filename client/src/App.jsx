@@ -15,6 +15,8 @@ import Messages from './pages/Messages';
 import ForgotPassword from './pages/ForgotPassword';
 import SearchPage from './pages/SearchPage';
 import Profile from './pages/Profile';
+import About from './pages/About';
+import Legal from './pages/Legal';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -35,6 +37,8 @@ function App() {
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email/:token" element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/legal" element={<Legal />} />
 
                 <Route path="/feed" element={
                   <ProtectedRoute>

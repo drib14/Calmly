@@ -78,9 +78,14 @@ const Register = () => {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
+        <div className="flex items-start space-x-2 text-sm text-gray-600">
+            <input type="checkbox" required className="mt-1" />
+            <span>I agree to the <Link to="/legal" className="text-slate-800 hover:underline">Terms of Service</Link> and <Link to="/legal" className="text-slate-800 hover:underline">Privacy Policy</Link>.</span>
+        </div>
+
         <button
           type="submit"
-          className="w-full bg-sage text-white py-2 rounded-md hover:bg-green-700 transition"
+          className="w-full bg-soft-dark text-white py-2 rounded-md hover:bg-gray-800 transition"
         >
           Create Account
         </button>
