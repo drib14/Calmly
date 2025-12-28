@@ -52,6 +52,7 @@ router.get('/feed', async (req, res) => {
   try {
     const posts = await Post.find(query)
       .populate('identity', 'name type handle avatar')
+      .populate('reposts.identity', 'name type handle avatar')
       .sort({ createdAt: -1 })
       .limit(20);
     res.json(posts);
@@ -71,10 +72,14 @@ router.put('/:id/like', protect, async (req, res) => {
         const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
         if (!identity) return res.status(403).json({ message: 'Invalid identity' });
 
-        if (post.likes.includes(identityId)) {
-            post.likes = post.likes.filter(id => id.toString() !== identityId);
+        const existingLikeIndex = post.likes.findIndex(like => like.user.toString() === req.user._id.toString());
+
+        if (existingLikeIndex > -1) {
+            // Already liked by this User (remove it to toggle off)
+            post.likes.splice(existingLikeIndex, 1);
         } else {
-            post.likes.push(identityId);
+            // Add like with specific identity
+            post.likes.push({ user: req.user._id, identity: identity._id });
         }
         await post.save();
         res.json(post.likes);
@@ -93,12 +98,18 @@ router.put('/:id/repost', protect, async (req, res) => {
         const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
         if (!identity) return res.status(403).json({ message: 'Invalid identity' });
 
-        if (post.reposts.includes(identityId)) {
-            post.reposts = post.reposts.filter(id => id.toString() !== identityId);
+        const existingRepostIndex = post.reposts.findIndex(r => r.user.toString() === req.user._id.toString());
+
+        if (existingRepostIndex > -1) {
+            post.reposts.splice(existingRepostIndex, 1);
         } else {
-            post.reposts.push(identityId);
+            post.reposts.push({ user: req.user._id, identity: identity._id });
         }
         await post.save();
+
+        // Populate for frontend return
+        await post.populate('reposts.identity', 'name type handle avatar');
+
         res.json(post.reposts);
     } catch (error) {
         res.status(500).json({ message: error.message });

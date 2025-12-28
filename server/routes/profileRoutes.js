@@ -18,10 +18,11 @@ router.get('/:handle', async (req, res) => {
         return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
     }
 
-    // Get Public Posts
+    // Get Public Posts (Explicitly for this identity only)
     const posts = await Post.find({ identity: identity._id, visibility: 'public' })
       .sort({ createdAt: -1 })
-      .populate('identity', 'name type handle avatar');
+      .populate('identity', 'name type handle avatar')
+      .populate('reposts.identity', 'name type handle avatar');
 
     res.json({ identity, posts });
   } catch (error) {

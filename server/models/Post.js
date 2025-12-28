@@ -29,12 +29,12 @@ const postSchema = new mongoose.Schema({
     default: 'public',
   },
   likes: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Identity'
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    identity: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' }
   }],
   reposts: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Identity'
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    identity: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' }
   }],
   media: [{
     url: String,

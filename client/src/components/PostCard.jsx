@@ -69,23 +69,82 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
+import { Link, useNavigate } from 'react-router-dom';
+
+const PostCard = ({ post, mutate }) => {
+  const { currentIdentity, identities } = useIdentity(); // Access all user identities to check ownership
+  const [expanded, setExpanded] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [isReposting, setIsReposting] = useState(false);
+  const [showAnonError, setShowAnonError] = useState(false);
+  const navigate = useNavigate();
+
+  // Check if current user owns any identity that liked/reposted this
+  // The backend now stores { user: ID, identity: ID } in arrays.
+  // Wait, frontend receives populated objects? No, backend sends array of objects.
+  // We need to check if ANY of the user's identities match the identity in the like object?
+  // Actually simpler: The backend enforced uniqueness by USER ID.
+  // So if I am the user, I have liked it.
+  // BUT the frontend doesn't know my User ID directly from `currentIdentity` context easily without `user` object.
+  // Let's assume `post.likes` contains objects `{ _id, user, identity }`.
+  // We can check if `post.likes.some(l => l.identity === currentIdentity._id)` if we want to show specific identity state,
+  // OR check if `post.likes.some(l => identities.map(i => i._id).includes(l.identity))` to check if "I" liked it.
+
+  // Actually, let's simplify for MVP display: Check if `currentIdentity` is in the list.
+  // Backend returns `likes: [{user, identity}, ...]`.
+  // We need to match `identity._id` or `identity` string.
+
+  const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
+  const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
   const isOwner = post.identity._id === currentIdentity?._id;
-  const isLiked = post.likes?.includes(currentIdentity?._id);
-  const isReposted = post.reposts?.includes(currentIdentity?._id);
+
+  // Handle Name Click
+  const handleProfileClick = (e) => {
+      e.stopPropagation();
+      if (post.identity.type === 'anonymous') {
+          // Allow if I am the owner (check if post identity ID is in my identities list)
+          const isMyPost = identities.some(i => i._id === post.identity._id);
+          if (!isMyPost) {
+              setShowAnonError(true);
+              return;
+          }
+      }
+      navigate(`/profile/${post.identity.handle.replace('@', '')}`);
+  };
 
   return (
     <motion.div
         layout
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6"
+        className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden"
     >
+      {/* Repost Indicator */}
+      {post.reposts && post.reposts.length > 0 && post.reposts[0].identity && (
+          <div className="flex items-center space-x-2 mb-3 text-xs text-slate-400 font-medium">
+              <Repeat size={12} />
+              <span>Reposted by</span>
+              <div className="flex items-center space-x-1">
+                  <Avatar identity={post.reposts[0].identity} size="sm" />
+                  <span>{post.reposts[0].identity.name}</span>
+              </div>
+              {post.reposts.length > 1 && <span>and {post.reposts.length - 1} others</span>}
+          </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-start mb-4 relative">
         <div className="flex items-center space-x-3">
-           <Avatar identity={post.identity} />
+           <div onClick={handleProfileClick} className="cursor-pointer">
+               <Avatar identity={post.identity} />
+           </div>
            <div>
-               <p className="text-sm font-bold text-slate-800">{post.identity.name}</p>
+               <p onClick={handleProfileClick} className="text-sm font-bold text-slate-800 cursor-pointer hover:underline decoration-slate-400 underline-offset-2">
+                   {post.identity.name}
+               </p>
                <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">
                    {post.identity.type} • {formatDistanceToNow(new Date(post.createdAt))} ago
                </p>
@@ -207,6 +266,25 @@ const PostCard = ({ post, mutate }) => {
                               <Send size={14} className="-ml-0.5 mt-0.5 text-white" />
                           </button>
                       </div>
+                  </div>
+              </motion.div>
+          )}
+      </AnimatePresence>
+
+      {/* Anon Error Modal */}
+      <AnimatePresence>
+          {showAnonError && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 text-center"
+              >
+                  <div>
+                      <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <User size={24} className="text-slate-400" />
+                      </div>
+                      <h3 className="text-lg font-serif font-bold text-slate-800">Identity Protected</h3>
+                      <p className="text-sm text-slate-500 mt-2">This user has chosen to remain anonymous. Their profile is hidden to respect their safe space.</p>
+                      <button onClick={() => setShowAnonError(false)} className="mt-4 text-xs font-bold text-slate-900 hover:underline">Close</button>
                   </div>
               </motion.div>
           )}
