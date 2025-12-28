@@ -21,7 +21,8 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
               return {
                   url: file.path,
                   type: type,
-                  name: file.originalname
+                  name: file.originalname,
+                  size: file.size
               };
           });
       }
@@ -92,6 +93,45 @@ router.get('/inbox', protect, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+});
+
+// Get Unread Count
+router.get('/unread-count', protect, async (req, res) => {
+    try {
+        const userIdentities = await Identity.find({ user: req.user._id });
+        const identityIds = userIdentities.map(i => i._id);
+
+        const count = await Message.countDocuments({
+            recipient: { $in: identityIds },
+            read: false,
+            sender: { $nin: identityIds }
+        });
+
+        res.json({ count });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Mark Conversation as Read
+router.put('/read', protect, async (req, res) => {
+    const { otherIdentityId } = req.body;
+    try {
+        const userIdentities = await Identity.find({ user: req.user._id });
+        const identityIds = userIdentities.map(i => i._id);
+
+        await Message.updateMany(
+            {
+                sender: otherIdentityId,
+                recipient: { $in: identityIds },
+                read: false
+            },
+            { read: true }
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 module.exports = router;

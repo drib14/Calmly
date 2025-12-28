@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { Send, Image, Mic, User, Plus, X, Search, FileText, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import { toast } from 'react-hot-toast';
