@@ -22,7 +22,8 @@ const PostCard = ({ post, mutate }) => {
   const [newComment, setNewComment] = useState('');
   const [commentMedia, setCommentMedia] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
-  const [replyTo, setReplyTo] = useState(null); // { id: commentId, name: identityName }
+  const [replyTo, setReplyTo] = useState(null);
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   // Modals
   const [showAnonError, setShowAnonError] = useState(false);
@@ -97,6 +98,7 @@ const PostCard = ({ post, mutate }) => {
       if (!newComment.trim() && !commentMedia) return;
       if (!currentIdentity) return toast.error("Select an identity first");
 
+      setSubmittingComment(true);
       try {
           const formData = new FormData();
           formData.append('content', newComment);
@@ -113,11 +115,13 @@ const PostCard = ({ post, mutate }) => {
           setMediaPreview(null);
           setReplyTo(null);
 
-          mutateComments(); // Refresh comments immediately
+          mutateComments();
           toast.success(replyTo ? "Reply sent" : "Comment added");
       } catch (err) {
           console.error(err);
           toast.error("Failed to post comment");
+      } finally {
+          setSubmittingComment(false);
       }
   };
 
@@ -241,15 +245,14 @@ const PostCard = ({ post, mutate }) => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="absolute right-0 top-8 bg-white border border-slate-100 shadow-lg rounded-xl p-1 z-10 min-w-[140px]"
                     >
-                        {isOwner ? (
+                        {isOwner && (
                             <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg">
                                 <Trash2 size={14} /> <span>Delete Post</span>
                             </button>
-                        ) : (
-                            <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-lg">
-                                <Flag size={14} /> <span>Report Content</span>
-                            </button>
                         )}
+                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-lg">
+                            <Flag size={14} /> <span>Report Content</span>
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -261,30 +264,34 @@ const PostCard = ({ post, mutate }) => {
           {post.type === 'letter' ? (
               <div className={clsx(
                   "p-8 rounded-lg mb-4 shadow-sm relative overflow-hidden",
-                  post.letterFields?.paperType === 'parchment' ? 'bg-[#f0e6d2] border border-[#d6c4a0]' : 'bg-white border border-slate-200'
+                  // Apply dynamic styles based on paper type
+                  post.letterFields?.paperType === 'parchment' ? 'bg-[#f0e6d2] text-[#5c4b35] border-[#e6dcc0]' :
+                  post.letterFields?.paperType === 'classic' ? 'bg-amber-50 text-amber-900 border-amber-100' :
+                  post.letterFields?.paperType === 'lined' ? 'bg-white text-slate-800 border-blue-100' :
+                  post.letterFields?.paperType === 'dark' ? 'bg-slate-900 text-slate-200 border-slate-800' :
+                  post.letterFields?.paperType === 'flower' ? 'bg-rose-50 text-rose-900 border-rose-100' :
+                  'bg-white border-slate-200'
               )}>
-                  {/* Paper Texture Effect overlay */}
-                  {post.letterFields?.paperType === 'parchment' && (
-                      <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')]"></div>
-                  )}
+                  {/* Texture Overlays */}
+                  {post.letterFields?.paperType === 'parchment' && <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')]"></div>}
+                  {post.letterFields?.paperType === 'lined' && <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]"></div>}
+                  {post.letterFields?.paperType === 'dark' && <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]"></div>}
+                  {post.letterFields?.paperType === 'flower' && <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/flowers.png')]"></div>}
 
                   <div className="relative z-10">
-                    <div className="font-serif text-slate-900 text-lg font-bold mb-6 border-b border-black/10 pb-2">{post.letterFields?.header}</div>
-                    <div className="font-serif text-slate-800 text-base leading-loose whitespace-pre-wrap mb-8">{post.content}</div>
-                    <div className="font-serif text-slate-900 text-lg font-bold text-right italic">{post.letterFields?.footer}</div>
+                    <div className="font-serif text-lg font-bold mb-6 border-b border-current/20 pb-2">{post.letterFields?.header}</div>
+                    <div className="font-serif text-base leading-loose whitespace-pre-wrap mb-8">{post.content}</div>
+                    <div className="font-serif text-lg font-bold text-right italic">{post.letterFields?.footer}</div>
                   </div>
               </div>
           ) : post.type === 'poetry' ? (
               <div
                 className={clsx(
                     "p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center",
-                    post.style?.align === 'text-center' ? 'items-center text-center' :
-                    post.style?.align === 'text-right' ? 'items-end text-right' : 'items-start text-left'
+                    post.style?.backgroundColor,
+                    post.style?.align,
+                    post.style?.font
                 )}
-                style={{
-                    backgroundColor: post.style?.backgroundColor || '#f8fafc',
-                    fontFamily: post.style?.font || 'serif'
-                }}
               >
                   {post.title && <h3 className="text-2xl font-bold mb-6 opacity-80">{post.title}</h3>}
                   <div className="whitespace-pre-wrap leading-loose text-lg opacity-90">{post.content}</div>
@@ -445,7 +452,8 @@ const PostCard = ({ post, mutate }) => {
                           />
                           <button
                             onClick={submitComment}
-                            className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform"
+                            disabled={submittingComment}
+                            className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                           >
                               <Send size={14} className="-ml-0.5 mt-0.5 text-white" />
                           </button>
