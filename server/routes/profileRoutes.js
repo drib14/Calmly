@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 const Identity = require('../models/Identity');
 const Post = require('../models/Post');
 
 // Get profile by handle
-router.get('/:handle', async (req, res) => {
+router.get('/:handle', protect, async (req, res) => {
   try {
     const handle = req.params.handle.startsWith('@') ? req.params.handle : `@${req.params.handle}`;
 

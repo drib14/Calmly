@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
-import { Mail, MessageCircle, Send, User } from 'lucide-react';
+import { Mail, MessageCircle, Send, User, Search } from 'lucide-react';
 import useSWR from 'swr';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,11 +20,19 @@ const Messages = () => {
 
       {/* Sidebar (List) */}
       <div className="w-full md:w-1/3 border-r border-soft-border bg-slate-50 flex flex-col">
-          <div className="p-4 border-b border-soft-border">
-              <h2 className="text-xl font-serif text-accent">Messages</h2>
+          <div className="p-4 border-b border-soft-border space-y-4">
+              <h2 className="text-xl font-serif text-accent font-bold">Messages</h2>
+              <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search people..."
+                    className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  />
+                  <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+              </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
             {isLoading ? (
                 <p className="text-center text-gray-400 py-4 text-sm">Loading conversations...</p>
             ) : messages?.length === 0 ? (

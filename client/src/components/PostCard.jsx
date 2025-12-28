@@ -67,21 +67,31 @@ const PostCard = ({ post, mutate }) => {
       } catch (err) { console.error(err); }
   };
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   const handleDelete = async () => {
-      if(window.confirm("Delete this moment?")) {
-          alert("Deleted");
-      }
+      // Add delete logic here (API Call)
+      try {
+          // await axios.delete(`/posts/${post._id}`); // Placeholder for logic
+          alert("Deleted (Mock)");
+      } catch (err) { console.error(err); }
+      setShowDeleteModal(false);
   };
 
   const handleProfileClick = (e) => {
       e.stopPropagation();
+      // Ensure we have identities loaded
+      if (!identities) return;
+
+      const isMyPost = identities.some(i => i._id === post.identity._id);
+
       if (post.identity.type === 'anonymous') {
-          const isMyPost = identities.some(i => i._id === post.identity._id);
           if (!isMyPost) {
               setShowAnonError(true);
               return;
           }
       }
+
       if (post.identity.handle) {
           navigate(`/profile/${post.identity.handle.replace('@', '')}`);
       }
@@ -130,7 +140,7 @@ const PostCard = ({ post, mutate }) => {
         {showOptions && (
             <div className="absolute right-0 top-8 bg-white border border-slate-100 shadow-lg rounded-xl p-1 z-10 min-w-[120px]">
                 {isOwner ? (
-                    <button onClick={handleDelete} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg">
+                    <button onClick={() => setShowDeleteModal(true)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg">
                         <Trash2 size={14} /> <span>Delete</span>
                     </button>
                 ) : (
@@ -248,9 +258,9 @@ const PostCard = ({ post, mutate }) => {
           {showAnonError && (
               <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 text-center"
+                className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center p-6 text-center rounded-3xl"
               >
-                  <div>
+                  <div onClick={(e) => e.stopPropagation()}>
                       <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                           <User size={24} className="text-slate-400" />
                       </div>
@@ -258,6 +268,34 @@ const PostCard = ({ post, mutate }) => {
                       <p className="text-sm text-slate-500 mt-2">This user has chosen to remain anonymous. Their profile is hidden to respect their safe space.</p>
                       <button onClick={() => setShowAnonError(false)} className="mt-4 text-xs font-bold text-slate-900 hover:underline">Close</button>
                   </div>
+              </motion.div>
+          )}
+      </AnimatePresence>
+
+      {/* Delete Modal */}
+      <AnimatePresence>
+          {showDeleteModal && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                          <Trash2 size={24} />
+                      </div>
+                      <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">Delete this moment?</h3>
+                      <p className="text-slate-500 text-sm mb-6">This action cannot be undone. Are you sure you want to let this go?</p>
+
+                      <div className="flex space-x-3">
+                          <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition">Cancel</button>
+                          <button onClick={handleDelete} className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition">Delete</button>
+                      </div>
+                  </motion.div>
               </motion.div>
           )}
       </AnimatePresence>
