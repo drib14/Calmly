@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
+const Report = require('../models/Report');
 const { upload } = require('../utils/cloudinary');
 
 // Create a post
@@ -42,6 +43,7 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
 
     res.status(201).json(post);
   } catch (error) {
+    console.error("Create Post Error:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -62,6 +64,7 @@ router.get('/feed', async (req, res) => {
       .limit(20);
     res.json(posts);
   } catch (error) {
+    console.error("Feed Error:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -117,6 +120,48 @@ router.put('/:id/repost', protect, async (req, res) => {
 
         res.json(post.reposts);
     } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete Post
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Check ownership
+        // post.identity is an ID. We need to check if that identity belongs to req.user
+        const identity = await Identity.findOne({ _id: post.identity, user: req.user._id });
+
+        if (!identity) {
+            return res.status(403).json({ message: 'Not authorized to delete this post' });
+        }
+
+        await Post.deleteOne({ _id: req.params.id });
+        res.json({ message: 'Post removed' });
+    } catch (error) {
+        console.error("Delete Post Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Report Post
+router.post('/:id/report', protect, async (req, res) => {
+    const { reason } = req.body;
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        await Report.create({
+            reporter: req.user._id,
+            post: req.params.id,
+            reason: reason || 'Inappropriate content'
+        });
+
+        res.status(201).json({ message: 'Report submitted' });
+    } catch (error) {
+        console.error("Report Post Error:", error);
         res.status(500).json({ message: error.message });
     }
 });
