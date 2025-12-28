@@ -34,13 +34,16 @@ const CreatePost = () => {
 
   const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
 
+  // Expanded Styles for Letters (Textures)
   const paperStyles = [
-      { id: 'classic', label: 'Classic', class: 'bg-amber-50 border-amber-100 text-amber-900' },
-      { id: 'parchment', label: 'Parchment', class: 'bg-[#f0e6d2] border-[#e6dcc0] text-[#5c4b35]' },
-      { id: 'dark', label: 'Midnight', class: 'bg-slate-900 border-slate-800 text-slate-200' },
-      { id: 'lined', label: 'Notebook', class: 'bg-white border-blue-100 text-slate-800' },
+      { id: 'classic', label: 'Classic', class: 'bg-amber-50 text-amber-900 border-amber-100', texture: '' },
+      { id: 'parchment', label: 'Parchment', class: 'bg-[#f0e6d2] text-[#5c4b35] border-[#e6dcc0]', texture: 'https://www.transparenttextures.com/patterns/aged-paper.png' },
+      { id: 'lined', label: 'Lined', class: 'bg-white text-slate-800 border-blue-100', texture: 'https://www.transparenttextures.com/patterns/notebook.png' },
+      { id: 'dark', label: 'Midnight', class: 'bg-slate-900 text-slate-200 border-slate-800', texture: 'https://www.transparenttextures.com/patterns/stardust.png' },
+      { id: 'flower', label: 'Floral', class: 'bg-rose-50 text-rose-900 border-rose-100', texture: 'https://www.transparenttextures.com/patterns/flowers.png' },
   ];
 
+  // Expanded Colors for Poetry (10+)
   const poemBackgrounds = [
       { id: 'white', class: 'bg-white text-slate-900 border border-slate-100' },
       { id: 'dark', class: 'bg-slate-900 text-white' },
@@ -48,6 +51,19 @@ const CreatePost = () => {
       { id: 'ocean', class: 'bg-gradient-to-tr from-cyan-100 to-blue-200 text-blue-900' },
       { id: 'forest', class: 'bg-gradient-to-b from-emerald-50 to-teal-100 text-teal-900' },
       { id: 'midnight', class: 'bg-gradient-to-r from-slate-900 to-indigo-950 text-indigo-100' },
+      { id: 'berry', class: 'bg-gradient-to-bl from-pink-200 to-purple-300 text-purple-900' },
+      { id: 'lemon', class: 'bg-yellow-50 text-yellow-800 border border-yellow-100' },
+      { id: 'sky', class: 'bg-sky-100 text-sky-800' },
+      { id: 'lavender', class: 'bg-violet-100 text-violet-900' },
+      { id: 'cherry', class: 'bg-red-50 text-red-900 border border-red-100' },
+      { id: 'gray', class: 'bg-gray-100 text-gray-700' },
+  ];
+
+  const fontOptions = [
+      { id: 'font-serif', label: 'Serif' },
+      { id: 'font-sans', label: 'Sans' },
+      { id: 'font-mono', label: 'Mono' },
+      { id: 'font-[cursive]', label: 'Handwriting' }, // Tailwind arbitrary value or custom class needed
   ];
 
   const handleFileChange = (e) => {
@@ -135,13 +151,7 @@ const CreatePost = () => {
             if (!needsFeedback) {
                 navigate('/feed');
             } else {
-                // Wait for modal close to navigate? Or navigate immediately?
-                // Modal is separate. Let's keep user here or show modal ON feed.
-                // Better UX: Show modal here, then navigate on close.
-                // However, `showFeedbackModal` is local state. If we navigate, component unmounts.
-                // So we delay navigation OR just navigate and handle feedback globally.
-                // Instructions: "ask them for feedback with a feedback modal".
-                // I'll stay on page to show modal, then navigate on close.
+                // Stay for modal
             }
 
         } catch (error) {
@@ -255,9 +265,12 @@ const CreatePost = () => {
 
         {type === 'letter' ? (
             <div className={`space-y-4 p-6 rounded-lg border shadow-sm transition-colors relative overflow-hidden ${paperStyles.find(s => s.id === letterFields.paperType)?.class}`}>
-                {/* Texture overlay for parchment */}
-                {letterFields.paperType === 'parchment' && (
-                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')]"></div>
+                {/* Texture overlay */}
+                {paperStyles.find(s => s.id === letterFields.paperType)?.texture && (
+                     <div
+                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                        style={{ backgroundImage: `url(${paperStyles.find(s => s.id === letterFields.paperType).texture})` }}
+                     ></div>
                 )}
 
                 <div className="flex justify-end space-x-2 mb-2 relative z-10">
@@ -296,7 +309,7 @@ const CreatePost = () => {
         ) : type === 'poetry' ? (
             <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
                 <div className="flex space-x-4 mb-4 justify-between items-center">
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-2 flex-wrap gap-y-2">
                         {poemBackgrounds.map(bg => (
                             <button
                                 key={bg.id}
@@ -306,17 +319,22 @@ const CreatePost = () => {
                             />
                         ))}
                     </div>
-                    <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
-                        <option value="text-left">Left</option>
-                        <option value="text-center">Center</option>
-                        <option value="text-right">Right</option>
-                    </select>
+                    <div className="flex space-x-2">
+                        <select onChange={e => setPoemStyle({...poemStyle, font: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
+                            {fontOptions.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+                        </select>
+                        <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
+                            <option value="text-left">Left</option>
+                            <option value="text-center">Center</option>
+                            <option value="text-right">Right</option>
+                        </select>
+                    </div>
                 </div>
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl font-serif mb-4 placeholder-current/40 ${poemStyle.align}`}
+                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 ${poemStyle.align} ${poemStyle.font}`}
                     placeholder="Untitled Poem"
                 />
                 <textarea
@@ -340,7 +358,7 @@ const CreatePost = () => {
             </div>
         )}
 
-        {/* Media Preview (Hidden for Letters/Poems as requested) */}
+        {/* Media Preview */}
         {type !== 'letter' && type !== 'poetry' && previews.length > 0 && (
             <div className="grid grid-cols-4 gap-2 mb-4">
                 {previews.map((src, i) => (

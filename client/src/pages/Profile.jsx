@@ -108,13 +108,13 @@ const Profile = () => {
               )}
           </div>
 
-          <div className="px-6 pb-6 relative">
+          <div className="px-6 pb-6 relative pt-20">
               {/* Avatar */}
               <div className="absolute -top-16 left-6 w-32 h-32 rounded-full border-4 border-white bg-white flex items-center justify-center shadow-md overflow-hidden">
                   <Avatar identity={identity} size="xl" className="w-full h-full" />
               </div>
 
-              <div className="mt-16 flex justify-between items-start">
+              <div className="flex justify-between items-start">
                   <div>
                       <h1 className="text-2xl font-serif text-slate-900 font-bold">{identity.name}</h1>
                       <p className="text-slate-500 text-sm">{identity.handle}</p>

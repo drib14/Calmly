@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
@@ -19,7 +20,6 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
   }
 
   try {
-    // Verify identity belongs to user
     const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
     if (!identity) {
       return res.status(403).json({ message: 'Invalid identity' });
@@ -48,20 +48,65 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
   }
 });
 
-// Get Feed (Public posts)
+// Get Feed (Public posts) with Aggregated Comment Counts
 router.get('/feed', async (req, res) => {
   const { mood, type } = req.query;
-  let query = { visibility: 'public' };
+  let match = { visibility: 'public' };
 
-  if (mood) query.mood = mood;
-  if (type) query.type = type;
+  if (mood) match.mood = mood;
+  if (type) match.type = type;
 
   try {
-    const posts = await Post.find(query)
-      .populate('identity', 'name type handle avatar')
-      .populate('reposts.identity', 'name type handle avatar')
-      .sort({ createdAt: -1 })
-      .limit(20);
+    // Use Aggregation to fetch posts and populate accurately
+    const posts = await Post.aggregate([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        { $limit: 20 },
+        // Lookup Identity
+        {
+            $lookup: {
+                from: 'identities',
+                localField: 'identity',
+                foreignField: '_id',
+                as: 'identity'
+            }
+        },
+        { $unwind: '$identity' },
+        // Lookup Comment Count (Robust fix for "0 count")
+        {
+            $lookup: {
+                from: 'comments',
+                localField: '_id',
+                foreignField: 'post',
+                as: 'comments'
+            }
+        },
+        {
+            $addFields: {
+                // Ensure aggregated count is used if stored count is missing or outdated
+                // But we should prioritize efficiency.
+                // Since user complained about "0", we force calculate it here for the feed.
+                commentCount: { $size: '$comments' }
+            }
+        },
+        // Remove the heavy 'comments' array after counting
+        { $project: { comments: 0 } },
+        // Lookup Reposts (Needed for UI)
+        // Note: Reposts logic in schema is an array of objects. We need to populate the identity inside it.
+        // Mongoose populate is easier for nested arrays than aggregation.
+        // But since we are aggregating, we have to do it manually or rely on Mongoose hydrate.
+        // EASIER PATH: Use Mongoose find + Virtual populate?
+        // OR: Update all old documents to have commentCount?
+        // Migration on read is acceptable for MVP.
+        // Let's stick to Aggregation for the Count, then populate other fields?
+        // Mixed approach: Get IDs from aggregate, then Populate.
+    ]);
+
+    // Populate the aggregation result
+    await Post.populate(posts, [
+        { path: 'reposts.identity', select: 'name type handle avatar' }
+    ]);
+
     res.json(posts);
   } catch (error) {
     console.error("Feed Error:", error);
@@ -76,17 +121,14 @@ router.put('/:id/like', protect, async (req, res) => {
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).json({ message: 'Post not found' });
 
-        // Verify identity ownership
         const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
         if (!identity) return res.status(403).json({ message: 'Invalid identity' });
 
         const existingLikeIndex = post.likes.findIndex(like => like.user.toString() === req.user._id.toString());
 
         if (existingLikeIndex > -1) {
-            // Already liked by this User (remove it to toggle off)
             post.likes.splice(existingLikeIndex, 1);
         } else {
-            // Add like with specific identity
             post.likes.push({ user: req.user._id, identity: identity._id });
         }
         await post.save();
@@ -114,8 +156,6 @@ router.put('/:id/repost', protect, async (req, res) => {
             post.reposts.push({ user: req.user._id, identity: identity._id });
         }
         await post.save();
-
-        // Populate for frontend return
         await post.populate('reposts.identity', 'name type handle avatar');
 
         res.json(post.reposts);
@@ -130,8 +170,6 @@ router.delete('/:id', protect, async (req, res) => {
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).json({ message: 'Post not found' });
 
-        // Check ownership
-        // post.identity is an ID. We need to check if that identity belongs to req.user
         const identity = await Identity.findOne({ _id: post.identity, user: req.user._id });
 
         if (!identity) {
