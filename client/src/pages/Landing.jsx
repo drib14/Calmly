@@ -91,8 +91,9 @@ const Landing = () => {
                                 <PenTool size={20} />
                             </div>
                          </div>
-                         <div className="h-[200px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
+                         <div className="h-[200px] w-full min-h-[200px]">
+                            {/* Explicit width/height to prevent Recharts -1/-1 error during initial render/animation */}
+                            <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart data={stats.postsPerDay}>
                                     <defs>
                                         <linearGradient id="colorPosts" x1="0" y1="0" x2="0" y2="1">
