@@ -6,7 +6,8 @@
     "install-client": "cd client && npm install",
     "build-client": "cd client && npm run build",
     "start": "cd server && node index.js",
-    "vercel-build": "cd client && npm install && npm run build && cd .. && rm -rf public && mkdir -p public && cp -r client/dist/* public/ && cd server && npm install --legacy-peer-deps"
+    "build": "npm run vercel-build",
+    "vercel-build": "cd client && npm install && npm run build && cd .. && rm -rf public dist && mkdir -p public dist && cp -r client/dist/* public/ && cp -r client/dist/* dist/ && cd server && npm install --legacy-peer-deps"
   },
   "engines": {
     "node": "20.x"
