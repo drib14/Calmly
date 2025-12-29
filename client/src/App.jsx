@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { IdentityProvider } from './context/IdentityContext';
+import { SocketProvider } from './context/SocketContext';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import Loader from './components/Loader';
@@ -29,10 +30,12 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <IdentityProvider>
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Layout>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AuthProvider>
+        <IdentityProvider>
+          <SocketProvider>
+            <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#1e293b', color: '#fff' } }} />
+            <Layout>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
@@ -84,10 +87,11 @@ function App() {
                   </ProtectedRoute>
                 } />
               </Routes>
-          </Layout>
-        </Router>
-      </IdentityProvider>
-    </AuthProvider>
+            </Layout>
+          </SocketProvider>
+        </IdentityProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
