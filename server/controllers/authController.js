@@ -48,7 +48,7 @@ const registerUser = async (req, res) => {
         to: email,
         subject: 'Welcome to Calmly - Verify Your Account',
         html: `
-          <h2>Welcome to your safe space.</h2>
+          <h2>Welcome to your calm space.</h2>
           <p>We are honored to have you here. Please verify your email to start your journey.</p>
           <a href="${verificationUrl}" class="button" style="color: white;">Verify Account</a>
           <p style="margin-top: 20px; font-size: 12px; color: #888;">Or click here: <a href="${verificationUrl}">${verificationUrl}</a></p>

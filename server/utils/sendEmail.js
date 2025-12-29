@@ -34,7 +34,7 @@ const sendEmail = async ({ to, subject, html }) => {
           ${html}
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} Calmly Platform. A safe space for you.</p>
+          <p>© ${new Date().getFullYear()} Calmly Platform. A calm space for you.</p>
         </div>
       </div>
     </body>

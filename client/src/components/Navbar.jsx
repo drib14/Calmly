@@ -221,10 +221,13 @@ const Navbar = () => {
         <AnimatePresence>
             {showProfileMenu && (
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute bottom-full left-0 w-full bg-white border border-slate-100 shadow-xl rounded-xl p-2 mb-2 z-50"
+                    initial={{ opacity: 0, y: 10, x: isExpanded ? 0 : 20 }}
+                    animate={{ opacity: 1, y: 0, x: 0 }}
+                    exit={{ opacity: 0, y: 10, x: isExpanded ? 0 : 20 }}
+                    className={clsx(
+                        "absolute bg-white border border-slate-100 shadow-xl rounded-xl p-2 z-[60] min-w-[200px]",
+                        isExpanded ? "bottom-full left-0 w-full mb-2" : "left-full bottom-0 ml-4 mb-0"
+                    )}
                 >
                     <button
                         onClick={() => {

@@ -97,7 +97,7 @@ const Journal = () => {
       setEntryToDelete(null);
   };
 
-  if (!entries && !error) return <div className="p-10 text-center">Loading your safe space...</div>;
+  if (!entries && !error) return <div className="p-10 text-center">Loading your calmly...</div>;
 
   return (
     <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] flex gap-6 relative overflow-hidden bg-white md:bg-transparent rounded-3xl md:rounded-none shadow-sm md:shadow-none border md:border-none border-slate-100">
