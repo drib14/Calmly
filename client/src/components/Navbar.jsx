@@ -41,22 +41,98 @@ const Navbar = () => {
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/feed' },
-    { icon: Search, label: 'Explore', path: '/search' },
+    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true }, // Search is topbar on mobile
     { icon: PenTool, label: 'Create', path: '/create' },
     { icon: BookOpen, label: 'Journal', path: '/journal' },
     { icon: MessageCircle, label: 'Chat', path: '/chat', badge: unreadData?.count },
   ];
 
   return (
+    <>
+    {/* Bottom Bar (Mobile) */}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 flex justify-around items-center px-2 py-2 pb-safe">
+        {navItems.filter(i => !i.mobileHidden).map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+                <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={clsx("p-3 rounded-xl relative", isActive ? "text-slate-900" : "text-slate-400")}
+                >
+                    <div className="relative">
+                        <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                        {item.badge > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
+                            </span>
+                        )}
+                    </div>
+                </NavLink>
+            )
+        })}
+
+        {/* Mobile Profile Trigger */}
+        <div
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className={clsx("p-3 rounded-xl relative", showProfileMenu ? "text-slate-900" : "text-slate-400")}
+        >
+            <Avatar identity={currentIdentity} size="sm" />
+        </div>
+
+        {/* Mobile Profile Menu */}
+        <AnimatePresence>
+            {showProfileMenu && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    className="absolute bottom-full right-4 mb-4 w-48 bg-white border border-slate-100 shadow-2xl rounded-2xl p-2 z-50 origin-bottom-right"
+                >
+                    <div className="p-3 border-b border-slate-50 mb-1">
+                        <p className="text-sm font-bold text-slate-900 truncate">{currentIdentity?.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{currentIdentity?.handle}</p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            navigate(currentIdentity ? `/profile/${currentIdentity.handle.replace('@','')}` : '/feed');
+                            setShowProfileMenu(false);
+                        }}
+                        className="flex items-center space-x-3 w-full p-3 hover:bg-slate-50 rounded-xl text-sm text-slate-700 transition"
+                    >
+                        <User size={18} />
+                        <span>Profile</span>
+                    </button>
+                    <button
+                        onClick={() => { navigate('/settings'); setShowProfileMenu(false); }}
+                        className="flex items-center space-x-3 w-full p-3 hover:bg-slate-50 rounded-xl text-sm text-slate-700 transition"
+                    >
+                        <Settings size={18} />
+                        <span>Settings</span>
+                    </button>
+                    <div className="h-px bg-slate-50 my-1"></div>
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-3 w-full p-3 hover:bg-red-50 rounded-xl text-sm text-red-500 transition"
+                    >
+                        <LogOut size={18} />
+                        <span>Logout</span>
+                    </button>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    </nav>
+
+    {/* Sidebar (Desktop) */}
     <nav
       className={clsx(
-        "fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:top-0 md:left-0 md:bottom-auto md:h-screen md:border-t-0 md:border-r z-50 flex md:flex-col justify-between items-center py-2 md:py-6 px-6 shadow-lg md:shadow-none transition-all duration-300",
-        isExpanded ? "md:w-64 md:px-4" : "md:w-20 md:px-0"
+        "hidden md:flex fixed top-0 left-0 bottom-0 border-r border-slate-200 bg-white z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300",
+        isExpanded ? "w-64" : "w-20"
       )}
     >
 
       {/* Logo & Toggle (Desktop) */}
-      <div className="hidden md:flex flex-col w-full mb-8">
+      <div className="flex flex-col w-full mb-8">
         <div className={clsx("flex items-center transition-all duration-300", isExpanded ? "justify-between px-2" : "justify-center")}>
             {isExpanded ? (
                 <span className="font-serif font-bold text-2xl text-slate-800 tracking-tight">Calmly</span>
@@ -74,7 +150,7 @@ const Navbar = () => {
       </div>
 
       {/* Nav Items */}
-      <div className="flex md:flex-col w-full md:w-auto justify-between md:justify-start md:space-y-2">
+      <div className="flex flex-col w-full space-y-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -91,7 +167,6 @@ const Navbar = () => {
             >
               <div className="relative">
                   <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                  {/* Red Dot Badge */}
                   {item.badge > 0 && (
                       <span className="absolute -top-1 -right-1 flex h-3 w-3">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -111,7 +186,6 @@ const Navbar = () => {
                   </span>
               )}
 
-              {/* Tooltip (Collapsed Desktop Only) */}
               {!isExpanded && (
                 <span className="absolute left-16 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block pointer-events-none z-50">
                     {item.label} {item.badge > 0 && `(${item.badge})`}
@@ -123,9 +197,25 @@ const Navbar = () => {
       </div>
 
       {/* User / Profile (Desktop) */}
-      <div className={clsx("hidden md:flex flex-col w-full mb-4 space-y-2 relative", isExpanded ? "px-2" : "items-center")}>
+      <div className={clsx("flex flex-col w-full mb-4 space-y-2 relative", isExpanded ? "px-2" : "items-center")}>
+        <div
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className={clsx(
+                "flex items-center cursor-pointer hover:bg-slate-50 transition p-1.5 rounded-xl border border-transparent hover:border-slate-100",
+                isExpanded ? "w-full space-x-3" : "justify-center",
+                showProfileMenu && "bg-slate-50 border-slate-100"
+            )}
+        >
+            <Avatar identity={currentIdentity} size="sm" />
+            {isExpanded && (
+                <div className="overflow-hidden flex-1">
+                    <p className="text-xs font-bold text-slate-700 truncate">{currentIdentity?.name || 'Account'}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{currentIdentity?.handle || 'Loading...'}</p>
+                </div>
+            )}
+        </div>
 
-        {/* Dropdown Menu */}
+        {/* Desktop Profile Menu */}
         <AnimatePresence>
             {showProfileMenu && (
                 <motion.div
@@ -162,26 +252,9 @@ const Navbar = () => {
                 </motion.div>
             )}
         </AnimatePresence>
-
-        {/* Trigger */}
-        <div
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className={clsx(
-                "flex items-center cursor-pointer hover:bg-slate-50 transition p-1.5 rounded-xl border border-transparent hover:border-slate-100",
-                isExpanded ? "w-full space-x-3" : "justify-center",
-                showProfileMenu && "bg-slate-50 border-slate-100"
-            )}
-        >
-            <Avatar identity={currentIdentity} size="sm" />
-            {isExpanded && (
-                <div className="overflow-hidden flex-1">
-                    <p className="text-xs font-bold text-slate-700 truncate">{currentIdentity?.name || 'Account'}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{currentIdentity?.handle || 'Loading...'}</p>
-                </div>
-            )}
-        </div>
       </div>
     </nav>
+    </>
   );
 };
 
