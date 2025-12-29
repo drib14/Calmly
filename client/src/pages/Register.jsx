@@ -10,15 +10,18 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
+    setLoading(true);
 
     if (password.length < 6) {
         setError("Password must be at least 6 characters.");
+        setLoading(false);
         return;
     }
 
@@ -28,6 +31,7 @@ const Register = () => {
     } else {
       setError(res.message);
     }
+    setLoading(false);
   };
 
   return (
@@ -85,9 +89,10 @@ const Register = () => {
 
         <button
           type="submit"
-          className="w-full bg-soft-dark text-white py-2 rounded-md hover:bg-gray-800 transition"
+          disabled={loading}
+          className="w-full bg-soft-dark text-white py-2 rounded-md hover:bg-gray-800 transition disabled:opacity-50"
         >
-          Create Account
+          {loading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-gray-500">

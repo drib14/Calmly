@@ -26,6 +26,7 @@ const Profile = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
 
   if (isLoading) return <div className="text-center py-20 text-gray-400">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
@@ -68,6 +69,7 @@ const Profile = () => {
 
   const handleDeletePhoto = async (type) => {
       if (!window.confirm(`Remove ${type === 'avatar' ? 'profile picture' : 'cover photo'}?`)) return;
+      setDeletingPhoto(true);
       try {
           await axios.delete(`/identities/${identity._id}/photo?type=${type}`);
           toast.success("Photo removed");
@@ -77,6 +79,7 @@ const Profile = () => {
       } catch (err) {
           toast.error("Failed to remove photo");
       }
+      setDeletingPhoto(false);
   };
 
   const handleFileChange = (e, type) => {
@@ -189,7 +192,7 @@ const Profile = () => {
                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'cover')} />
                       </label>
                       {coverPreview && (
-                          <button onClick={() => handleDeletePhoto('coverPhoto')} className="p-2 bg-red-500/80 backdrop-blur rounded-full text-white hover:bg-red-600">
+                          <button onClick={() => handleDeletePhoto('coverPhoto')} disabled={deletingPhoto} className="p-2 bg-red-500/80 backdrop-blur rounded-full text-white hover:bg-red-600 disabled:opacity-50">
                               <Trash2 size={18} />
                           </button>
                       )}

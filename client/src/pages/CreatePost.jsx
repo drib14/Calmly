@@ -22,6 +22,8 @@ const CreatePost = () => {
   const [files, setFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [creatingIdentity, setCreatingIdentity] = useState(false);
+  const [deletingIdentity, setDeletingIdentity] = useState(false);
 
   // Modals
   const [showDeleteIdentityModal, setShowDeleteIdentityModal] = useState(false);
@@ -165,12 +167,14 @@ const CreatePost = () => {
 
   const handleCreateIdentity = async (e) => {
       e.preventDefault();
+      setCreatingIdentity(true);
       const res = await createPseudonym(newIdentityName, '');
       if (res.success) {
           setShowNewIdentity(false);
           setNewIdentityName('');
           toast.success("Identity created");
       }
+      setCreatingIdentity(false);
   };
 
   const confirmDeleteIdentity = (id) => {
@@ -180,10 +184,12 @@ const CreatePost = () => {
 
   const executeDeleteIdentity = async () => {
       if (identityToDelete) {
+          setDeletingIdentity(true);
           await deleteIdentity(identityToDelete);
           setShowDeleteIdentityModal(false);
           setIdentityToDelete(null);
           toast.success("Identity removed");
+          setDeletingIdentity(false);
       }
   };
 
@@ -231,7 +237,9 @@ const CreatePost = () => {
                     value={newIdentityName}
                     onChange={(e) => setNewIdentityName(e.target.value)}
                   />
-                  <button onClick={handleCreateIdentity} className="bg-sage text-white px-3 py-1 rounded text-sm">Create</button>
+                  <button onClick={handleCreateIdentity} disabled={creatingIdentity} className="bg-sage text-white px-3 py-1 rounded text-sm disabled:opacity-50">
+                    {creatingIdentity ? '...' : 'Create'}
+                  </button>
               </div>
           )}
       </div>
@@ -411,8 +419,10 @@ const CreatePost = () => {
               <h3 className="text-xl font-bold mb-2">Delete Identity?</h3>
               <p className="text-slate-500 mb-6 text-sm">This will mark the identity as deleted. Your posts will remain but attribution will be anonymized.</p>
               <div className="flex space-x-3">
-                  <button onClick={() => setShowDeleteIdentityModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg">Cancel</button>
-                  <button onClick={executeDeleteIdentity} className="flex-1 py-2 bg-red-500 text-white rounded-lg">Delete</button>
+                  <button onClick={() => setShowDeleteIdentityModal(false)} disabled={deletingIdentity} className="flex-1 py-2 bg-slate-100 rounded-lg disabled:opacity-50">Cancel</button>
+                  <button onClick={executeDeleteIdentity} disabled={deletingIdentity} className="flex-1 py-2 bg-red-500 text-white rounded-lg disabled:opacity-50">
+                    {deletingIdentity ? 'Deleting...' : 'Delete'}
+                  </button>
               </div>
           </div>
       </Modal>

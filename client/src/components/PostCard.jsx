@@ -30,6 +30,8 @@ const PostCard = ({ post, mutate }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const optionsRef = useRef(null);
   const navigate = useNavigate();
@@ -126,6 +128,7 @@ const PostCard = ({ post, mutate }) => {
   };
 
   const handleDelete = async () => {
+      setDeleting(true);
       try {
           await axios.delete(`/posts/${post._id}`);
           toast.success("Post deleted");
@@ -134,10 +137,12 @@ const PostCard = ({ post, mutate }) => {
           console.error(err);
           toast.error("Failed to delete post");
       }
+      setDeleting(false);
       setShowDeleteModal(false);
   };
 
   const handleReport = async () => {
+      setReporting(true);
       try {
           await axios.post(`/posts/${post._id}/report`, { reason: reportReason });
           toast.success("Report submitted");
@@ -147,6 +152,7 @@ const PostCard = ({ post, mutate }) => {
           console.error(err);
           toast.error("Failed to submit report");
       }
+      setReporting(false);
   };
 
   const handleProfileClick = (e) => {
@@ -485,8 +491,10 @@ const PostCard = ({ post, mutate }) => {
               <p className="text-slate-500 text-sm mb-6">This action cannot be undone. Are you sure you want to let this go?</p>
 
               <div className="flex space-x-3">
-                  <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition">Cancel</button>
-                  <button onClick={handleDelete} className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition">Delete</button>
+                  <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition disabled:opacity-50">Cancel</button>
+                  <button onClick={handleDelete} disabled={deleting} className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition disabled:opacity-50">
+                    {deleting ? 'Deleting...' : 'Delete'}
+                  </button>
               </div>
           </div>
       </Modal>
@@ -509,8 +517,10 @@ const PostCard = ({ post, mutate }) => {
               />
 
               <div className="flex space-x-3">
-                  <button onClick={() => setShowReportModal(false)} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition">Cancel</button>
-                  <button onClick={handleReport} className="flex-1 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition">Submit Report</button>
+                  <button onClick={() => setShowReportModal(false)} disabled={reporting} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition disabled:opacity-50">Cancel</button>
+                  <button onClick={handleReport} disabled={reporting} className="flex-1 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition disabled:opacity-50">
+                    {reporting ? 'Reporting...' : 'Submit Report'}
+                  </button>
               </div>
           </div>
       </Modal>

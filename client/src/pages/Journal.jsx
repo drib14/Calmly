@@ -27,6 +27,7 @@ const Journal = () => {
   // Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleEntryClick = (entry) => {
       setSelectedEntry(entry);
@@ -81,6 +82,7 @@ const Journal = () => {
 
   const handleDelete = async () => {
       if (!entryToDelete) return;
+      setDeleting(true);
       try {
           await axios.delete(`/journal/${entryToDelete}`);
           toast.success("Entry deleted");
@@ -93,6 +95,7 @@ const Journal = () => {
           console.error(err);
           toast.error("Failed to delete");
       }
+      setDeleting(false);
       setShowDeleteModal(false);
       setEntryToDelete(null);
   };
@@ -231,8 +234,10 @@ const Journal = () => {
                  <h3 className="text-xl font-bold mb-2">Delete Entry?</h3>
                  <p className="text-slate-500 mb-6 text-sm">This journal entry will be lost forever.</p>
                  <div className="flex space-x-3">
-                     <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-2 bg-slate-100 rounded-lg">Cancel</button>
-                     <button onClick={handleDelete} className="flex-1 py-2 bg-red-500 text-white rounded-lg">Delete</button>
+                     <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="flex-1 py-2 bg-slate-100 rounded-lg disabled:opacity-50">Cancel</button>
+                     <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2 bg-red-500 text-white rounded-lg disabled:opacity-50">
+                        {deleting ? 'Deleting...' : 'Delete'}
+                     </button>
                  </div>
             </div>
         </Modal>
