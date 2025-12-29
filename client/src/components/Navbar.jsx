@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { useIdentity } from '../context/IdentityContext';
+import Avatar from './Avatar';
 import axios from 'axios';
 import useSWR from 'swr';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { currentIdentity } = useIdentity();
   const location = useLocation();
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   // Poll for Unread Messages
   const { data: unreadData } = useSWR(
@@ -23,7 +28,7 @@ const Navbar = () => {
               return { count: 0 };
           }
       },
-      { refreshInterval: 5000 } // Poll every 5s
+      { refreshInterval: 5000 }
   );
 
   const handleLogout = async () => {
@@ -31,7 +36,8 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  if (!user && location.pathname === '/') return null;
+  // Ensure Navbar is hidden if user is not logged in
+  if (!user) return null;
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/feed' },
@@ -116,26 +122,61 @@ const Navbar = () => {
         })}
       </div>
 
-      {/* User / Logout (Desktop) */}
-      <div className={clsx("hidden md:flex flex-col w-full mb-4 space-y-2", isExpanded ? "px-2" : "items-center")}>
-        <button
-          onClick={handleLogout}
-          className={clsx(
-              "p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all flex items-center",
-              isExpanded ? "w-full space-x-3" : "justify-center"
-          )}
-          title="Logout"
-        >
-          <LogOut size={22} />
-          {isExpanded && <span className="font-medium text-sm">Logout</span>}
-        </button>
+      {/* User / Profile (Desktop) */}
+      <div className={clsx("hidden md:flex flex-col w-full mb-4 space-y-2 relative", isExpanded ? "px-2" : "items-center")}>
 
-        <div className={clsx("flex items-center", isExpanded ? "w-full space-x-3 bg-slate-50 p-2 rounded-xl border border-slate-100" : "justify-center")}>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 border-2 border-white shadow-sm flex-shrink-0"></div>
+        {/* Dropdown Menu */}
+        <AnimatePresence>
+            {showProfileMenu && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-full left-0 w-full bg-white border border-slate-100 shadow-xl rounded-xl p-2 mb-2 z-50"
+                >
+                    <button
+                        onClick={() => {
+                            navigate(currentIdentity ? `/profile/${currentIdentity.handle.replace('@','')}` : '/feed');
+                            setShowProfileMenu(false);
+                        }}
+                        className="flex items-center space-x-3 w-full p-2 hover:bg-slate-50 rounded-lg text-sm text-slate-700 transition"
+                    >
+                        <User size={18} />
+                        <span>Profile</span>
+                    </button>
+                    <button
+                        onClick={() => { navigate('/settings'); setShowProfileMenu(false); }}
+                        className="flex items-center space-x-3 w-full p-2 hover:bg-slate-50 rounded-lg text-sm text-slate-700 transition"
+                    >
+                        <Settings size={18} />
+                        <span>Settings</span>
+                    </button>
+                    <div className="h-px bg-slate-100 my-1"></div>
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-3 w-full p-2 hover:bg-red-50 rounded-lg text-sm text-red-500 transition"
+                    >
+                        <LogOut size={18} />
+                        <span>Logout</span>
+                    </button>
+                </motion.div>
+            )}
+        </AnimatePresence>
+
+        {/* Trigger */}
+        <div
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className={clsx(
+                "flex items-center cursor-pointer hover:bg-slate-50 transition p-1.5 rounded-xl border border-transparent hover:border-slate-100",
+                isExpanded ? "w-full space-x-3" : "justify-center",
+                showProfileMenu && "bg-slate-50 border-slate-100"
+            )}
+        >
+            <Avatar identity={currentIdentity} size="sm" />
             {isExpanded && (
-                <div className="overflow-hidden">
-                    <p className="text-xs font-bold text-slate-700 truncate">My Account</p>
-                    <p className="text-[10px] text-slate-400 truncate">Online</p>
+                <div className="overflow-hidden flex-1">
+                    <p className="text-xs font-bold text-slate-700 truncate">{currentIdentity?.name || 'Account'}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{currentIdentity?.handle || 'Loading...'}</p>
                 </div>
             )}
         </div>
