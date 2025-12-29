@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
+import { useLocation } from 'react-router-dom';
 import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
@@ -21,6 +22,7 @@ const formatBytes = (bytes, decimals = 2) => {
 
 const Messages = () => {
   const { currentIdentity, identities } = useIdentity();
+  const location = useLocation();
   const [activeConversation, setActiveConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -30,6 +32,15 @@ const Messages = () => {
 
   // Mobile View State ('list' or 'chat')
   const [view, setView] = useState('list');
+
+  useEffect(() => {
+    if (location.state?.startConversationWith) {
+      setActiveConversation(location.state.startConversationWith);
+      setView('chat');
+      // Clear state to avoid reopening on refresh/back (optional, often better to keep for history consistency)
+      // window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Suggested Users (All identities for now, horizontal scroll)
   const { data: suggestedUsers } = useSWR('/search?q=&type=identities', async (url) => {

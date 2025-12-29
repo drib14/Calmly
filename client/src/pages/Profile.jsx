@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import axios from 'axios';
 import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon } from 'lucide-react';
@@ -14,6 +14,7 @@ const fetcher = url => axios.get(url).then(res => res.data);
 
 const Profile = () => {
   const { handle } = useParams();
+  const navigate = useNavigate();
   const { data, error, isLoading, mutate } = useSWR(`/profile/${handle}`, fetcher);
   const { currentIdentity, identities } = useIdentity();
 
@@ -131,7 +132,10 @@ const Profile = () => {
                           <span>Edit Profile</span>
                       </button>
                   ) : (
-                      <button className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition flex items-center space-x-2">
+                      <button
+                        onClick={() => navigate('/messages', { state: { startConversationWith: identity } })}
+                        className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition flex items-center space-x-2"
+                      >
                           <MessageCircle size={16} className="text-white" />
                           <span>Message</span>
                       </button>
