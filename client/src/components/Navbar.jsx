@@ -206,9 +206,11 @@ const Navbar = () => {
                 showProfileMenu && "bg-slate-50 border-slate-100"
             )}
         >
-            <Avatar identity={currentIdentity} size="sm" />
+            <div className="flex-shrink-0">
+                <Avatar identity={currentIdentity} size="sm" />
+            </div>
             {isExpanded && (
-                <div className="overflow-hidden flex-1">
+                <div className="overflow-hidden flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-700 truncate">{currentIdentity?.name || 'Account'}</p>
                     <p className="text-[10px] text-slate-400 truncate">{currentIdentity?.handle || 'Loading...'}</p>
                 </div>
