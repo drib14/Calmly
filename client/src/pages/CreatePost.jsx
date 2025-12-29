@@ -47,18 +47,18 @@ const CreatePost = () => {
 
   // Expanded Colors for Poetry (10+)
   const poemBackgrounds = [
-      { id: 'white', class: 'bg-white text-slate-900 border border-slate-100' },
-      { id: 'dark', class: 'bg-slate-900 text-white' },
-      { id: 'sunset', class: 'bg-gradient-to-br from-orange-100 to-rose-200 text-rose-900' },
-      { id: 'ocean', class: 'bg-gradient-to-tr from-cyan-100 to-blue-200 text-blue-900' },
-      { id: 'forest', class: 'bg-gradient-to-b from-emerald-50 to-teal-100 text-teal-900' },
-      { id: 'midnight', class: 'bg-gradient-to-r from-slate-900 to-indigo-950 text-indigo-100' },
-      { id: 'berry', class: 'bg-gradient-to-bl from-pink-200 to-purple-300 text-purple-900' },
-      { id: 'lemon', class: 'bg-yellow-50 text-yellow-800 border border-yellow-100' },
-      { id: 'sky', class: 'bg-sky-100 text-sky-800' },
-      { id: 'lavender', class: 'bg-violet-100 text-violet-900' },
-      { id: 'cherry', class: 'bg-red-50 text-red-900 border border-red-100' },
-      { id: 'gray', class: 'bg-gray-100 text-gray-700' },
+      { id: 'white', class: 'bg-white text-slate-900 border border-slate-100', preview: 'bg-white border-slate-200' },
+      { id: 'dark', class: 'bg-slate-900 text-white', preview: 'bg-slate-900' },
+      { id: 'sunset', class: 'bg-gradient-to-br from-orange-100 to-rose-200 text-rose-900', preview: 'bg-gradient-to-br from-orange-100 to-rose-200' },
+      { id: 'ocean', class: 'bg-gradient-to-tr from-cyan-100 to-blue-200 text-blue-900', preview: 'bg-gradient-to-tr from-cyan-100 to-blue-200' },
+      { id: 'forest', class: 'bg-gradient-to-b from-emerald-50 to-teal-100 text-teal-900', preview: 'bg-gradient-to-b from-emerald-50 to-teal-100' },
+      { id: 'midnight', class: 'bg-gradient-to-r from-slate-900 to-indigo-950 text-indigo-100', preview: 'bg-gradient-to-r from-slate-900 to-indigo-950' },
+      { id: 'berry', class: 'bg-gradient-to-bl from-pink-200 to-purple-300 text-purple-900', preview: 'bg-gradient-to-bl from-pink-200 to-purple-300' },
+      { id: 'lemon', class: 'bg-yellow-50 text-yellow-800 border border-yellow-100', preview: 'bg-yellow-50 border-yellow-200' },
+      { id: 'sky', class: 'bg-sky-100 text-sky-800', preview: 'bg-sky-100' },
+      { id: 'lavender', class: 'bg-violet-100 text-violet-900', preview: 'bg-violet-100' },
+      { id: 'cherry', class: 'bg-red-50 text-red-900 border border-red-100', preview: 'bg-red-50 border-red-200' },
+      { id: 'gray', class: 'bg-gray-100 text-gray-700', preview: 'bg-gray-100' },
   ];
 
   const fontOptions = [
@@ -245,7 +245,7 @@ const CreatePost = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                 <select
@@ -323,7 +323,7 @@ const CreatePost = () => {
                                 key={bg.id}
                                 type="button"
                                 onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
-                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.class.split(' ')[0] === 'bg-gradient-to-br' ? 'bg-gradient-to-br from-orange-100 to-rose-200' : bg.class.split(' ')[0]} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.preview} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
                             />
                         ))}
                     </div>
