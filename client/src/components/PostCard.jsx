@@ -191,7 +191,7 @@ const PostCard = ({ post, mutate }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={clsx(
-            "bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden transition-all hover:shadow-md",
+            "bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden transition-all hover:shadow-md",
             getTypeStyles()
         )}
     >
@@ -266,10 +266,10 @@ const PostCard = ({ post, mutate }) => {
       </div>
 
       {/* Content */}
-      <div className="pl-13">
+      <div className="md:pl-13">
           {post.type === 'letter' ? (
               <div className={clsx(
-                  "p-8 rounded-lg mb-4 shadow-sm relative overflow-hidden",
+                  "p-6 md:p-8 rounded-lg mb-4 shadow-sm relative overflow-hidden",
                   // Apply dynamic styles based on paper type
                   post.letterFields?.paperType === 'parchment' ? 'bg-[#f0e6d2] text-[#5c4b35] border-[#e6dcc0]' :
                   post.letterFields?.paperType === 'classic' ? 'bg-amber-50 text-amber-900 border-amber-100' :
@@ -293,7 +293,7 @@ const PostCard = ({ post, mutate }) => {
           ) : post.type === 'poetry' ? (
               <div
                 className={clsx(
-                    "p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center",
+                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden",
                     post.style?.backgroundColor,
                     post.style?.align,
                     post.style?.font
