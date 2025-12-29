@@ -133,16 +133,34 @@ const Navbar = () => {
 
       {/* Logo & Toggle (Desktop) */}
       <div className="flex flex-col w-full mb-8">
-        <div className={clsx("flex items-center transition-all duration-300", isExpanded ? "justify-between px-2" : "justify-center")}>
-            {isExpanded ? (
-                <span className="font-serif font-bold text-2xl text-slate-800 tracking-tight">Calmly</span>
-            ) : (
-                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-serif font-bold text-lg shadow-md">C</div>
-            )}
+        <div className={clsx("flex items-center transition-all duration-300", isExpanded ? "justify-between px-2" : "justify-center flex-col gap-4")}>
+
+            <div
+                onClick={() => navigate('/feed')}
+                className={clsx(
+                    "flex items-center cursor-pointer overflow-hidden transition-all duration-300",
+                    isExpanded ? "gap-3" : "justify-center"
+                )}
+            >
+                {/* Always show the 'C' Logo */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-serif font-bold text-lg shadow-md">
+                    C
+                </div>
+
+                {/* Text Logo - Only visible when expanded */}
+                {isExpanded && (
+                    <span className="font-serif font-bold text-2xl text-slate-800 tracking-tight whitespace-nowrap">
+                        Calmly
+                    </span>
+                )}
+            </div>
 
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                className={clsx(
+                    "p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition",
+                    !isExpanded && "mt-2"
+                )}
             >
                 {isExpanded ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
