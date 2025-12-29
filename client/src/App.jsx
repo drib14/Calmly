@@ -18,6 +18,7 @@ import SearchPage from './pages/SearchPage';
 import Profile from './pages/Profile';
 import About from './pages/About';
 import Legal from './pages/Legal';
+import Settings from './pages/Settings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -68,6 +69,12 @@ function App() {
                 <Route path="/profile/:handle" element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 } />
 

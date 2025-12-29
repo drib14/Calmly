@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
@@ -25,7 +25,19 @@ const Messages = () => {
   const [messageText, setMessageText] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
+  const [sending, setSending] = useState(false);
   const scrollRef = useRef();
+
+  // Mobile View State ('list' or 'chat')
+  const [view, setView] = useState('list');
+
+  // Suggested Users (All identities for now, horizontal scroll)
+  const { data: suggestedUsers } = useSWR('/search?q=&type=identities', async (url) => {
+      try {
+          const res = await axios.get(url);
+          return res.data.identities || [];
+      } catch (err) { return []; }
+  });
 
   // Fetch Inbox (Polling)
   const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', async (url) => {
@@ -68,9 +80,15 @@ const Messages = () => {
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleConversationClick = (identity) => {
+      setActiveConversation(identity);
+      setView('chat');
+  };
+
   const handleSend = async () => {
       if ((!messageText.trim() && mediaFiles.length === 0) || !activeConversation || !currentIdentity) return;
 
+      setSending(true);
       const formData = new FormData();
       formData.append('senderIdentityId', currentIdentity._id);
       formData.append('recipientIdentityId', activeConversation._id);
@@ -89,6 +107,8 @@ const Messages = () => {
       } catch (err) {
           console.error(err);
           toast.error("Failed to send message");
+      } finally {
+          setSending(false);
       }
   };
 
@@ -129,12 +149,16 @@ const Messages = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-100px)] bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex">
-      {/* Sidebar */}
-      <div className="w-1/3 border-r border-slate-100 flex flex-col">
+    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex relative">
+
+      {/* Sidebar (List View) */}
+      <div className={clsx(
+          "w-full md:w-1/3 border-r border-slate-100 flex flex-col absolute md:relative h-full bg-white z-10 transition-transform duration-300",
+          view === 'list' ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      )}>
           <div className="p-4 border-b border-slate-50">
                <h2 className="text-xl font-serif font-bold text-slate-900 mb-4">Messages</h2>
-               <div className="relative">
+               <div className="relative mb-4">
                    <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
                    <input
                       className="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 text-sm focus:ring-1 focus:ring-slate-200"
@@ -143,24 +167,33 @@ const Messages = () => {
                       onChange={handleSearch}
                    />
                </div>
-               {/* Search Results */}
+
+               {/* Search Results Dropdown */}
                {searchResults.length > 0 && (
-                   <div className="mt-2 absolute bg-white shadow-xl border border-slate-100 rounded-xl w-64 z-20 max-h-60 overflow-y-auto">
+                   <div className="absolute top-28 left-4 right-4 bg-white shadow-xl border border-slate-100 rounded-xl z-20 max-h-60 overflow-y-auto">
                        {searchResults.map(id => (
-                           <div key={id._id} onClick={() => { setActiveConversation(id); setSearchQuery(''); setSearchResults([]); }} className="p-3 hover:bg-slate-50 cursor-pointer flex items-center space-x-3">
+                           <div key={id._id} onClick={() => { handleConversationClick(id); setSearchQuery(''); setSearchResults([]); }} className="p-3 hover:bg-slate-50 cursor-pointer flex items-center space-x-3">
                                <Avatar identity={id} size="sm" />
                                <span className="text-sm font-bold text-slate-700">{id.name}</span>
                            </div>
                        ))}
                    </div>
                )}
+
+               {/* Horizontal User List */}
+               <div className="flex space-x-4 overflow-x-auto pb-2 custom-scrollbar">
+                   {suggestedUsers?.map(user => (
+                       <div key={user._id} onClick={() => handleConversationClick(user)} className="flex flex-col items-center space-y-1 cursor-pointer min-w-[60px]">
+                           <Avatar identity={user} size="md" />
+                           <span className="text-[10px] text-slate-600 truncate w-full text-center">{user.name.split(' ')[0]}</span>
+                       </div>
+                   ))}
+               </div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
               {inbox?.map(msg => {
-                  // Guard clause for missing sender/recipient
                   if (!msg.sender || !msg.recipient) return null;
-
                   const isMe = msg.sender._id === currentIdentity?._id;
                   const other = isMe ? msg.recipient : msg.sender;
                   const isUnread = !isMe && !msg.read;
@@ -168,7 +201,7 @@ const Messages = () => {
                   return (
                       <div
                         key={msg._id}
-                        onClick={() => setActiveConversation(other)}
+                        onClick={() => handleConversationClick(other)}
                         className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition ${activeConversation?._id === other._id ? 'bg-slate-50' : ''}`}
                       >
                           <div className="flex items-center space-x-3">
@@ -192,11 +225,19 @@ const Messages = () => {
           </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-slate-50/50">
+      {/* Chat Area (Detail View) */}
+      <div className={clsx(
+          "w-full md:flex-1 flex flex-col bg-slate-50/50 absolute md:relative h-full transition-transform duration-300",
+          view === 'chat' ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+      )}>
           {activeConversation ? (
               <>
-                  <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm z-10">
+                  <div className="p-4 bg-white border-b border-slate-100 flex items-center shadow-sm z-10">
+                      {/* Back Button (Mobile Only) */}
+                      <button onClick={() => setView('list')} className="md:hidden mr-3 text-slate-500">
+                          <ChevronLeft />
+                      </button>
+
                       <div className="flex items-center space-x-3">
                           <Avatar identity={activeConversation} />
                           <div>
@@ -212,7 +253,7 @@ const Messages = () => {
                           return (
                               <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
-                                  <div className={`max-w-[70%] space-y-2`}>
+                                  <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
                                       {/* Media Bubbles */}
                                       {msg.media?.map((m, i) => (
                                           <div key={i} className={clsx(
@@ -289,7 +330,11 @@ const Messages = () => {
                               onChange={(e) => setMessageText(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                           />
-                          <button onClick={handleSend} className="bg-slate-900 text-white p-2 rounded-xl hover:scale-105 transition-transform">
+                          <button
+                              onClick={handleSend}
+                              disabled={sending}
+                              className="bg-slate-900 text-white p-2 rounded-xl hover:scale-105 transition-transform disabled:opacity-50"
+                          >
                               <Send size={18} />
                           </button>
                       </div>
