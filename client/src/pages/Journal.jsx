@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import useSWR, { mutate } from 'swr';
-import { Lock, Unlock, Trash2, Plus, Calendar } from 'lucide-react';
+import { Lock, Unlock, Trash2, Plus, Calendar, ChevronLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import clsx from 'clsx';
 import Modal from '../components/Modal';
 
 const fetcher = url => axios.get(url).then(res => res.data);
@@ -18,30 +19,57 @@ const Journal = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [mood, setMood] = useState('Neutral');
+  const [saving, setSaving] = useState(false);
+
+  // Mobile View State
+  const [view, setView] = useState('list'); // 'list' or 'editor'
 
   // Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
 
+  const handleEntryClick = (entry) => {
+      setSelectedEntry(entry);
+      setIsWriting(false);
+      setView('editor');
+  };
+
+  const handleNewEntry = () => {
+      setIsWriting(true);
+      setSelectedEntry(null);
+      setTitle('');
+      setContent('');
+      setMood('Neutral');
+      setView('editor');
+  };
+
+  const handleBackToList = () => {
+      setView('list');
+  };
+
   const handleSave = async () => {
     if (!content.trim()) return toast.error("Write something first");
 
+    setSaving(true);
     try {
         await axios.post('/journal', {
             title: title || 'Untitled',
             content,
             mood,
             tags: [],
-            isLocked: true // Default locked
+            isLocked: true
         });
         toast.success("Saved to Journal");
         setIsWriting(false);
         setTitle('');
         setContent('');
         mutate('/journal');
+        setView('list'); // Go back to list on mobile/desktop refresh
     } catch (err) {
         console.error(err);
         toast.error("Failed to save");
+    } finally {
+        setSaving(false);
     }
   };
 
@@ -57,7 +85,10 @@ const Journal = () => {
           await axios.delete(`/journal/${entryToDelete}`);
           toast.success("Entry deleted");
           mutate('/journal');
-          if (selectedEntry?._id === entryToDelete) setSelectedEntry(null);
+          if (selectedEntry?._id === entryToDelete) {
+              setSelectedEntry(null);
+              setView('list');
+          }
       } catch (err) {
           console.error(err);
           toast.error("Failed to delete");
@@ -69,13 +100,17 @@ const Journal = () => {
   if (!entries && !error) return <div className="p-10 text-center">Loading your safe space...</div>;
 
   return (
-    <div className="flex h-[calc(100vh-100px)] gap-6">
+    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] flex gap-6 relative overflow-hidden bg-white md:bg-transparent rounded-3xl md:rounded-none shadow-sm md:shadow-none border md:border-none border-slate-100">
+
         {/* Sidebar List */}
-        <div className="w-1/3 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col">
+        <div className={clsx(
+            "w-full md:w-1/3 bg-white md:rounded-3xl p-6 md:shadow-sm md:border border-slate-100 flex flex-col absolute md:relative h-full transition-transform duration-300 z-10",
+            view === 'list' ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        )}>
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-serif font-bold text-slate-800">My Journal</h2>
                 <button
-                    onClick={() => { setIsWriting(true); setSelectedEntry(null); }}
+                    onClick={handleNewEntry}
                     className="w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center hover:bg-slate-700 transition"
                 >
                     <Plus size={20} />
@@ -91,7 +126,7 @@ const Journal = () => {
                 {entries?.map(entry => (
                     <div
                         key={entry._id}
-                        onClick={() => { setSelectedEntry(entry); setIsWriting(false); }}
+                        onClick={() => handleEntryClick(entry)}
                         className={`p-4 rounded-2xl cursor-pointer transition border ${selectedEntry?._id === entry._id ? 'bg-slate-50 border-slate-200' : 'bg-white border-transparent hover:bg-slate-50'}`}
                     >
                         <div className="flex justify-between items-start mb-1">
@@ -111,11 +146,22 @@ const Journal = () => {
         </div>
 
         {/* Main Content / Editor */}
-        <div className="flex-1 bg-white rounded-3xl p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+        <div className={clsx(
+            "w-full md:flex-1 bg-white md:rounded-3xl p-8 md:shadow-sm md:border border-slate-100 flex flex-col absolute md:relative h-full transition-transform duration-300 bg-slate-50/50 md:bg-white",
+            view === 'editor' ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+        )}>
+            {/* Mobile Back Button */}
+            <div className="md:hidden mb-4">
+                <button onClick={handleBackToList} className="flex items-center text-slate-500 hover:text-slate-800">
+                    <ChevronLeft size={20} />
+                    <span className="ml-1 text-sm font-bold">Back</span>
+                </button>
+            </div>
+
             {isWriting ? (
                 <div className="h-full flex flex-col animate-fadeIn">
                     <input
-                        className="text-3xl font-serif font-bold text-slate-900 placeholder:text-slate-300 border-none focus:ring-0 p-0 mb-4 w-full"
+                        className="text-3xl font-serif font-bold text-slate-900 placeholder:text-slate-300 border-none focus:ring-0 p-0 mb-4 w-full bg-transparent"
                         placeholder="Title your thoughts..."
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
@@ -137,14 +183,18 @@ const Journal = () => {
                         </div>
                     </div>
                     <textarea
-                        className="flex-1 w-full resize-none border-none focus:ring-0 p-0 font-serif text-lg leading-loose text-slate-700 placeholder:text-slate-300"
+                        className="flex-1 w-full resize-none border-none focus:ring-0 p-0 font-serif text-lg leading-loose text-slate-700 placeholder:text-slate-300 bg-transparent"
                         placeholder="Start writing..."
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                     />
                     <div className="flex justify-end pt-4">
-                        <button onClick={handleSave} className="bg-slate-900 text-white px-6 py-2 rounded-xl font-medium hover:bg-slate-800 transition">
-                            Save Entry
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-slate-900 text-white px-6 py-2 rounded-xl font-medium hover:bg-slate-800 transition disabled:opacity-50"
+                        >
+                            {saving ? 'Saving...' : 'Save Entry'}
                         </button>
                     </div>
                 </div>
@@ -167,7 +217,7 @@ const Journal = () => {
             ) : (
                 <div className="h-full flex flex-col items-center justify-center text-slate-300">
                     <Lock size={48} className="mb-4 opacity-50" />
-                    <p className="font-serif text-lg">Select an entry or start writing</p>
+                    <p className="font-serif text-lg text-center px-4">Select an entry or start writing<br/><span className="text-sm opacity-70">Your secrets are safe here.</span></p>
                 </div>
             )}
         </div>
