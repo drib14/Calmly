@@ -210,31 +210,31 @@ const PostCard = ({ post, mutate }) => {
 
       {/* Header */}
       <div className="flex justify-between items-start mb-4 relative">
-        <div className="flex items-center space-x-3">
-           <div onClick={handleProfileClick} className="cursor-pointer">
+        <div className="flex items-center space-x-3 min-w-0 flex-1 mr-2">
+           <div onClick={handleProfileClick} className="cursor-pointer flex-shrink-0">
                <Avatar identity={post.identity} />
            </div>
-           <div>
-               <p onClick={handleProfileClick} className="text-sm font-bold text-slate-800 cursor-pointer hover:underline decoration-slate-400 underline-offset-2">
+           <div className="min-w-0 flex-1">
+               <p onClick={handleProfileClick} className="text-sm font-bold text-slate-800 cursor-pointer hover:underline decoration-slate-400 underline-offset-2 truncate">
                    {post.identity.name}
                </p>
-               <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide flex items-center gap-2">
+               <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
                    <span>{post.identity.type}</span>
                    <span>•</span>
-                   <span>{formatDistanceToNow(new Date(post.createdAt))} ago</span>
+                   <span className="whitespace-nowrap">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
 
                    {/* Visibility Icon */}
-                   {post.visibility === 'public' && <Globe size={12} className="text-slate-400" />}
-                   {post.visibility === 'unlisted' && <EyeOff size={12} className="text-slate-400" />}
-                   {post.visibility === 'private' && <Lock size={12} className="text-slate-400" />}
+                   {post.visibility === 'public' && <Globe size={12} className="text-slate-400 flex-shrink-0" />}
+                   {post.visibility === 'unlisted' && <EyeOff size={12} className="text-slate-400 flex-shrink-0" />}
+                   {post.visibility === 'private' && <Lock size={12} className="text-slate-400 flex-shrink-0" />}
 
                    {post.type !== 'mood' && (
                        <>
                         <span>•</span>
-                        <span className="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 uppercase">{post.type}</span>
+                        <span className="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 uppercase whitespace-nowrap">{post.type}</span>
                        </>
                    )}
-               </p>
+               </div>
            </div>
         </div>
 
