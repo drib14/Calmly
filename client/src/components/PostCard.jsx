@@ -10,9 +10,11 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
+import ImageViewer from './ImageViewer';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
+import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
@@ -21,6 +23,10 @@ const PostCard = ({ post, mutate }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+
+  // Image Viewer
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState(null);
 
   // Comment Input State
   const [newComment, setNewComment] = useState('');
@@ -187,6 +193,30 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
+  const handleShare = async () => {
+     try {
+         await navigator.share({
+             title: `Post by ${post.identity.name}`,
+             text: post.content,
+             url: window.location.origin + `/profile/${post.identity.handle?.replace('@', '') || 'anon'}` // Deep linking not perfect yet
+         });
+     } catch (err) {
+         handleCopyLink();
+     }
+  };
+
+  const handleCopyLink = () => {
+      const link = `${window.location.origin}/profile/${post.identity.handle?.replace('@', '') || 'anon'}`;
+      navigator.clipboard.writeText(link);
+      toast.success("Link copied to clipboard");
+      setShowOptions(false);
+  };
+
+  const openViewer = (src) => {
+      setViewerImage(src);
+      setViewerOpen(true);
+  };
+
   const getTypeStyles = () => {
       switch (post.type) {
           case 'poetry': return 'border-l-4 border-l-purple-400';
@@ -251,7 +281,7 @@ const PostCard = ({ post, mutate }) => {
         </div>
 
         <div className="relative" ref={optionsRef}>
-            <button onClick={() => setShowOptions(!showOptions)} className="text-slate-300 hover:text-slate-600 transition p-2">
+            <button onClick={() => setShowOptions(!showOptions)} className="text-secondary hover:text-text transition p-2">
                 <MoreHorizontal size={20} />
             </button>
 
@@ -261,8 +291,15 @@ const PostCard = ({ post, mutate }) => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[140px]"
+                        className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
+                        <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition">
+                            <LinkIcon size={14} /> <span>Copy Link</span>
+                        </button>
+                        <button onClick={handleShare} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition md:hidden">
+                             <Share2 size={14} /> <span>Share</span>
+                        </button>
+                        <div className="h-px bg-soft-border my-1" />
                         {isOwner && (
                             <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
                                 <Trash2 size={14} /> <span>Delete Post</span>
@@ -342,7 +379,12 @@ const PostCard = ({ post, mutate }) => {
                               file.type === 'video' ? (
                                   <MediaPlayer key={idx} src={file.url} />
                               ) : (
-                                  <img key={idx} src={file.url} className="w-full h-full object-cover aspect-square" />
+                                  <img
+                                    key={idx}
+                                    src={file.url}
+                                    className="w-full h-full object-cover aspect-square cursor-pointer hover:opacity-90 transition"
+                                    onClick={() => openViewer(file.url)}
+                                  />
                               )
                           ))}
                       </div>
@@ -395,6 +437,13 @@ const PostCard = ({ post, mutate }) => {
                   <Repeat size={20} className={clsx("transition-transform", isReposting && "animate-spin")} />
                   <span className="text-xs font-bold">{post.reposts?.length || 0}</span>
               </button>
+
+              <button
+                onClick={handleShare}
+                className="flex items-center space-x-2 text-slate-500 hover:text-slate-800 transition group"
+              >
+                  <Share2 size={20} />
+              </button>
           </div>
       </div>
 
@@ -428,7 +477,11 @@ const PostCard = ({ post, mutate }) => {
                                                         {c.media[0].type === 'video' ? (
                                                             <MediaPlayer src={c.media[0].url} />
                                                         ) : (
-                                                            <img src={c.media[0].url} className="w-full h-full object-cover" />
+                                                            <img
+                                                                src={c.media[0].url}
+                                                                className="w-full h-full object-cover cursor-pointer"
+                                                                onClick={() => openViewer(c.media[0].url)}
+                                                            />
                                                         )}
                                                     </div>
                                                 )}
@@ -547,6 +600,12 @@ const PostCard = ({ post, mutate }) => {
               </div>
           </div>
       </Modal>
+
+      <ImageViewer
+        isOpen={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        imageSrc={viewerImage}
+      />
 
     </motion.div>
   );

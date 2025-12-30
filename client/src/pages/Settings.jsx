@@ -145,8 +145,8 @@ const Settings = () => {
       title: "Notifications",
       description: "Choose what alerts you receive.",
       items: [
-          { id: 'inAppNotifications', label: "In-App Notifications", type: 'toggle' },
-          { id: 'emailNotifications', label: "Email Notifications", type: 'toggle' }
+          { id: 'inAppNotifications', label: "In-App Notifications", type: 'toggle', description: "Receive notifications within the app." },
+          { id: 'emailNotifications', label: "Email Notifications", type: 'toggle', description: "Receive email updates for important activity." }
       ]
     },
     {
@@ -155,8 +155,8 @@ const Settings = () => {
       title: "Moderation & Blocking",
       description: "Manage blocked users and mute lists.",
       items: [
-          { id: 'blockedUsers', label: "Blocked Users", type: 'list' },
-          { id: 'mutedKeywords', label: "Muted Keywords", type: 'list' }
+          { id: 'blockedUsers', label: "Blocked Users", type: 'list', description: "Manage users you have blocked." },
+          { id: 'mutedKeywords', label: "Muted Keywords", type: 'list', description: "Manage keywords you don't want to see." }
       ]
     },
     {
@@ -165,8 +165,8 @@ const Settings = () => {
       title: "Personal Journal",
       description: "Settings for your private diary.",
       items: [
-          { id: 'enableJournal', label: "Enable Journal Feature", type: 'toggle' },
-          { id: 'journalLocked', label: "Lock Journal with Password", type: 'toggle' }
+          { id: 'enableJournal', label: "Enable Journal Feature", type: 'toggle', description: "Enable or disable the personal journal feature." },
+          { id: 'journalLocked', label: "Lock Journal with Password", type: 'toggle', description: "Secure your journal with a password." }
       ]
     },
     {
@@ -175,9 +175,9 @@ const Settings = () => {
       title: "Appearance",
       description: "Customize fonts, themes, and accessibility.",
       items: [
-          { id: 'theme', label: "Theme", type: 'select', options: ['soft-light', 'dark', 'sage', 'ocean'] },
-          { id: 'fontFamily', label: "Font Family", type: 'select', options: ['font-serif', 'font-sans', 'font-mono'] },
-          { id: 'highContrast', label: "High Contrast Mode", type: 'toggle' }
+          { id: 'theme', label: "Theme", type: 'select', options: ['soft-light', 'dark', 'sage', 'ocean'], description: "Choose your preferred color theme." },
+          { id: 'fontFamily', label: "Font Family", type: 'select', options: ['font-serif', 'font-sans', 'font-mono'], description: "Select the font style for the application." },
+          { id: 'highContrast', label: "High Contrast Mode", type: 'toggle', description: "Increase contrast for better readability." }
       ]
     },
     {
@@ -186,8 +186,8 @@ const Settings = () => {
       title: "Data & Security",
       description: "Manage your data and account security.",
       items: [
-          { id: 'download_data', label: "Download My Data", type: 'download_data' },
-          { id: 'two_factor', label: "Two-Factor Auth", type: 'toggle' }
+          { id: 'download_data', label: "Download My Data", type: 'download_data', description: "Request a copy of all your data." },
+          { id: 'two_factor', label: "Two-Factor Auth", type: 'toggle', description: "Enable two-factor authentication for added security." }
       ]
     },
     {

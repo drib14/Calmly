@@ -6,6 +6,7 @@ import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon }
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
+import ImageViewer from '../components/ImageViewer';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -30,12 +31,15 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState(null);
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
   const { identity, posts } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
+  const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
   const openEditModal = () => {
       setEditName(identity.name);
@@ -45,6 +49,12 @@ const Profile = () => {
       setNewAvatar(null);
       setNewCover(null);
       setShowEditModal(true);
+  };
+
+  const openViewer = (src) => {
+      if (!src) return;
+      setViewerImage(src);
+      setViewerOpen(true);
   };
 
   const handleSaveProfile = async () => {
@@ -109,9 +119,12 @@ const Profile = () => {
       {/* Header Card */}
       <div className="bg-surface border border-soft-border rounded-3xl overflow-hidden mb-6 shadow-sm relative group">
           {/* Cover Photo */}
-          <div className="h-48 bg-background relative overflow-hidden">
+          <div
+            className="h-48 bg-background relative overflow-hidden cursor-pointer"
+            onClick={() => openViewer(identity.coverPhoto)}
+          >
               {identity.coverPhoto ? (
-                  <img src={identity.coverPhoto} className="w-full h-full object-cover" />
+                  <img src={identity.coverPhoto} className="w-full h-full object-cover transition-transform hover:scale-105 duration-700" />
               ) : (
                   <div className="w-full h-full bg-gradient-to-r from-background to-soft-border flex items-center justify-center text-secondary">
                       <ImageIcon size={32} opacity={0.5} />
@@ -121,7 +134,10 @@ const Profile = () => {
 
           <div className="px-6 pb-6 relative pt-20">
               {/* Avatar */}
-              <div className="absolute -top-16 left-6 w-32 h-32 rounded-full border-4 border-surface bg-surface flex items-center justify-center shadow-md overflow-hidden">
+              <div
+                className="absolute -top-16 left-6 w-32 h-32 rounded-full bg-surface flex items-center justify-center shadow-md overflow-hidden cursor-pointer hover:opacity-90 transition"
+                onClick={(e) => { e.stopPropagation(); openViewer(identity.avatar); }}
+              >
                   <Avatar identity={identity} size="xl" className="w-full h-full" />
               </div>
 
@@ -138,13 +154,21 @@ const Profile = () => {
                           <Edit2 size={16} />
                           <span>Edit Profile</span>
                       </button>
-                  ) : (
+                  ) : canMessage ? (
                       <button
                         onClick={() => navigate('/chat', { state: { startConversationWith: identity } })}
                         className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:opacity-90 transition flex items-center space-x-2"
                       >
                           <MessageCircle size={16} className="text-white" />
                           <span>Message</span>
+                      </button>
+                  ) : (
+                      <button
+                        disabled
+                        className="px-4 py-2 rounded-xl bg-soft-border text-secondary text-sm font-medium cursor-not-allowed flex items-center space-x-2"
+                      >
+                          <MessageCircle size={16} />
+                          <span>Messages Disabled</span>
                       </button>
                   )}
               </div>
@@ -267,6 +291,13 @@ const Profile = () => {
         message={`Are you sure you want to remove your ${confirmModal.type === 'avatar' ? 'profile picture' : 'cover photo'}?`}
         confirmText="Remove"
         isDanger={true}
+      />
+
+      <ImageViewer
+        isOpen={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        imageSrc={viewerImage}
+        altText="Profile Photo"
       />
     </div>
   );

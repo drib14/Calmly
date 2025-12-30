@@ -13,7 +13,27 @@ const fetcher = url => axios.get(url).then(res => res.data);
 
 const Journal = () => {
   const { user } = useAuth();
-  const { data: entries, error } = useSWR('/journal', fetcher);
+
+  // Lock Logic
+  // We default to true if we don't know yet (safety first), but if user loaded and not locked, we set false.
+  const [isLocked, setIsLocked] = useState(true);
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlocking, setUnlocking] = useState(false);
+
+  useEffect(() => {
+      if (user) {
+          if (user.settings?.journalLocked) {
+              setIsLocked(true);
+          } else {
+              setIsLocked(false);
+          }
+      }
+  }, [user]);
+
+  // Only fetch if unlocked
+  const shouldFetch = user && !isLocked;
+  const { data: entries, error } = useSWR(shouldFetch ? '/journal' : null, fetcher);
+
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isWriting, setIsWriting] = useState(false);
 
@@ -30,17 +50,6 @@ const Journal = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
-
-  // Lock State
-  const [isLocked, setIsLocked] = useState(false);
-  const [unlockPassword, setUnlockPassword] = useState('');
-  const [unlocking, setUnlocking] = useState(false);
-
-  useEffect(() => {
-      if (user?.settings?.journalLocked) {
-          setIsLocked(true);
-      }
-  }, [user]);
 
   const handleUnlock = async (e) => {
       e.preventDefault();
@@ -92,7 +101,7 @@ const Journal = () => {
         setTitle('');
         setContent('');
         mutate('/journal');
-        setView('list'); // Go back to list on mobile/desktop refresh
+        setView('list');
     } catch (err) {
         console.error(err);
         toast.error("Failed to save");
@@ -127,7 +136,7 @@ const Journal = () => {
       setEntryToDelete(null);
   };
 
-  if (!entries && !error) return <div className="p-10 text-center">Loading your calmly...</div>;
+  if (!user) return <div className="p-10 text-center">Loading Calmly...</div>;
 
   if (isLocked) {
       return (
@@ -158,6 +167,9 @@ const Journal = () => {
           </div>
       );
   }
+
+  // Loading state for fetching entries
+  if (!entries && !error) return <div className="p-10 text-center text-secondary">Decrypting journal...</div>;
 
   return (
     <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] flex gap-6 relative overflow-hidden bg-surface md:bg-transparent rounded-3xl md:rounded-none shadow-sm md:shadow-none border md:border-none border-soft-border">
