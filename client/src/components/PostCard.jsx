@@ -14,6 +14,7 @@ import ImageViewer from './ImageViewer';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
+import ShareModal from './ShareModal';
 import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
@@ -21,6 +22,8 @@ const PostCard = ({ post, mutate }) => {
   const { settings } = useSettings();
   const [expanded, setExpanded] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -44,6 +47,7 @@ const PostCard = ({ post, mutate }) => {
   const [reporting, setReporting] = useState(false);
 
   const optionsRef = useRef(null);
+  const shareRef = useRef(null);
   const navigate = useNavigate();
 
   // SWR for Comments (Real-time polling when expanded)
@@ -65,11 +69,14 @@ const PostCard = ({ post, mutate }) => {
   const isTriggering = triggeringMoods.includes(post.mood);
   const shouldBlur = settings?.enableSafeMode && isTriggering && !isRevealed && !isOwner;
 
-  // Close options on outside click
+  // Close options/share on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (optionsRef.current && !optionsRef.current.contains(event.target)) {
         setShowOptions(false);
+      }
+      if (shareRef.current && !shareRef.current.contains(event.target)) {
+        setShowShareMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -193,23 +200,11 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
-  const handleShare = async () => {
-     try {
-         await navigator.share({
-             title: `Post by ${post.identity.name}`,
-             text: post.content,
-             url: window.location.origin + `/profile/${post.identity.handle?.replace('@', '') || 'anon'}` // Deep linking not perfect yet
-         });
-     } catch (err) {
-         handleCopyLink();
-     }
-  };
-
   const handleCopyLink = () => {
       const link = `${window.location.origin}/profile/${post.identity.handle?.replace('@', '') || 'anon'}`;
       navigator.clipboard.writeText(link);
       toast.success("Link copied to clipboard");
-      setShowOptions(false);
+      setShowShareMenu(false);
   };
 
   const openViewer = (src) => {
@@ -239,7 +234,7 @@ const PostCard = ({ post, mutate }) => {
     >
       {/* Repost Indicator */}
       {post.reposts && post.reposts.length > 0 && post.reposts[0].identity && (
-          <div className="flex items-center space-x-2 mb-3 text-xs text-slate-400 font-medium">
+          <div className="flex items-center space-x-2 mb-3 text-xs text-secondary font-medium">
               <Repeat size={12} />
               <span>Reposted by</span>
               <div className="flex items-center space-x-1">
@@ -257,23 +252,23 @@ const PostCard = ({ post, mutate }) => {
                <Avatar identity={post.identity} />
            </div>
            <div className="min-w-0 flex-1">
-               <p onClick={handleProfileClick} className="text-sm font-bold text-slate-800 cursor-pointer hover:underline decoration-slate-400 underline-offset-2 truncate">
+               <p onClick={handleProfileClick} className="text-sm font-bold text-text cursor-pointer hover:underline decoration-slate-400 underline-offset-2 truncate">
                    {post.identity.name}
                </p>
-               <div className="text-[11px] text-slate-400 font-medium uppercase tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
+               <div className="text-[11px] text-secondary font-medium uppercase tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
                    <span>{post.identity.type}</span>
                    <span>•</span>
                    <span className="whitespace-nowrap">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
 
                    {/* Visibility Icon */}
-                   {post.visibility === 'public' && <Globe size={12} className="text-slate-400 flex-shrink-0" />}
-                   {post.visibility === 'unlisted' && <EyeOff size={12} className="text-slate-400 flex-shrink-0" />}
-                   {post.visibility === 'private' && <Lock size={12} className="text-slate-400 flex-shrink-0" />}
+                   {post.visibility === 'public' && <Globe size={12} className="text-secondary flex-shrink-0" />}
+                   {post.visibility === 'unlisted' && <EyeOff size={12} className="text-secondary flex-shrink-0" />}
+                   {post.visibility === 'private' && <Lock size={12} className="text-secondary flex-shrink-0" />}
 
                    {post.type !== 'mood' && (
                        <>
                         <span>•</span>
-                        <span className="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 uppercase whitespace-nowrap">{post.type}</span>
+                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">{post.type}</span>
                        </>
                    )}
                </div>
@@ -293,13 +288,6 @@ const PostCard = ({ post, mutate }) => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
-                        <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition">
-                            <LinkIcon size={14} /> <span>Copy Link</span>
-                        </button>
-                        <button onClick={handleShare} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition md:hidden">
-                             <Share2 size={14} /> <span>Share</span>
-                        </button>
-                        <div className="h-px bg-soft-border my-1" />
                         {isOwner && (
                             <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
                                 <Trash2 size={14} /> <span>Delete Post</span>
@@ -317,7 +305,7 @@ const PostCard = ({ post, mutate }) => {
       {/* Content */}
       <div className="md:pl-13 relative">
           {shouldBlur && (
-              <div className="absolute inset-0 z-20 backdrop-blur-md bg-white/60 flex flex-col items-center justify-center rounded-xl p-4 text-center">
+              <div className="absolute inset-0 z-20 backdrop-blur-md bg-white/60 dark:bg-black/60 flex flex-col items-center justify-center rounded-xl p-4 text-center">
                   <EyeOff className="text-secondary mb-2" size={32} />
                   <p className="text-sm font-bold text-text mb-1">Content Hidden (Safe Mode)</p>
                   <p className="text-xs text-secondary mb-4">This post contains a mood that might be triggering.</p>
@@ -367,8 +355,8 @@ const PostCard = ({ post, mutate }) => {
               </div>
           ) : (
               <>
-                  {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-slate-900">{post.title}</h3>}
-                  <div className="text-slate-700 leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4">
+                  {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-text">{post.title}</h3>}
+                  <div className="text-text leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4">
                       {post.content}
                   </div>
 
@@ -393,11 +381,11 @@ const PostCard = ({ post, mutate }) => {
           )}
 
           <div className="flex flex-wrap gap-2 mb-6">
-              <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-xs font-medium border border-slate-200">
+              <span className="px-3 py-1 bg-background text-secondary rounded-full text-xs font-medium border border-soft-border">
                   {post.mood}
               </span>
               {post.tags?.map(tag => (
-                   <span key={tag} className="px-3 py-1 bg-slate-50 text-slate-400 rounded-full text-xs font-medium border border-slate-100">
+                   <span key={tag} className="px-3 py-1 bg-background text-secondary rounded-full text-xs font-medium border border-soft-border">
                    #{tag}
                </span>
               ))}
@@ -405,14 +393,14 @@ const PostCard = ({ post, mutate }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-          <div className="flex space-x-6">
+      <div className="flex items-center justify-between pt-4 border-t border-soft-border">
+          <div className="flex space-x-6 relative">
               {interactionsEnabled && (
                   <button
                     onClick={handleLike}
                     className={clsx(
                         "flex items-center space-x-2 transition group",
-                        isLiked ? "text-red-500" : "text-slate-500 hover:text-red-500"
+                        isLiked ? "text-red-500" : "text-secondary hover:text-red-500"
                     )}
                   >
                       <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
@@ -423,7 +411,7 @@ const PostCard = ({ post, mutate }) => {
               {commentsEnabled && (
                   <button
                     onClick={() => setExpanded(!expanded)}
-                    className="flex items-center space-x-2 text-slate-500 hover:text-blue-500 transition group"
+                    className="flex items-center space-x-2 text-secondary hover:text-blue-500 transition group"
                   >
                       <MessageCircle size={20} />
                       <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
@@ -432,18 +420,41 @@ const PostCard = ({ post, mutate }) => {
 
               <button
                 onClick={handleRepost}
-                className={clsx("flex items-center space-x-2 transition group", isReposted ? "text-green-500" : "text-slate-500 hover:text-green-500")}
+                className={clsx("flex items-center space-x-2 transition group", isReposted ? "text-green-500" : "text-secondary hover:text-green-500")}
               >
                   <Repeat size={20} className={clsx("transition-transform", isReposting && "animate-spin")} />
                   <span className="text-xs font-bold">{post.reposts?.length || 0}</span>
               </button>
 
-              <button
-                onClick={handleShare}
-                className="flex items-center space-x-2 text-slate-500 hover:text-slate-800 transition group"
-              >
-                  <Share2 size={20} />
-              </button>
+              <div className="relative" ref={shareRef}>
+                  <button
+                    onClick={() => setShowShareMenu(!showShareMenu)}
+                    className="flex items-center space-x-2 text-secondary hover:text-text transition group"
+                  >
+                      <Share2 size={20} />
+                  </button>
+
+                  <AnimatePresence>
+                      {showShareMenu && (
+                          <motion.div
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="absolute left-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
+                          >
+                              <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition">
+                                  <LinkIcon size={14} /> <span>Copy Link</span>
+                              </button>
+                              <button
+                                onClick={() => { setShowShareModal(true); setShowShareMenu(false); }}
+                                className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition"
+                              >
+                                  <Send size={14} /> <span>Share as Message</span>
+                              </button>
+                          </motion.div>
+                      )}
+                  </AnimatePresence>
+              </div>
           </div>
       </div>
 
@@ -486,7 +497,7 @@ const PostCard = ({ post, mutate }) => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center space-x-4 mt-1 ml-2 text-[10px] text-slate-400">
+                                            <div className="flex items-center space-x-4 mt-1 ml-2 text-[10px] text-secondary">
                                                 <span>{formatDistanceToNow(new Date(c.createdAt))} ago</span>
                                                 <button
                                                     onClick={() => handleCommentLike(c._id)}
@@ -512,7 +523,7 @@ const PostCard = ({ post, mutate }) => {
                       {/* Comment Media Preview */}
                       {mediaPreview && (
                           <div className="mb-2 relative inline-block">
-                              <img src={mediaPreview} className="h-16 w-16 object-cover rounded-lg border border-slate-200" />
+                              <img src={mediaPreview} className="h-16 w-16 object-cover rounded-lg border border-soft-border" />
                               <button onClick={() => { setCommentMedia(null); setMediaPreview(null); }} className="absolute -top-1 -right-1 bg-black text-white rounded-full p-0.5">
                                   <X size={10} />
                               </button>
@@ -521,19 +532,19 @@ const PostCard = ({ post, mutate }) => {
 
                       {/* Reply Indicator */}
                       {replyTo && (
-                          <div className="flex items-center justify-between bg-blue-50 p-2 px-3 rounded-lg mb-2 text-xs text-blue-600">
+                          <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 p-2 px-3 rounded-lg mb-2 text-xs text-blue-600 dark:text-blue-300">
                               <span>Replying to <b>{replyTo.name}</b></span>
                               <button onClick={() => setReplyTo(null)}><X size={12}/></button>
                           </div>
                       )}
 
-                      <div className="flex items-center space-x-2 bg-white p-1.5 pl-2 rounded-full border border-slate-200 focus-within:ring-2 ring-slate-100 transition-shadow">
-                          <label className="p-2 cursor-pointer text-slate-400 hover:text-slate-600 transition rounded-full hover:bg-slate-50">
+                      <div className="flex items-center space-x-2 bg-surface p-1.5 pl-2 rounded-full border border-soft-border focus-within:ring-2 ring-slate-100 dark:ring-slate-700 transition-shadow">
+                          <label className="p-2 cursor-pointer text-secondary hover:text-text transition rounded-full hover:bg-background">
                               <input type="file" className="hidden" accept="image/*,video/*" onChange={handleCommentFile} />
                               <ImageIcon size={18} />
                           </label>
                           <input
-                            className="flex-1 text-sm bg-transparent outline-none placeholder:text-slate-400"
+                            className="flex-1 text-sm bg-transparent outline-none placeholder:text-secondary text-text"
                             placeholder={replyTo ? "Write a reply..." : "Send a supportive message..."}
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
@@ -542,9 +553,9 @@ const PostCard = ({ post, mutate }) => {
                           <button
                             onClick={submitComment}
                             disabled={submittingComment}
-                            className="w-8 h-8 bg-slate-900 rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                            className="w-8 h-8 bg-slate-900 dark:bg-slate-100 rounded-full flex items-center justify-center text-white dark:text-slate-900 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                           >
-                              <Send size={14} className="-ml-0.5 mt-0.5 text-white" />
+                              <Send size={14} className="-ml-0.5 mt-0.5 text-white dark:text-slate-900" />
                           </button>
                       </div>
                   </div>
@@ -555,12 +566,12 @@ const PostCard = ({ post, mutate }) => {
       {/* Anon Error Modal */}
       <Modal isOpen={showAnonError} onClose={() => setShowAnonError(false)}>
           <div className="text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <User size={24} className="text-slate-400" />
+              <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-3">
+                  <User size={24} className="text-secondary" />
               </div>
-              <h3 className="text-lg font-serif font-bold text-slate-800">Identity Protected</h3>
-              <p className="text-sm text-slate-500 mt-2">This user has chosen to remain anonymous. Their profile is hidden to respect their privacy.</p>
-              <button onClick={() => setShowAnonError(false)} className="mt-4 text-xs font-bold text-slate-900 hover:underline">Close</button>
+              <h3 className="text-lg font-serif font-bold text-text">Identity Protected</h3>
+              <p className="text-sm text-secondary mt-2">This user has chosen to remain anonymous. Their profile is hidden to respect their privacy.</p>
+              <button onClick={() => setShowAnonError(false)} className="mt-4 text-xs font-bold text-text hover:underline">Close</button>
           </div>
       </Modal>
 
@@ -578,14 +589,14 @@ const PostCard = ({ post, mutate }) => {
       {/* Report Modal */}
       <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)}>
           <div className="text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600">
+              <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mx-auto mb-4 text-secondary">
                   <Flag size={24} />
               </div>
-              <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">Report Content</h3>
-              <p className="text-slate-500 text-sm mb-4">Why are you reporting this post?</p>
+              <h3 className="text-xl font-serif font-bold text-text mb-2">Report Content</h3>
+              <p className="text-secondary text-sm mb-4">Why are you reporting this post?</p>
 
               <textarea
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 ring-slate-900 outline-none resize-none mb-6"
+                  className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:ring-2 ring-slate-900 outline-none resize-none mb-6 text-text"
                   rows="3"
                   placeholder="Please describe the issue..."
                   value={reportReason}
@@ -593,13 +604,20 @@ const PostCard = ({ post, mutate }) => {
               />
 
               <div className="flex space-x-3">
-                  <button onClick={() => setShowReportModal(false)} disabled={reporting} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition disabled:opacity-50">Cancel</button>
+                  <button onClick={() => setShowReportModal(false)} disabled={reporting} className="flex-1 py-3 bg-background text-text font-medium rounded-xl hover:bg-surface transition disabled:opacity-50 border border-soft-border">Cancel</button>
                   <button onClick={handleReport} disabled={reporting} className="flex-1 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition disabled:opacity-50">
                     {reporting ? 'Reporting...' : 'Submit Report'}
                   </button>
               </div>
           </div>
       </Modal>
+
+      {/* Share Modal */}
+      <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          post={post}
+      />
 
       <ImageViewer
         isOpen={viewerOpen}
