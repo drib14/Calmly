@@ -179,9 +179,9 @@ const Navbar = () => {
                     isExpanded ? "gap-3" : "justify-center"
                 )}
             >
-                {/* Always show the 'C' Logo */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-serif font-bold text-lg shadow-md">
-                    C
+                {/* Logo with Favicon */}
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-surface flex items-center justify-center shadow-md border border-soft-border overflow-hidden">
+                    <img src="/favicon.png" alt="Logo" className="w-6 h-6 object-contain" />
                 </div>
 
                 {/* Text Logo - Only visible when expanded */}
