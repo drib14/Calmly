@@ -44,12 +44,15 @@ const Messages = () => {
   }, [location.state]);
 
   // Suggested Users (All identities for now, horizontal scroll)
-  const { data: suggestedUsers } = useSWR('/search?q=&type=identities', async (url) => {
+  const { data: suggestedUsersRaw } = useSWR('/search?q=&type=identities', async (url) => {
       try {
           const res = await axios.get(url);
           return res.data.identities || [];
       } catch (err) { return []; }
   });
+
+  // Filter out my own identities from suggestions
+  const suggestedUsers = suggestedUsersRaw?.filter(u => !identities?.some(id => id._id === u._id)) || [];
 
   // Fetch Inbox (Polling)
   const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', async (url) => {
@@ -222,7 +225,7 @@ const Messages = () => {
                {/* Search Results Dropdown */}
                {searchResults.length > 0 && (
                    <div className="absolute top-28 left-4 right-4 bg-surface shadow-xl border border-soft-border rounded-xl z-20 max-h-60 overflow-y-auto">
-                       {searchResults.map(id => (
+                       {searchResults.filter(id => !identities?.some(myId => myId._id === id._id)).map(id => (
                            <div key={id._id} onClick={() => { handleConversationClick(id); setSearchQuery(''); setSearchResults([]); }} className="p-3 hover:bg-background cursor-pointer flex items-center space-x-3">
                                <Avatar identity={id} size="sm" />
                                <span className="text-sm font-bold text-text">{id.name}</span>
@@ -243,14 +246,22 @@ const Messages = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {inbox?.map(msg => {
-                  if (!msg.sender || !msg.recipient) return null;
+              {(inbox || []).reduce((acc, msg) => {
+                  // Deduplication Logic on Frontend as a failsafe
+                  if (!msg.sender || !msg.recipient) return acc;
 
                   // Check if the sender is ANY of my identities
                   const isSenderMe = identities?.some(id => id._id === msg.sender._id);
                   // The other person is the recipient if I am the sender, otherwise it's the sender
                   const other = isSenderMe ? msg.recipient : msg.sender;
 
+                  // Ensure we haven't already rendered a conversation for this 'other' person
+                  // This fixes "displayed duplicated data" if backend grouping is flaky or multiple threads exist
+                  if (acc.some(item => item.other._id === other._id)) return acc;
+
+                  acc.push({ msg, other, isSenderMe });
+                  return acc;
+              }, []).map(({ msg, other, isSenderMe }) => {
                   const isUnread = !isSenderMe && !msg.read;
 
                   return (

@@ -8,17 +8,20 @@ import { toast } from 'react-hot-toast';
 import { useIdentity } from '../context/IdentityContext';
 
 const ShareModal = ({ isOpen, onClose, post }) => {
-  const { currentIdentity } = useIdentity();
+  const { currentIdentity, identities } = useIdentity();
   const [searchQuery, setSearchQuery] = useState('');
   const [sending, setSending] = useState(null);
 
   // Suggested Users (All identities)
-  const { data: suggestedUsers } = useSWR(isOpen ? '/search?q=&type=identities' : null, async (url) => {
+  const { data: suggestedUsersRaw } = useSWR(isOpen ? '/search?q=&type=identities' : null, async (url) => {
       try {
           const res = await axios.get(url);
           return res.data.identities || [];
       } catch (err) { return []; }
   });
+
+  // Filter out my own identities
+  const suggestedUsers = suggestedUsersRaw?.filter(u => !identities?.some(id => id._id === u._id)) || [];
 
   const [searchResults, setSearchResults] = useState([]);
 
@@ -27,7 +30,8 @@ const ShareModal = ({ isOpen, onClose, post }) => {
       if (e.target.value.length > 2) {
           try {
               const res = await axios.get(`/search?q=${e.target.value}&type=identities`);
-              setSearchResults(res.data.identities || []);
+              const results = res.data.identities || [];
+              setSearchResults(results.filter(u => !identities?.some(id => id._id === u._id)));
           } catch (err) {
               console.error(err);
           }
