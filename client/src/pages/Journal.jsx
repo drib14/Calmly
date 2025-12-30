@@ -39,10 +39,25 @@ const Journal = () => {
       }
   }, [user, loading]);
 
-  // Only fetch if unlocked
-  // We pass the PIN to the fetcher key so SWR re-fetches when PIN changes
+  // Only fetch if unlocked AND we have the PIN (if one is required)
+  // If user.settings.journalLocked is true, we MUST have journalPin to fetch.
+  // If isLocked is true, shouldFetch is false.
+  // If isLocked is false but settings.locked is true, we need pin.
+  // We rely on isLocked state which is managed by unlock flow.
+
   const shouldFetch = user && !isLocked;
-  const { data: entries, error } = useSWR(shouldFetch ? ['/journal', journalPin] : null, ([url, pin]) => fetcher(url, pin));
+
+  const { data: entries, error } = useSWR(
+      shouldFetch ? ['/journal', journalPin] : null,
+      ([url, pin]) => fetcher(url, pin),
+      {
+          // Prevent retry on 403 to avoid loop
+          shouldRetryOnError: (err) => {
+              if (err.response && err.response.status === 403) return false;
+              return true;
+          }
+      }
+  );
 
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isWriting, setIsWriting] = useState(false);

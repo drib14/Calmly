@@ -153,8 +153,10 @@ const Messages = () => {
       setSearchQuery(e.target.value);
       if (e.target.value.length > 2) {
           try {
+              // Ensure we filter out current user identities from search results
               const res = await axios.get(`/search?q=${e.target.value}&type=identities`);
-              setSearchResults(res.data.identities || []);
+              const results = res.data.identities || [];
+              setSearchResults(results.filter(id => !identities?.some(myId => myId._id === id._id)));
           } catch (err) {
               console.error(err);
           }
@@ -225,7 +227,7 @@ const Messages = () => {
                {/* Search Results Dropdown */}
                {searchResults.length > 0 && (
                    <div className="absolute top-28 left-4 right-4 bg-surface shadow-xl border border-soft-border rounded-xl z-20 max-h-60 overflow-y-auto">
-                       {searchResults.filter(id => !identities?.some(myId => myId._id === id._id)).map(id => (
+                       {searchResults.map(id => (
                            <div key={id._id} onClick={() => { handleConversationClick(id); setSearchQuery(''); setSearchResults([]); }} className="p-3 hover:bg-background cursor-pointer flex items-center space-x-3">
                                <Avatar identity={id} size="sm" />
                                <span className="text-sm font-bold text-text">{id.name}</span>

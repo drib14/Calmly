@@ -14,6 +14,10 @@ const messageSchema = new mongoose.Schema({
   content: {
     type: String,
   },
+  sharedPost: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Post',
+  },
   media: [{
     url: String,
     type: { type: String, enum: ['image', 'video', 'audio', 'file'] },
