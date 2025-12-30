@@ -69,6 +69,9 @@ const PostCard = ({ post, mutate }) => {
       } catch (err) { console.error(err); }
   };
 
+  const interactionsEnabled = post.identity?.user?.settings?.enableReactions !== false;
+  const commentsEnabled = post.identity?.user?.settings?.enableComments !== false;
+
   const handleRepost = async () => {
       if (!currentIdentity) return toast.error("Select an identity first");
       setIsReposting(true);
@@ -339,24 +342,28 @@ const PostCard = ({ post, mutate }) => {
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t border-slate-50">
           <div className="flex space-x-6">
-              <button
-                onClick={handleLike}
-                className={clsx(
-                    "flex items-center space-x-2 transition group",
-                    isLiked ? "text-red-500" : "text-slate-500 hover:text-red-500"
-                )}
-              >
-                  <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
-                  <span className="text-xs font-bold">{post.likes?.length || 0}</span>
-              </button>
+              {interactionsEnabled && (
+                  <button
+                    onClick={handleLike}
+                    className={clsx(
+                        "flex items-center space-x-2 transition group",
+                        isLiked ? "text-red-500" : "text-slate-500 hover:text-red-500"
+                    )}
+                  >
+                      <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
+                      <span className="text-xs font-bold">{post.likes?.length || 0}</span>
+                  </button>
+              )}
 
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="flex items-center space-x-2 text-slate-500 hover:text-blue-500 transition group"
-              >
-                  <MessageCircle size={20} />
-                  <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
-              </button>
+              {commentsEnabled && (
+                  <button
+                    onClick={() => setExpanded(!expanded)}
+                    className="flex items-center space-x-2 text-slate-500 hover:text-blue-500 transition group"
+                  >
+                      <MessageCircle size={20} />
+                      <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
+                  </button>
+              )}
 
               <button
                 onClick={handleRepost}

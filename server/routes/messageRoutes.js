@@ -34,8 +34,23 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
       const sender = await Identity.findOne({ _id: senderIdentityId, user: req.user._id });
       if (!sender) return res.status(403).json({ message: 'Invalid sender identity' });
 
-      const recipient = await Identity.findById(recipientIdentityId);
+      const recipient = await Identity.findById(recipientIdentityId).populate('user', 'settings');
       if (!recipient) return res.status(404).json({ message: 'Recipient not found' });
+
+      // Check Privacy Settings
+      const settings = recipient.user.settings || {};
+
+      if (settings.enablePrivateMessaging === false) {
+          return res.status(403).json({ message: 'This user has disabled private messaging.' });
+      }
+
+      if (sender.type === 'anonymous' && settings.allowAnonymousDMs === false) {
+          return res.status(403).json({ message: 'This user does not accept anonymous messages.' });
+      }
+
+      if (sender.type === 'pseudonym' && settings.allowPseudonymDMs === false) {
+          return res.status(403).json({ message: 'This user does not accept messages from pseudonyms.' });
+      }
 
       const message = await Message.create({
         sender: senderIdentityId,
@@ -61,7 +76,7 @@ router.get('/conversation', protect, async (req, res) => {
         })
         .sort({ createdAt: 1 })
         .populate('sender', 'name type handle avatar')
-        .populate('recipient', 'name type handle avatar');
+        .populate('recipient', 'name type handle avatar'); // We might want to populate user settings here too for read receipts logic in frontend if needed
 
         res.json(messages);
     } catch (error) {
@@ -79,14 +94,31 @@ router.get('/inbox', protect, async (req, res) => {
     })
     .sort({ createdAt: -1 })
     .populate('sender', 'name type handle avatar')
-    .populate('recipient', 'name type handle avatar');
+    .populate({
+        path: 'recipient',
+        select: 'name type handle avatar',
+        populate: { path: 'user', select: 'settings' } // Populate settings to check read receipt prefs
+    })
+    .populate({
+        path: 'sender', // Double populate for when WE are recipient to know sender's settings?
+        select: 'name type handle avatar',
+        populate: { path: 'user', select: 'settings' }
+    });
+
+    // Note: The structure above is a bit tricky because sender/recipient swaps.
+    // Ideally we populate both sides fully.
 
     const conversations = {};
     messages.forEach(msg => {
         if (!msg.sender || !msg.recipient) return;
         const isSender = identityIds.some(id => id.toString() === msg.sender._id.toString());
         const otherId = isSender ? msg.recipient._id.toString() : msg.sender._id.toString();
-        if (!conversations[otherId]) conversations[otherId] = msg;
+
+        // Attach the *other* person's Identity object (with user settings populated) to the conversation
+        // This allows the frontend to see if they allow read receipts etc.
+        if (!conversations[otherId]) {
+            conversations[otherId] = msg;
+        }
     });
 
     res.json(Object.values(conversations));

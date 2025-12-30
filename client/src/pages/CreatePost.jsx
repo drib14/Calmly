@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useIdentity } from '../context/IdentityContext';
+import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Image, X } from 'lucide-react';
@@ -10,11 +11,19 @@ import FeedbackModal from '../components/FeedbackModal';
 
 const CreatePost = () => {
   const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
+  const { settings } = useSettings();
   const navigate = useNavigate();
 
   const [type, setType] = useState('confession');
   const [mood, setMood] = useState('Neutral');
   const [content, setContent] = useState('');
+
+  useEffect(() => {
+      if (settings) {
+          if (settings.defaultPostType) setType(settings.defaultPostType);
+          if (settings.defaultMood) setMood(settings.defaultMood);
+      }
+  }, [settings]);
   const [title, setTitle] = useState('');
   const [visibility, setVisibility] = useState('public');
   const [showNewIdentity, setShowNewIdentity] = useState(false);

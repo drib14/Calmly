@@ -3,9 +3,12 @@ import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import MobileTopBar from './MobileTopBar';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../hooks/useSettings';
+import clsx from 'clsx';
 
 const Layout = ({ children }) => {
   const { user } = useAuth();
+  const { settings } = useSettings();
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password' || location.pathname.startsWith('/verify-email');
   const isLanding = location.pathname === '/';
@@ -23,8 +26,16 @@ const Layout = ({ children }) => {
   // Let's assume Nav shows if User is logged in, regardless of page, unless it's an Auth page.
   // Navbar.jsx already returns null if !user.
 
+  const themeClass = settings?.theme === 'dark' ? 'dark bg-slate-900 text-white' :
+                     settings?.theme === 'sage' ? 'bg-[#f0f4f0] text-slate-800' :
+                     settings?.theme === 'ocean' ? 'bg-[#f0f8ff] text-slate-800' :
+                     'bg-white text-slate-900';
+
+  const fontClass = settings?.fontFamily || 'font-serif';
+  const contrastClass = settings?.highContrast ? 'contrast-125' : '';
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-white">
+    <div className={clsx("flex flex-col md:flex-row min-h-screen transition-colors duration-300", themeClass, fontClass, contrastClass)}>
       {user && !isAuthPage && <MobileTopBar />}
       <Navbar />
       <main className="flex-1 md:ml-20 transition-all duration-300">

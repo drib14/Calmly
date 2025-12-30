@@ -72,6 +72,17 @@ router.get('/feed', async (req, res) => {
             }
         },
         { $unwind: '$identity' },
+        // Lookup User for Settings (for interaction permissions)
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'identity.user',
+                foreignField: '_id',
+                as: 'identity.user'
+            }
+        },
+        { $unwind: '$identity.user' }, // Flatten user array
+
         // Lookup Comment Count (Robust fix for "0 count")
         {
             $lookup: {
@@ -91,15 +102,14 @@ router.get('/feed', async (req, res) => {
         },
         // Remove the heavy 'comments' array after counting
         { $project: { comments: 0 } },
-        // Lookup Reposts (Needed for UI)
-        // Note: Reposts logic in schema is an array of objects. We need to populate the identity inside it.
-        // Mongoose populate is easier for nested arrays than aggregation.
-        // But since we are aggregating, we have to do it manually or rely on Mongoose hydrate.
-        // EASIER PATH: Use Mongoose find + Virtual populate?
-        // OR: Update all old documents to have commentCount?
-        // Migration on read is acceptable for MVP.
-        // Let's stick to Aggregation for the Count, then populate other fields?
-        // Mixed approach: Get IDs from aggregate, then Populate.
+        // Project only necessary user fields to protect privacy
+        {
+            $project: {
+                'identity.user.password': 0,
+                'identity.user.refreshToken': 0,
+                'identity.user.verificationToken': 0
+            }
+        }
     ]);
 
     // Populate the aggregation result
