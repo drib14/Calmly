@@ -141,7 +141,15 @@ const Profile = () => {
                   <Avatar identity={identity} size="xl" className="w-full h-full" />
               </div>
 
-              <div className="flex justify-between items-start">
+              {/* Close/Back Button */}
+              <button
+                  onClick={() => navigate(-1)} // Navigate back
+                  className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition z-10"
+              >
+                  <X size={20} />
+              </button>
+
+              <div className="flex justify-between items-start mt-2">
                   <div>
                       <h1 className="text-2xl font-serif text-text font-bold">{identity.name}</h1>
                       <p className="text-secondary text-sm">{identity.handle}</p>
@@ -298,6 +306,7 @@ const Profile = () => {
         onClose={() => setViewerOpen(false)}
         imageSrc={viewerImage}
         altText="Profile Photo"
+        showChevrons={false} // Hide chevrons as requested
       />
     </div>
   );

@@ -180,7 +180,7 @@ const Navbar = () => {
                 )}
             >
                 {/* Logo with Favicon */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-surface flex items-center justify-center shadow-md border border-soft-border overflow-hidden">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-surface flex items-center justify-center shadow-md border border-soft-border overflow-hidden">
                     <img src="/favicon.png" alt="Logo" className="w-6 h-6 object-contain" />
                 </div>
 

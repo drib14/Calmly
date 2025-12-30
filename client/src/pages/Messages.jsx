@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
-import { useLocation } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
@@ -23,6 +23,7 @@ const formatBytes = (bytes, decimals = 2) => {
 const Messages = () => {
   const { currentIdentity, identities } = useIdentity();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeConversation, setActiveConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [mediaFiles, setMediaFiles] = useState([]);
@@ -159,6 +160,35 @@ const Messages = () => {
       }
   };
 
+  const renderSharedPost = (post, isMe) => {
+      if (!post) return <div className="text-xs text-red-400 italic">Post deleted or unavailable</div>;
+
+      return (
+          <div
+            onClick={() => navigate(`/feed`)} // Just go to feed or profile for now
+            className={clsx(
+                "rounded-xl overflow-hidden cursor-pointer border mb-1 transition-colors w-full max-w-sm",
+                isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-background border-soft-border hover:bg-background/80"
+            )}
+          >
+              {post.media && post.media.length > 0 && post.media[0].type === 'image' && (
+                  <img src={post.media[0].url} className="w-full h-32 object-cover" />
+              )}
+              <div className="p-3">
+                  <div className="flex items-center space-x-2 mb-1">
+                      {post.identity && <Avatar identity={post.identity} size="xs" />}
+                      <span className={clsx("text-xs font-bold truncate", isMe ? "text-white" : "text-text")}>
+                          {post.identity?.name || 'Unknown'}
+                      </span>
+                  </div>
+                  <p className={clsx("text-xs line-clamp-2", isMe ? "text-white/80" : "text-secondary")}>
+                      {post.content || (post.media?.length ? 'Shared media' : 'Shared content')}
+                  </p>
+              </div>
+          </div>
+      );
+  };
+
   return (
     <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] bg-surface rounded-3xl shadow-sm border border-soft-border overflow-hidden flex relative">
 
@@ -176,7 +206,7 @@ const Messages = () => {
                       placeholder="Search users..."
                       value={searchQuery}
                       onChange={handleSearch}
-                   />
+                  />
                </div>
 
                {/* Search Results Dropdown */}
@@ -226,7 +256,7 @@ const Messages = () => {
                                       <span className="text-[10px] text-secondary">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
                                   </div>
                                   <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-text" : "text-secondary")}>
-                                      {isMe ? 'You: ' : ''}{msg.content || 'Sent a file'}
+                                      {isMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a post' : msg.content || 'Sent a file'}
                                   </p>
                               </div>
                           </div>
@@ -295,6 +325,9 @@ const Messages = () => {
                                               )}
                                           </div>
                                       ))}
+
+                                      {/* Shared Post Bubble */}
+                                      {msg.sharedPost && renderSharedPost(msg.sharedPost, isMe)}
 
                                       {/* Text Bubble */}
                                       {msg.content && (
