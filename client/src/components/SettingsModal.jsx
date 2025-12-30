@@ -148,10 +148,18 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
   };
 
   const renderContent = () => {
-      switch (setting.id) {
-          case 'change_password':
-              return (
-                  <form onSubmit={handlePasswordChange} className="space-y-4 text-left">
+      return (
+        <>
+          {setting.description && (
+              <p className="text-sm text-secondary mb-6 px-4 bg-background p-3 rounded-xl border border-soft-border mx-auto max-w-sm text-center">
+                  {setting.description}
+              </p>
+          )}
+          {(() => {
+            switch (setting.id) {
+                case 'change_password':
+                    return (
+                        <form onSubmit={handlePasswordChange} className="space-y-4 text-left">
                       <div>
                           <label className="text-xs font-bold text-secondary uppercase">Current Password</label>
                           <input type="password" required className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
@@ -173,9 +181,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   </form>
               );
 
-          case 'change_email':
-               return (
-                  <form onSubmit={handleEmailChange} className="space-y-4 text-left">
+                case 'change_email':
+                    return (
+                        <form onSubmit={handleEmailChange} className="space-y-4 text-left">
                       <div>
                           <label className="text-xs font-bold text-secondary uppercase">New Email Address</label>
                           <input type="email" required className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
@@ -187,9 +195,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   </form>
                );
 
-          case 'sessions':
-              return (
-                  <div className="space-y-4 text-left max-h-[300px] overflow-y-auto custom-scrollbar">
+                case 'sessions':
+                    return (
+                        <div className="space-y-4 text-left max-h-[300px] overflow-y-auto custom-scrollbar">
                       {activeSessions.map((session, i) => (
                           <div key={i} className="flex items-center justify-between p-3 bg-surface rounded-xl border border-soft-border">
                               <div className="flex items-center space-x-3">
@@ -216,9 +224,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   </div>
               );
 
-          case 'download_data':
-              return (
-                  <div className="text-center">
+                case 'download_data':
+                    return (
+                        <div className="text-center">
                       <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 text-accent">
                           <Download size={32} />
                       </div>
@@ -231,15 +239,15 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   </div>
               );
 
-          default:
-              if (setting.id === 'journalLocked') {
-                  return (
-                      <div className="text-center py-6">
-                          <p className="text-secondary mb-6 px-4">
-                              {toggleState
-                                ? "Enter your journal PIN to unlock it."
-                                : "Create a 4-digit PIN to lock your journal."}
-                          </p>
+                default:
+                    if (setting.id === 'journalLocked') {
+                        return (
+                            <div className="text-center py-6">
+                                <p className="text-secondary mb-6 px-4">
+                                    {toggleState
+                                        ? "Enter your journal PIN to unlock it."
+                                        : "Create a 4-digit PIN to lock your journal."}
+                                </p>
                           <div className="flex justify-center mb-6">
                               <PinInput length={4} onChange={(pin) => setJournalPassword(pin)} />
                           </div>
@@ -254,15 +262,10 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   );
               }
 
-              if (setting.type === 'toggle') {
-                  return (
-                      <div className="text-center py-6">
-                          {setting.description && (
-                              <p className="text-sm text-secondary mb-4 px-4 bg-background p-3 rounded-xl border border-soft-border mx-auto max-w-sm">
-                                  {setting.description}
-                              </p>
-                          )}
-                          <p className="text-text font-medium mb-6 px-4">
+                    if (setting.type === 'toggle') {
+                        return (
+                            <div className="text-center py-6">
+                                <p className="text-text font-medium mb-6 px-4">
                               {toggleState
                                 ? `Currently enabled.`
                                 : `Currently disabled.`}
@@ -285,9 +288,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   );
               }
 
-              if (setting.type === 'select') {
-                  return (
-                      <div className="space-y-4">
+                    if (setting.type === 'select') {
+                        return (
+                            <div className="space-y-4">
                           <label className="text-xs font-bold text-secondary uppercase">Select Option</label>
                           <select
                             className="w-full border border-soft-border rounded-xl p-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-accent"
@@ -307,9 +310,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   );
               }
 
-              if (setting.type === 'list' || setting.type === 'info') {
-                   return (
-                      <div className="text-center">
+                    if (setting.type === 'list' || setting.type === 'info') {
+                        return (
+                            <div className="text-center">
                           <p className="text-secondary mb-6">Manage {setting.label}</p>
                            <div className="bg-background p-4 rounded-xl mb-4 border border-soft-border">
                                <p className="text-sm text-secondary">
@@ -327,13 +330,16 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                    );
               }
 
-              return (
-                  <div className="text-center">
-                      <p className="text-secondary mb-6">Configure {setting.label}</p>
-                       <button onClick={onClose} className="w-full bg-soft-border text-text py-3 rounded-xl font-bold">Close</button>
-                  </div>
-              );
-      }
+                    return (
+                        <div className="text-center">
+                            <p className="text-secondary mb-6">Configure {setting.label}</p>
+                            <button onClick={onClose} className="w-full bg-soft-border text-text py-3 rounded-xl font-bold">Close</button>
+                        </div>
+                    );
+            }
+          })()}
+        </>
+      );
   };
 
   return (

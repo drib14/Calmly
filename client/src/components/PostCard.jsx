@@ -228,7 +228,7 @@ const PostCard = ({ post, mutate }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={clsx(
-            "bg-surface text-text p-5 md:p-6 rounded-3xl shadow-sm border border-soft-border mb-6 relative overflow-hidden transition-all hover:shadow-md",
+            "bg-surface text-text p-5 md:p-6 rounded-3xl shadow-sm border border-soft-border mb-6 relative transition-all hover:shadow-md",
             getTypeStyles()
         )}
     >

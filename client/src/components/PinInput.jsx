@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import clsx from 'clsx';
 
-const PinInput = ({ length = 4, onComplete, onClear, error }) => {
+const PinInput = ({ length = 4, onComplete, onChange, onClear, error }) => {
   const [pin, setPin] = useState(new Array(length).fill(''));
   const inputRefs = useRef([]);
 
@@ -20,6 +20,11 @@ const PinInput = ({ length = 4, onComplete, onClear, error }) => {
     newPin[index] = value.substring(value.length - 1); // Only take last char
     setPin(newPin);
 
+    // Call generic onChange if provided
+    if (onChange) {
+        onChange(newPin);
+    }
+
     // Trigger complete
     if (value && index < length - 1) {
       inputRefs.current[index + 1].focus();
@@ -28,7 +33,7 @@ const PinInput = ({ length = 4, onComplete, onClear, error }) => {
     // Check if full
     const fullPin = newPin.join('');
     if (fullPin.length === length && newPin.every(d => d !== '')) {
-        onComplete(fullPin);
+        if (onComplete) onComplete(fullPin);
     }
   };
 
@@ -47,7 +52,8 @@ const PinInput = ({ length = 4, onComplete, onClear, error }) => {
           const newPin = pastedData.split('');
           while (newPin.length < length) newPin.push('');
           setPin(newPin);
-          onComplete(newPin.join(''));
+          if (onChange) onChange(newPin);
+          if (onComplete) onComplete(newPin.join(''));
       }
   };
 
