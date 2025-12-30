@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 

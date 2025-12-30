@@ -261,14 +261,14 @@ const PostCard = ({ post, mutate }) => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute right-0 top-8 bg-white border border-slate-100 shadow-lg rounded-xl p-1 z-10 min-w-[140px]"
+                        className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[140px]"
                     >
                         {isOwner && (
-                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg">
+                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
                                 <Trash2 size={14} /> <span>Delete Post</span>
                             </button>
                         )}
-                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 rounded-lg">
+                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
                             <Flag size={14} /> <span>Report Content</span>
                         </button>
                     </motion.div>
@@ -407,12 +407,12 @@ const PostCard = ({ post, mutate }) => {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                  <div className="mt-4 pt-4 border-t border-slate-50 bg-slate-50/50 -mx-6 px-6 pb-6">
+                  <div className="mt-4 pt-4 border-t border-soft-border bg-background/50 -mx-6 px-6 pb-6">
                       <div className="space-y-3 mb-4 max-h-60 overflow-y-auto custom-scrollbar">
                           {!comments ? (
-                              <div className="text-center py-4 text-slate-400 text-xs">Loading comments...</div>
+                              <div className="text-center py-4 text-secondary text-xs">Loading comments...</div>
                           ) : comments.length === 0 ? (
-                              <div className="text-center py-4 text-slate-400 text-xs">No comments yet. Be the first.</div>
+                              <div className="text-center py-4 text-secondary text-xs">No comments yet. Be the first.</div>
                           ) : (
                               comments.map(c => {
                                   const isCommentLiked = c.likes?.some(id => id === currentIdentity?._id);
@@ -420,9 +420,9 @@ const PostCard = ({ post, mutate }) => {
                                     <div key={c._id} className={clsx("flex space-x-3", c.parentComment && "ml-8")}>
                                         <Avatar identity={c.identity} size="sm" />
                                         <div className="flex-1">
-                                            <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-slate-100 inline-block max-w-full">
-                                                <span className="font-bold text-slate-800 text-xs block mb-1">{c.identity.name}</span>
-                                                {c.content && <span className="text-slate-600 block whitespace-pre-wrap">{c.content}</span>}
+                                            <div className="bg-surface p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-soft-border inline-block max-w-full">
+                                                <span className="font-bold text-text text-xs block mb-1">{c.identity.name}</span>
+                                                {c.content && <span className="text-secondary block whitespace-pre-wrap">{c.content}</span>}
                                                 {c.media && c.media.length > 0 && (
                                                     <div className="mt-2 rounded-lg overflow-hidden max-w-[200px]">
                                                         {c.media[0].type === 'video' ? (
