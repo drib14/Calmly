@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { ChevronRight, Check, X, Smartphone, Globe, ExternalLink, Download } from 'lucide-react';
 import axios from 'axios';
+import PinInput from './PinInput';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -60,17 +61,22 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
       }
   };
 
-  const handleJournalLock = async (e) => {
-      e.preventDefault();
+  const handleJournalLock = async () => {
       setLoading(true);
       try {
           // If we are enabling (toggleState is currently false), we are sending locked=true
           // If we are disabling (toggleState is currently true), we are sending locked=false
           const targetState = !toggleState;
 
+          if (!journalPassword || journalPassword.length !== 4) {
+              toast.error("Please enter a 4-digit PIN");
+              setLoading(false);
+              return;
+          }
+
           await axios.put('/settings/journal-lock', {
               locked: targetState,
-              password: journalPassword
+              password: journalPassword.join('')
           });
 
           setToggleState(targetState);
@@ -231,26 +237,19 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                       <div className="text-center py-6">
                           <p className="text-secondary mb-6 px-4">
                               {toggleState
-                                ? "Enter your journal password to unlock it."
-                                : "Create a password to lock your journal."}
+                                ? "Enter your journal PIN to unlock it."
+                                : "Create a 4-digit PIN to lock your journal."}
                           </p>
-                          <form onSubmit={handleJournalLock} className="space-y-4">
-                              <input
-                                  type="password"
-                                  placeholder={toggleState ? "Enter current password" : "Create new password"}
-                                  className="w-full border border-soft-border rounded-xl p-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-accent"
-                                  value={journalPassword}
-                                  onChange={(e) => setJournalPassword(e.target.value)}
-                                  required
-                              />
-                              <button
-                                  type="submit"
-                                  disabled={loading}
-                                  className={`w-full py-3 rounded-xl font-bold transition text-white ${toggleState ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'}`}
-                              >
-                                  {loading ? 'Processing...' : (toggleState ? 'Unlock Journal' : 'Lock Journal')}
-                              </button>
-                          </form>
+                          <div className="flex justify-center mb-6">
+                              <PinInput length={4} onChange={(pin) => setJournalPassword(pin)} />
+                          </div>
+                          <button
+                              onClick={handleJournalLock}
+                              disabled={loading || !journalPassword || journalPassword.length !== 4}
+                              className={`w-full py-3 rounded-xl font-bold transition text-white ${toggleState ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'} disabled:opacity-50`}
+                          >
+                              {loading ? 'Processing...' : (toggleState ? 'Unlock Journal' : 'Lock Journal')}
+                          </button>
                       </div>
                   );
               }

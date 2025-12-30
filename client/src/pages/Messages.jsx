@@ -165,7 +165,17 @@ const Messages = () => {
 
       return (
           <div
-            onClick={() => navigate(`/feed`)} // Just go to feed or profile for now
+                onClick={() => {
+                    // Navigate to feed but use state to potentially scroll to post?
+                    // Or since we don't have a dedicated post page, we'll try to find it in feed.
+                    // Actually, let's assume there is a way to view a single post, or we just go to feed.
+                    // User requested "redirect to that post".
+                    // I will verify if I can create a simple Post View or if Feed supports #hash.
+                    // For now, I will use a hash which is a standard web pattern.
+                    navigate(`/feed#post-${post._id}`);
+                    // Trigger a custom event or check location hash in Feed to scroll?
+                    // Given the constraints, I'll stick to the hash approach.
+                }}
             className={clsx(
                 "rounded-xl overflow-hidden cursor-pointer border mb-1 transition-colors w-full max-w-sm",
                 isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-background border-soft-border hover:bg-background/80"
@@ -235,9 +245,13 @@ const Messages = () => {
           <div className="flex-1 overflow-y-auto custom-scrollbar">
               {inbox?.map(msg => {
                   if (!msg.sender || !msg.recipient) return null;
-                  const isMe = msg.sender._id === currentIdentity?._id;
-                  const other = isMe ? msg.recipient : msg.sender;
-                  const isUnread = !isMe && !msg.read;
+
+                  // Check if the sender is ANY of my identities
+                  const isSenderMe = identities?.some(id => id._id === msg.sender._id);
+                  // The other person is the recipient if I am the sender, otherwise it's the sender
+                  const other = isSenderMe ? msg.recipient : msg.sender;
+
+                  const isUnread = !isSenderMe && !msg.read;
 
                   return (
                       <div
@@ -295,7 +309,14 @@ const Messages = () => {
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                       {messages?.map((msg, idx) => {
+                          // In the chat detail, we want to align messages based on the active current identity
+                          // If I sent it (from ANY identity? or just the current one?)
+                          // Usually in chat view, we want to see My messages on right, Theirs on left.
+                          // Since 'messages' endpoint returns conversation between identity1 and identity2,
+                          // and identity1 is currentIdentity, then 'isMe' is simply if sender matches currentIdentity.
+                          // However, to be robust if the user switches identities while viewing:
                           const isMe = msg.sender._id === currentIdentity?._id;
+
                           return (
                               <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}

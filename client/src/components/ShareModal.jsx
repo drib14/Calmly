@@ -77,28 +77,46 @@ const ShareModal = ({ isOpen, onClose, post }) => {
                 />
             </div>
 
-            <div className="max-h-60 overflow-y-auto custom-scrollbar space-y-2">
+            <div className="max-h-60 overflow-y-auto custom-scrollbar">
                 {displayedUsers?.length === 0 && (
                     <p className="text-center text-secondary text-sm py-4">No users found.</p>
                 )}
-                {displayedUsers?.map(user => (
-                    <div key={user._id} className="flex items-center justify-between p-2 hover:bg-background rounded-xl transition">
-                        <div className="flex items-center space-x-3 overflow-hidden">
-                            <Avatar identity={user} size="sm" />
-                            <div className="min-w-0">
-                                <p className="text-sm font-bold text-text truncate">{user.name}</p>
-                                <p className="text-[10px] text-secondary truncate">{user.handle}</p>
+
+                {/* Horizontal Layout for initial suggestions, Vertical for search */}
+                {searchQuery.length <= 2 && displayedUsers && displayedUsers.length > 0 ? (
+                     <div className="grid grid-cols-3 gap-4 p-2">
+                        {displayedUsers.map(user => (
+                            <div key={user._id} onClick={() => handleSend(user)} className="flex flex-col items-center p-2 hover:bg-background rounded-xl cursor-pointer transition text-center group">
+                                <Avatar identity={user} size="md" />
+                                <p className="text-xs font-bold text-text mt-2 truncate w-full">{user.name}</p>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full mt-1 ${sending === user._id ? 'bg-green-100 text-green-600' : 'bg-surface border border-soft-border text-secondary group-hover:border-text group-hover:text-text'}`}>
+                                    {sending === user._id ? 'Sent' : 'Send'}
+                                </span>
                             </div>
-                        </div>
-                        <button
-                            onClick={() => handleSend(user)}
-                            disabled={sending === user._id}
-                            className="px-3 py-1.5 bg-surface border border-soft-border text-xs font-bold text-text rounded-full hover:bg-background transition disabled:opacity-50"
-                        >
-                            {sending === user._id ? 'Sent' : 'Send'}
-                        </button>
+                        ))}
+                     </div>
+                ) : (
+                    <div className="space-y-2">
+                        {displayedUsers?.map(user => (
+                            <div key={user._id} className="flex items-center justify-between p-2 hover:bg-background rounded-xl transition">
+                                <div className="flex items-center space-x-3 overflow-hidden">
+                                    <Avatar identity={user} size="sm" />
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-text truncate">{user.name}</p>
+                                        <p className="text-[10px] text-secondary truncate">{user.handle}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => handleSend(user)}
+                                    disabled={sending === user._id}
+                                    className="px-3 py-1.5 bg-surface border border-soft-border text-xs font-bold text-text rounded-full hover:bg-background transition disabled:opacity-50"
+                                >
+                                    {sending === user._id ? 'Sent' : 'Send'}
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                ))}
+                )}
             </div>
         </div>
     </Modal>

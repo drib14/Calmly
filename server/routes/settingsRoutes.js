@@ -10,7 +10,8 @@ const {
   deleteAccount,
   getSessions,
   toggleJournalLock,
-  verifyJournalPassword
+  verifyJournalPassword,
+  downloadUserData
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -23,6 +24,8 @@ router.put('/email', updateEmail);
 router.post('/logout-all', logoutAllDevices);
 router.get('/sessions', getSessions);
 router.delete('/account', deleteAccount);
+
+router.get('/download-data', downloadUserData);
 
 // Journal Lock Routes
 router.put('/journal-lock', toggleJournalLock);

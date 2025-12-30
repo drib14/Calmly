@@ -10,31 +10,39 @@ import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import PinInput from '../components/PinInput';
 
-const fetcher = url => axios.get(url).then(res => res.data);
+// Custom fetcher that includes PIN header
+const fetcher = (url, pin) => axios.get(url, { headers: { 'x-journal-pin': pin } }).then(res => res.data);
 
 const Journal = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   // Lock Logic
   // We default to true if we don't know yet (safety first), but if user loaded and not locked, we set false.
+  // We strictly check user.settings.journalLocked on mount.
   const [isLocked, setIsLocked] = useState(true);
-  const [unlockPin, setUnlockPin] = useState('');
   const [unlocking, setUnlocking] = useState(false);
   const [pinError, setPinError] = useState(false);
+  const [journalPin, setJournalPin] = useState(null); // Store verified PIN in memory
 
   useEffect(() => {
-      if (user) {
+      // If still loading, keep it locked (default true)
+      // Once user is loaded:
+      if (!loading && user) {
           if (user.settings?.journalLocked) {
               setIsLocked(true);
           } else {
               setIsLocked(false);
           }
+      } else if (!loading && !user) {
+          // If no user, maybe redirect? But component might unmount.
+          setIsLocked(true);
       }
-  }, [user]);
+  }, [user, loading]);
 
   // Only fetch if unlocked
+  // We pass the PIN to the fetcher key so SWR re-fetches when PIN changes
   const shouldFetch = user && !isLocked;
-  const { data: entries, error } = useSWR(shouldFetch ? '/journal' : null, fetcher);
+  const { data: entries, error } = useSWR(shouldFetch ? ['/journal', journalPin] : null, ([url, pin]) => fetcher(url, pin));
 
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isWriting, setIsWriting] = useState(false);
@@ -58,8 +66,8 @@ const Journal = () => {
       setPinError(false);
       try {
           await axios.post('/settings/journal-verify', { password: pin }); // Controller accepts password or pin
+          setJournalPin(pin); // Store PIN in memory for subsequent API calls
           setIsLocked(false);
-          setUnlockPin('');
       } catch (err) {
           toast.error("Incorrect PIN");
           setPinError(true);

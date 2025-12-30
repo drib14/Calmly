@@ -138,7 +138,7 @@ const Profile = () => {
                 className="absolute -top-16 left-6 w-32 h-32 rounded-full bg-surface flex items-center justify-center shadow-md overflow-hidden cursor-pointer hover:opacity-90 transition"
                 onClick={(e) => { e.stopPropagation(); openViewer(identity.avatar); }}
               >
-                  <Avatar identity={identity} size="xl" className="w-full h-full" />
+                  <Avatar identity={identity} size="xl" className="w-full h-full border-none" />
               </div>
 
               {/* Close/Back Button */}

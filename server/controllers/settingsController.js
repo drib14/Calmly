@@ -114,18 +114,45 @@ const logoutAllDevices = async (req, res) => {
   }
 };
 
-// @desc    Delete Account (Soft)
+// @desc    Delete Account (Hard Delete as per request)
 // @route   DELETE /api/settings/account
 // @access  Private
 const deleteAccount = async (req, res) => {
-  const user = await User.findById(req.user._id);
-  if (user) {
-    user.deletedAt = new Date();
-    user.refreshToken = [];
-    await user.save();
-    res.json({ message: 'Account scheduled for deletion. Goodbye.' });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+  try {
+    const Identity = require('../models/Identity');
+    const Post = require('../models/Post');
+    const Comment = require('../models/Comment');
+    const Message = require('../models/Message');
+    const Journal = require('../models/Journal');
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Find all identities associated with the user
+    const identities = await Identity.find({ user: user._id });
+    const identityIds = identities.map(i => i._id);
+
+    // Delete all related data
+    await Promise.all([
+        // Delete User's Identities
+        Identity.deleteMany({ user: user._id }),
+        // Delete User's Journal Entries
+        Journal.deleteMany({ user: user._id }),
+        // Delete Posts by User's Identities
+        Post.deleteMany({ identity: { $in: identityIds } }),
+        // Delete Comments by User's Identities
+        Comment.deleteMany({ identity: { $in: identityIds } }),
+        // Delete Messages sent by or received by User's Identities
+        Message.deleteMany({ $or: [{ sender: { $in: identityIds } }, { recipient: { $in: identityIds } }] })
+    ]);
+
+    // Finally, delete the user
+    await User.findByIdAndDelete(user._id);
+
+    res.json({ message: 'Account and all associated data permanently deleted.' });
+  } catch (error) {
+    console.error("Delete Account Error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -193,6 +220,47 @@ const verifyJournalPassword = async (req, res) => {
   }
 };
 
+// Download User Data
+const downloadUserData = async (req, res) => {
+  try {
+    const Identity = require('../models/Identity');
+    const Post = require('../models/Post');
+    const Comment = require('../models/Comment');
+    const Message = require('../models/Message');
+    const Journal = require('../models/Journal');
+
+    const user = await User.findById(req.user.id).select('-password');
+    const identities = await Identity.find({ user: req.user._id });
+    const identityIds = identities.map(i => i._id);
+
+    // Fetch Posts
+    const posts = await Post.find({ identity: { $in: identityIds } });
+
+    // Fetch Comments
+    const comments = await Comment.find({ identity: { $in: identityIds } });
+
+    // Fetch Messages (Sent and Received)
+    const messages = await Message.find({
+        $or: [{ sender: { $in: identityIds } }, { recipient: { $in: identityIds } }]
+    }).populate('sender', 'name handle').populate('recipient', 'name handle');
+
+    // Fetch Journal Entries
+    const journalEntries = await Journal.find({ user: req.user._id });
+
+    res.json({
+        user,
+        identities,
+        posts,
+        comments,
+        messages,
+        journalEntries
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -202,5 +270,6 @@ module.exports = {
   getSessions,
   deleteAccount,
   toggleJournalLock,
-  verifyJournalPassword
+  verifyJournalPassword,
+  downloadUserData
 };

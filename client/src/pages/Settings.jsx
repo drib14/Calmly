@@ -186,7 +186,7 @@ const Settings = () => {
       title: "Data & Security",
       description: "Manage your data and account security.",
       items: [
-          { id: 'download_data', label: "Download My Data", type: 'download_data', description: "Request a copy of all your data." },
+          { id: 'download_data', label: "Download My Data", type: 'action', description: "Request a copy of all your data." },
           { id: 'two_factor', label: "Two-Factor Auth", type: 'toggle', description: "Enable two-factor authentication for added security." }
       ]
     },
