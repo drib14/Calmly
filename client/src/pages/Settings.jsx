@@ -1,15 +1,56 @@
 import React, { useState } from 'react';
-import { ChevronRight, Settings as SettingsIcon, Shield, User, Lock, Edit3, MessageCircle, Bell, AlertTriangle, Book, Eye, Database, Info, ChevronLeft, Layout } from 'lucide-react';
-import Modal from '../components/Modal';
+import { ChevronRight, Settings as SettingsIcon, Shield, User, Lock, Edit3, MessageCircle, Bell, AlertTriangle, Book, Eye, Database, Info, ChevronLeft, Layout, LogOut, Trash2 } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import SettingsModal from '../components/SettingsModal';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
+const fetcher = url => axios.get(url).then(res => res.data);
 
 const Settings = () => {
   const [showModal, setShowModal] = useState(false);
-  const [activeItem, setActiveItem] = useState('');
+  const [activeItem, setActiveItem] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Fetch Settings
+  const { data: settings, mutate: mutateSettings } = useSWR('/settings', fetcher);
 
   const handleToolClick = (item) => {
+    // Handle immediate actions (Logout, Delete)
+    if (item.id === 'logout_all') {
+        if (window.confirm("Are you sure you want to log out from all devices?")) {
+            axios.post('/settings/logout-all').then(() => {
+                toast.success("Logged out everywhere");
+                logout();
+                navigate('/login');
+            });
+        }
+        return;
+    }
+    if (item.id === 'delete_account') {
+        if (window.confirm("This will permanently deactivate your account. Continue?")) {
+             axios.delete('/settings/account').then(() => {
+                toast.success("Account scheduled for deletion");
+                logout();
+                navigate('/login');
+            });
+        }
+        return;
+    }
+
     setActiveItem(item);
     setShowModal(true);
+  };
+
+  const updateSetting = (key, value) => {
+      // Optimistic update
+      if (settings) {
+          mutateSettings({ ...settings, [key]: value }, false);
+      }
   };
 
   const sections = [
@@ -18,84 +59,83 @@ const Settings = () => {
       icon: User,
       title: "Account Settings",
       description: "Manage your email, password, and sessions.",
-      items: ["Change email", "Verify email status", "Change password", "Log out from all devices", "Active sessions list", "Soft delete account", "Account recovery window info"]
+      items: [
+          { id: 'change_email', label: "Change Email" },
+          { id: 'change_password', label: "Change Password" },
+          { id: 'logout_all', label: "Log out from all devices" },
+          { id: 'sessions', label: "Active Sessions" },
+          { id: 'delete_account', label: "Soft Delete Account" }
+      ]
     },
     {
       id: 2,
       icon: Shield,
       title: "Identity & Privacy",
       description: "Control your anonymity and visibility.",
-      items: ["Default posting identity", "Manage pseudonyms", "Lock identity per post", "Hide real name globally", "Hide profile from search", "Allow profile viewing", "Identity usage history"]
+      items: [
+          { id: 'hideRealNameGlobally', label: "Hide Real Name Globally", type: 'toggle' },
+          { id: 'hideProfileFromSearch', label: "Hide Profile From Search", type: 'toggle' },
+          { id: 'allowProfileViewing', label: "Allow Profile Viewing", type: 'toggle' },
+          { id: 'defaultIdentityId', label: "Default Posting Identity", type: 'select' } // Needs identity list
+      ]
     },
     {
       id: 3,
       icon: Edit3,
       title: "Posting & Content",
       description: "Customize your creative tools and defaults.",
-      items: ["Default post type", "Default mood", "Auto content warning", "Enable drafts auto-save", "Edit time window length", "Scheduled posting toggle", "Auto-delete timer", "Comment permission defaults"]
+      items: [
+          { id: 'defaultPostType', label: "Default Post Type", type: 'select', options: ['confession', 'poetry', 'letter', 'mood'] },
+          { id: 'defaultMood', label: "Default Mood", type: 'select', options: ['Neutral', 'Happy', 'Sad', 'Anxious', 'Hopeful'] },
+          { id: 'autoContentWarning', label: "Auto Content Warning", type: 'toggle' },
+          { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle' }
+      ]
     },
     {
       id: 4,
       icon: Layout,
       title: "Interaction Controls",
       description: "Manage how others interact with your moments.",
-      items: ["Enable reactions", "Enable comments by default", "Allow anonymous comments", "Allow pseudonym comments", "Limit comments per post", "Save posts automatically", "Share link permission"]
+      items: [
+          { id: 'enableReactions', label: "Enable Reactions", type: 'toggle' },
+          { id: 'enableComments', label: "Enable Comments by Default", type: 'toggle' },
+          { id: 'allowAnonymousComments', label: "Allow Anonymous Comments", type: 'toggle' },
+          { id: 'allowPseudonymComments', label: "Allow Pseudonym Comments", type: 'toggle' }
+      ]
     },
     {
       id: 5,
       icon: MessageCircle,
       title: "Messaging",
       description: "Privacy settings for direct communications.",
-      items: ["Enable private messaging", "Allow anonymous DMs", "Allow pseudonym DMs", "Message request approval", "Block new messages rule", "Typing indicator toggle", "Read receipts toggle", "Message auto-delete timer"]
-    },
-    {
-      id: 6,
-      icon: AlertTriangle,
-      title: "Safety & Mental Health",
-      description: "Tools to protect your peace of mind.",
-      items: ["Enable safe-mode browsing", "Hide triggering content", "Crisis prompt sensitivity", "Cool-down posting timer", "Show emergency resources", "Country/region selection", "Content filter strength"]
+      items: [
+          { id: 'enablePrivateMessaging', label: "Enable Private Messaging", type: 'toggle' },
+          { id: 'allowAnonymousDMs', label: "Allow Anonymous DMs", type: 'toggle' },
+          { id: 'allowPseudonymDMs', label: "Allow Pseudonym DMs", type: 'toggle' },
+          { id: 'readReceipts', label: "Read Receipts", type: 'toggle' },
+          { id: 'showTypingIndicator', label: "Typing Indicator", type: 'toggle' }
+      ]
     },
     {
       id: 7,
       icon: Bell,
       title: "Notifications",
       description: "Choose what alerts you receive.",
-      items: ["In-app notifications preferences", "Email notifications preferences", "Notification quiet hours"]
-    },
-    {
-      id: 8,
-      icon: Lock,
-      title: "Moderation & Blocking",
-      description: "Manage blocked users and mute lists.",
-      items: ["Blocked users list", "Muted users list", "Report history", "Appeal status", "Keyword mute list", "Shadow mute visibility"]
-    },
-    {
-      id: 9,
-      icon: Book,
-      title: "Personal Journal",
-      description: "Settings for your private diary.",
-      items: ["Enable personal journal", "Journal lock (password)", "Mood tracking visibility", "Reflection prompt frequency", "Export format preference", "Journal auto-backup"]
+      items: [
+          { id: 'inAppNotifications', label: "In-App Notifications", type: 'toggle' },
+          { id: 'emailNotifications', label: "Email Notifications", type: 'toggle' }
+      ]
     },
     {
       id: 10,
       icon: Eye,
       title: "Appearance",
       description: "Customize fonts, themes, and accessibility.",
-      items: ["Theme", "Font selection", "Font size", "Line spacing", "Reading mode", "Reduced motion", "High contrast mode"]
-    },
-    {
-      id: 11,
-      icon: Database,
-      title: "Data & Security",
-      description: "Manage your data and account security.",
-      items: ["Download user data", "Delete specific data types", "Login history", "Security alerts", "Two-factor authentication"]
-    },
-    {
-      id: 12,
-      icon: Info,
-      title: "About & Support",
-      description: "Learn more about Calmly.",
-      items: ["Platform guidelines", "Safety resources", "Contact support", "Feedback form", "Terms & privacy", "App version info"]
+      items: [
+          { id: 'theme', label: "Theme", type: 'select', options: ['soft-light', 'dark', 'sage', 'ocean'] },
+          { id: 'fontFamily', label: "Font Family", type: 'select', options: ['font-serif', 'font-sans', 'font-mono'] },
+          { id: 'highContrast', label: "High Contrast Mode", type: 'toggle' }
+      ]
     }
   ];
 
@@ -126,8 +166,14 @@ const Settings = () => {
                     onClick={() => handleToolClick(item)}
                     className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
                   >
-                      <span className="font-medium text-slate-700 group-hover:text-slate-900">{item}</span>
-                      <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+                      <span className="font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
+                      {settings && item.type === 'toggle' ? (
+                          <div className={`w-10 h-6 rounded-full transition-colors ${settings[item.id] ? 'bg-green-500' : 'bg-gray-300'} relative`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${settings[item.id] ? 'left-5' : 'left-1'}`} />
+                          </div>
+                      ) : (
+                          <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+                      )}
                   </div>
               ))}
           </div>
@@ -150,25 +196,14 @@ const Settings = () => {
           </div>
       )}
 
-      {/* Feature Placeholder Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-          <div className="text-center py-6">
-              <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <SettingsIcon size={32} />
-              </div>
-              <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">{activeItem}</h3>
-              <p className="text-slate-500 text-sm">This feature is currently under development.</p>
-              <div className="mt-6">
-                  <span className="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wider">Implementing Soon</span>
-              </div>
-              <button
-                  onClick={() => setShowModal(false)}
-                  className="mt-8 w-full py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition"
-              >
-                  Got it
-              </button>
-          </div>
-      </Modal>
+      {/* Reusable Settings Modal */}
+      <SettingsModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        setting={activeItem}
+        onUpdate={updateSetting}
+        currentValue={activeItem && settings ? settings[activeItem.id] : null}
+      />
     </div>
   );
 };

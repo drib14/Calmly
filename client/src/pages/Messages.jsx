@@ -252,7 +252,12 @@ const Messages = () => {
                       <div className="flex items-center space-x-3">
                           <Avatar identity={activeConversation} />
                           <div>
-                              <h3 className="font-bold text-slate-900">{activeConversation.name}</h3>
+                              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                                {activeConversation.name}
+                                {/* Privacy Indicators */}
+                                {activeConversation.settings?.enablePrivateMessaging === false && <span title="Private Messaging Disabled" className="text-red-400"><Lock size={12} /></span>}
+                                {activeConversation.settings?.allowAnonymousDMs === false && <span title="Anonymous DMs Disabled" className="text-amber-400"><Shield size={12} /></span>}
+                              </h3>
                               <p className="text-xs text-slate-500 uppercase tracking-wide">{activeConversation.type}</p>
                           </div>
                       </div>
