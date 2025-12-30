@@ -8,6 +8,7 @@ import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
 
 const fetcher = url => axios.get(url).then(res => res.data);
@@ -68,8 +69,12 @@ const Profile = () => {
       }
   };
 
-  const handleDeletePhoto = async (type) => {
-      if (!window.confirm(`Remove ${type === 'avatar' ? 'profile picture' : 'cover photo'}?`)) return;
+  const initiateDeletePhoto = (type) => {
+      setConfirmModal({ isOpen: true, type });
+  };
+
+  const handleConfirmDelete = async () => {
+      const type = confirmModal.type;
       setDeletingPhoto(true);
       try {
           await axios.delete(`/identities/${identity._id}/photo?type=${type}`);
@@ -81,6 +86,7 @@ const Profile = () => {
           toast.error("Failed to remove photo");
       }
       setDeletingPhoto(false);
+      setConfirmModal({ isOpen: false, type: null });
   };
 
   const handleFileChange = (e, type) => {
@@ -196,7 +202,7 @@ const Profile = () => {
                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'cover')} />
                       </label>
                       {coverPreview && (
-                          <button onClick={() => handleDeletePhoto('coverPhoto')} disabled={deletingPhoto} className="p-2 bg-red-500/80 backdrop-blur rounded-full text-white hover:bg-red-600 disabled:opacity-50">
+                          <button onClick={() => initiateDeletePhoto('coverPhoto')} disabled={deletingPhoto} className="p-2 bg-red-500/80 backdrop-blur rounded-full text-white hover:bg-red-600 disabled:opacity-50">
                               <Trash2 size={18} />
                           </button>
                       )}
@@ -251,6 +257,16 @@ const Profile = () => {
               </div>
           </div>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, type: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Photo?"
+        message={`Are you sure you want to remove your ${confirmModal.type === 'avatar' ? 'profile picture' : 'cover photo'}?`}
+        confirmText="Remove"
+        isDanger={true}
+      />
     </div>
   );
 };

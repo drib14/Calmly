@@ -5,7 +5,9 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import SettingsModal from '../components/SettingsModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import Loader from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
+import { useIdentity } from '../context/IdentityContext';
 import { useNavigate } from 'react-router-dom';
 
 const fetcher = url => axios.get(url).then(res => res.data);
@@ -14,11 +16,13 @@ const Settings = () => {
   const [showModal, setShowModal] = useState(false);
   const [activeItem, setActiveItem] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
   const { logout } = useAuth();
+  const { identities } = useIdentity();
   const navigate = useNavigate();
 
   // Fetch Settings
-  const { data: settings, mutate: mutateSettings } = useSWR('/settings', fetcher);
+  const { data: settings, error, mutate: mutateSettings } = useSWR('/settings', fetcher);
 
   const handleToolClick = (item) => {
     // Handle immediate actions (Logout, Delete)
@@ -29,6 +33,11 @@ const Settings = () => {
     if (item.id === 'delete_account') {
         setConfirmModal({ isOpen: true, type: 'delete' });
         return;
+    }
+
+    // Populate dynamic options
+    if (item.id === 'defaultIdentityId') {
+        item.options = identities?.map(id => ({ value: id._id, label: id.name })) || [];
     }
 
     setActiveItem(item);
@@ -80,7 +89,7 @@ const Settings = () => {
           { id: 'hideRealNameGlobally', label: "Hide Real Name Globally", type: 'toggle' },
           { id: 'hideProfileFromSearch', label: "Hide Profile From Search", type: 'toggle' },
           { id: 'allowProfileViewing', label: "Allow Profile Viewing", type: 'toggle' },
-          { id: 'defaultIdentityId', label: "Default Posting Identity", type: 'select' } // Needs identity list
+          { id: 'defaultIdentityId', label: "Default Posting Identity", type: 'select', options: [] } // Populated dynamically
       ]
     },
     {
@@ -121,6 +130,17 @@ const Settings = () => {
       ]
     },
     {
+      id: 6,
+      icon: AlertTriangle,
+      title: "Safety & Mental Health",
+      description: "Tools to protect your peace of mind.",
+      items: [
+          { id: 'enableSafeMode', label: "Enable Safe Mode", type: 'toggle' },
+          { id: 'showCrisisPrompts', label: "Crisis Resource Prompts", type: 'toggle' },
+          { id: 'coolDownTimer', label: "Cool-Down Posting Timer", type: 'select', options: ['Off', '5m', '15m', '1h'] }
+      ]
+    },
+    {
       id: 7,
       icon: Bell,
       title: "Notifications",
@@ -128,6 +148,26 @@ const Settings = () => {
       items: [
           { id: 'inAppNotifications', label: "In-App Notifications", type: 'toggle' },
           { id: 'emailNotifications', label: "Email Notifications", type: 'toggle' }
+      ]
+    },
+    {
+      id: 8,
+      icon: Lock,
+      title: "Moderation & Blocking",
+      description: "Manage blocked users and mute lists.",
+      items: [
+          { id: 'blocked_list', label: "Blocked Users" }, // Handled by generic/placeholder for now as it needs a specific list UI
+          { id: 'muted_keywords', label: "Muted Keywords" }
+      ]
+    },
+    {
+      id: 9,
+      icon: Book,
+      title: "Personal Journal",
+      description: "Settings for your private diary.",
+      items: [
+          { id: 'enableJournal', label: "Enable Journal Feature", type: 'toggle' },
+          { id: 'journalLocked', label: "Lock Journal with Password", type: 'toggle' }
       ]
     },
     {
@@ -140,23 +180,45 @@ const Settings = () => {
           { id: 'fontFamily', label: "Font Family", type: 'select', options: ['font-serif', 'font-sans', 'font-mono'] },
           { id: 'highContrast', label: "High Contrast Mode", type: 'toggle' }
       ]
+    },
+    {
+      id: 11,
+      icon: Database,
+      title: "Data & Security",
+      description: "Manage your data and account security.",
+      items: [
+          { id: 'download_data', label: "Download My Data" },
+          { id: 'two_factor', label: "Two-Factor Auth", type: 'toggle' }
+      ]
+    },
+    {
+      id: 12,
+      icon: Info,
+      title: "About & Support",
+      description: "Learn more about Calmly.",
+      items: [
+          { id: 'guidelines', label: "Community Guidelines" },
+          { id: 'contact_support', label: "Contact Support" }
+      ]
     }
   ];
+
+  if (!settings && !error) return <Loader />;
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
       {/* Header */}
       <div className="flex items-center space-x-3 mb-8">
           {activeCategory ? (
-              <button onClick={() => setActiveCategory(null)} className="p-3 bg-slate-100 rounded-xl hover:bg-slate-200 transition">
-                  <ChevronLeft size={24} />
+              <button onClick={() => setActiveCategory(null)} className="p-3 bg-surface border border-soft-border rounded-xl hover:bg-background transition">
+                  <ChevronLeft size={24} className="text-text" />
               </button>
           ) : (
-              <div className="p-3 bg-slate-900 text-white rounded-xl">
+              <div className="p-3 bg-accent text-white rounded-xl">
                   <SettingsIcon size={24} />
               </div>
           )}
-          <h1 className="text-3xl font-serif font-bold text-slate-900">
+          <h1 className="text-3xl font-serif font-bold text-text">
               {activeCategory ? activeCategory.title : "Settings"}
           </h1>
       </div>
@@ -168,15 +230,15 @@ const Settings = () => {
                   <div
                     key={i}
                     onClick={() => handleToolClick(item)}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition cursor-pointer flex items-center justify-between group"
+                    className="bg-surface p-6 rounded-2xl shadow-sm border border-soft-border hover:shadow-md transition cursor-pointer flex items-center justify-between group"
                   >
-                      <span className="font-medium text-slate-700 group-hover:text-slate-900">{item.label}</span>
+                      <span className="font-medium text-text group-hover:text-primary">{item.label}</span>
                       {settings && item.type === 'toggle' ? (
-                          <div className={`w-10 h-6 rounded-full transition-colors ${settings[item.id] ? 'bg-green-500' : 'bg-gray-300'} relative`}>
+                          <div className={`w-10 h-6 rounded-full transition-colors ${settings[item.id] ? 'bg-success' : 'bg-secondary'} relative`}>
                               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${settings[item.id] ? 'left-5' : 'left-1'}`} />
                           </div>
                       ) : (
-                          <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-500" />
+                          <ChevronRight size={18} className="text-secondary group-hover:text-primary" />
                       )}
                   </div>
               ))}
@@ -188,13 +250,13 @@ const Settings = () => {
                   <div
                     key={section.id}
                     onClick={() => setActiveCategory(section)}
-                    className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-1"
+                    className="bg-surface p-6 rounded-3xl shadow-sm border border-soft-border hover:shadow-lg transition-all cursor-pointer group hover:-translate-y-1"
                   >
-                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-600 mb-4 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                      <div className="w-12 h-12 bg-background rounded-2xl flex items-center justify-center text-secondary mb-4 group-hover:bg-accent group-hover:text-white transition-colors">
                           <section.icon size={24} />
                       </div>
-                      <h3 className="text-lg font-bold text-slate-900 mb-2">{section.title}</h3>
-                      <p className="text-sm text-slate-500 leading-relaxed">{section.description}</p>
+                      <h3 className="text-lg font-bold text-text mb-2">{section.title}</h3>
+                      <p className="text-sm text-secondary leading-relaxed">{section.description}</p>
                   </div>
               ))}
           </div>

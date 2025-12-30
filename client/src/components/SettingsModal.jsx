@@ -202,9 +202,14 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                             value={formData[setting.id] || currentValue || ''}
                             onChange={handleSelectChange}
                           >
-                              {setting.options?.map(opt => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                              ))}
+                              {setting.options?.map(opt => {
+                                  // Handle simple strings or object { value, label }
+                                  const val = typeof opt === 'object' ? opt.value : opt;
+                                  const label = typeof opt === 'object' ? opt.label : opt;
+                                  return (
+                                      <option key={val} value={val}>{label}</option>
+                                  );
+                              })}
                           </select>
                       </div>
                   );
