@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import PinInput from '../components/PinInput';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -17,8 +18,9 @@ const Journal = () => {
   // Lock Logic
   // We default to true if we don't know yet (safety first), but if user loaded and not locked, we set false.
   const [isLocked, setIsLocked] = useState(true);
-  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlockPin, setUnlockPin] = useState('');
   const [unlocking, setUnlocking] = useState(false);
+  const [pinError, setPinError] = useState(false);
 
   useEffect(() => {
       if (user) {
@@ -51,15 +53,16 @@ const Journal = () => {
   const [entryToDelete, setEntryToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const handleUnlock = async (e) => {
-      e.preventDefault();
+  const handleUnlock = async (pin) => {
       setUnlocking(true);
+      setPinError(false);
       try {
-          await axios.post('/settings/journal-verify', { password: unlockPassword });
+          await axios.post('/settings/journal-verify', { password: pin }); // Controller accepts password or pin
           setIsLocked(false);
-          setUnlockPassword('');
+          setUnlockPin('');
       } catch (err) {
-          toast.error("Incorrect password");
+          toast.error("Incorrect PIN");
+          setPinError(true);
       } finally {
           setUnlocking(false);
       }
@@ -145,25 +148,17 @@ const Journal = () => {
                   <Lock size={32} />
               </div>
               <h2 className="text-2xl font-serif font-bold text-text mb-2">Journal Locked</h2>
-              <p className="text-secondary mb-8">Please enter your password to access your entries.</p>
+              <p className="text-secondary mb-8">Please enter your 4-digit PIN.</p>
 
-              <form onSubmit={handleUnlock} className="w-full max-w-xs space-y-4">
-                  <input
-                      type="password"
-                      placeholder="Enter Password"
-                      className="w-full bg-background border border-soft-border rounded-xl p-3 text-text focus:outline-none focus:ring-1 focus:ring-accent"
-                      value={unlockPassword}
-                      onChange={(e) => setUnlockPassword(e.target.value)}
-                      autoFocus
+              <div className="w-full max-w-xs flex justify-center">
+                  <PinInput
+                    length={4}
+                    onComplete={handleUnlock}
+                    error={pinError}
+                    onClear={pinError}
                   />
-                  <button
-                      type="submit"
-                      disabled={unlocking}
-                      className="w-full bg-accent text-white py-3 rounded-xl font-bold hover:opacity-90 disabled:opacity-50"
-                  >
-                      {unlocking ? 'Unlocking...' : 'Unlock'}
-                  </button>
-              </form>
+              </div>
+              {unlocking && <p className="text-xs text-secondary mt-4 animate-pulse">Unlocking...</p>}
           </div>
       );
   }
@@ -300,7 +295,7 @@ const Journal = () => {
                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
                     <Trash2 size={24} />
                  </div>
-                 <h3 className="text-xl font-bold mb-2">Delete Entry?</h3>
+                 <h3 className="text-xl font-bold mb-2 text-text">Delete Entry?</h3>
                  <p className="text-slate-500 mb-6 text-sm">This journal entry will be lost forever.</p>
                  <div className="flex space-x-3">
                      <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="flex-1 py-2 bg-slate-100 rounded-lg disabled:opacity-50">Cancel</button>
