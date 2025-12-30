@@ -21,7 +21,7 @@ const PinInput = ({ length = 4, onComplete, onChange, onClear, error }) => {
     setPin(newPin);
 
     // Call generic onChange if provided
-    if (onChange) {
+    if (typeof onChange === 'function') {
         onChange(newPin);
     }
 
@@ -33,7 +33,7 @@ const PinInput = ({ length = 4, onComplete, onChange, onClear, error }) => {
     // Check if full
     const fullPin = newPin.join('');
     if (fullPin.length === length && newPin.every(d => d !== '')) {
-        if (onComplete) onComplete(fullPin);
+        if (typeof onComplete === 'function') onComplete(fullPin);
     }
   };
 
@@ -52,8 +52,8 @@ const PinInput = ({ length = 4, onComplete, onChange, onClear, error }) => {
           const newPin = pastedData.split('');
           while (newPin.length < length) newPin.push('');
           setPin(newPin);
-          if (onChange) onChange(newPin);
-          if (onComplete) onComplete(newPin.join(''));
+          if (typeof onChange === 'function') onChange(newPin);
+          if (typeof onComplete === 'function') onComplete(newPin.join(''));
       }
   };
 

@@ -283,7 +283,7 @@ const Messages = () => {
                                       <span className="text-[10px] text-secondary">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
                                   </div>
                                   <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-text" : "text-secondary")}>
-                                      {isMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a post' : msg.content || 'Sent a file'}
+                                      {isSenderMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a post' : msg.content || 'Sent a file'}
                                   </p>
                               </div>
                           </div>
