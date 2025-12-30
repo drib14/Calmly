@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User } from 'lucide-react';
 import clsx from 'clsx';
@@ -16,6 +16,41 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const profileMenuRef = useRef(null);
+  const mobileProfileRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        // Only close if we are in desktop view logic (assumed by ref presence)
+        // But since we share state, we should be careful.
+        // If the click is inside mobileProfileRef, don't close.
+        if (mobileProfileRef.current && mobileProfileRef.current.contains(event.target)) return;
+
+        setShowProfileMenu(false);
+      }
+      if (mobileProfileRef.current && !mobileProfileRef.current.contains(event.target)) {
+         if (profileMenuRef.current && profileMenuRef.current.contains(event.target)) return;
+         setShowProfileMenu(false);
+      }
+    };
+
+    // Simplification: Just check if target is in EITHER ref.
+    const handleGlobalClick = (e) => {
+        const inDesktop = profileMenuRef.current?.contains(e.target);
+        const inMobile = mobileProfileRef.current?.contains(e.target);
+
+        if (!inDesktop && !inMobile) {
+            setShowProfileMenu(false);
+        }
+    };
+
+    if (showProfileMenu) {
+        document.addEventListener('mousedown', handleGlobalClick);
+    }
+    return () => document.removeEventListener('mousedown', handleGlobalClick);
+  }, [showProfileMenu]);
 
   // Poll for Unread Messages
   const { data: unreadData } = useSWR(
@@ -72,23 +107,24 @@ const Navbar = () => {
             )
         })}
 
-        {/* Mobile Profile Trigger */}
-        <div
-            onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className={clsx("p-3 rounded-xl relative", showProfileMenu ? "text-slate-900" : "text-slate-400")}
-        >
-            <Avatar identity={currentIdentity} size="sm" />
-        </div>
+        {/* Mobile Profile Section */}
+        <div className="relative" ref={mobileProfileRef}>
+            <div
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className={clsx("p-3 rounded-xl relative", showProfileMenu ? "text-slate-900" : "text-slate-400")}
+            >
+                <Avatar identity={currentIdentity} size="sm" />
+            </div>
 
-        {/* Mobile Profile Menu */}
-        <AnimatePresence>
-            {showProfileMenu && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    className="absolute bottom-full right-4 mb-4 w-48 bg-surface border border-soft-border shadow-2xl rounded-2xl p-2 z-50 origin-bottom-right"
-                >
+            {/* Mobile Profile Menu */}
+            <AnimatePresence>
+                {showProfileMenu && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="absolute bottom-full right-0 mb-4 w-48 bg-surface border border-soft-border shadow-2xl rounded-2xl p-2 z-50 origin-bottom-right"
+                    >
                     <div className="p-3 border-b border-soft-border mb-1">
                         <p className="text-sm font-bold text-text truncate">{currentIdentity?.name}</p>
                         <p className="text-xs text-secondary truncate">{currentIdentity?.handle}</p>
@@ -111,16 +147,17 @@ const Navbar = () => {
                         <span>Settings</span>
                     </button>
                     <div className="h-px bg-soft-border my-1"></div>
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center space-x-3 w-full p-3 hover:bg-red-50 rounded-xl text-sm text-red-500 transition"
-                    >
-                        <LogOut size={18} />
-                        <span>Logout</span>
-                    </button>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center space-x-3 w-full p-3 hover:bg-red-50 rounded-xl text-sm text-red-500 transition"
+                        >
+                            <LogOut size={18} />
+                            <span>Logout</span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     </nav>
 
     {/* Sidebar (Desktop) */}
@@ -215,7 +252,7 @@ const Navbar = () => {
       </div>
 
       {/* User / Profile (Desktop) */}
-      <div className={clsx("flex flex-col w-full mb-4 space-y-2 relative", isExpanded ? "px-2" : "items-center")}>
+      <div className={clsx("flex flex-col w-full mb-4 space-y-2 relative", isExpanded ? "px-2" : "items-center")} ref={profileMenuRef}>
         <div
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className={clsx(

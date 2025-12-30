@@ -258,10 +258,15 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
               if (setting.type === 'toggle') {
                   return (
                       <div className="text-center py-6">
-                          <p className="text-secondary mb-6 px-4">
+                          {setting.description && (
+                              <p className="text-sm text-secondary mb-4 px-4 bg-background p-3 rounded-xl border border-soft-border mx-auto max-w-sm">
+                                  {setting.description}
+                              </p>
+                          )}
+                          <p className="text-text font-medium mb-6 px-4">
                               {toggleState
-                                ? `Currently enabled. Disable ${setting.label}?`
-                                : `Currently disabled. Enable ${setting.label}?`}
+                                ? `Currently enabled.`
+                                : `Currently disabled.`}
                           </p>
                           <div className="flex justify-center space-x-4">
                               <button

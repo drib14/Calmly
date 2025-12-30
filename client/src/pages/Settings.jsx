@@ -86,10 +86,10 @@ const Settings = () => {
       title: "Identity & Privacy",
       description: "Control your anonymity and visibility.",
       items: [
-          { id: 'hideRealNameGlobally', label: "Hide Real Name Globally", type: 'toggle' },
-          { id: 'hideProfileFromSearch', label: "Hide Profile From Search", type: 'toggle' },
-          { id: 'allowProfileViewing', label: "Allow Profile Viewing", type: 'toggle' },
-          { id: 'defaultIdentityId', label: "Default Posting Identity", type: 'select', options: [] } // Populated dynamically
+          { id: 'hideRealNameGlobally', label: "Hide Real Name Globally", type: 'toggle', description: "Your real name will be hidden on your profile and replaced with your handle." },
+          { id: 'hideProfileFromSearch', label: "Hide Profile From Search", type: 'toggle', description: "Your profile will not appear in search results." },
+          { id: 'allowProfileViewing', label: "Allow Profile Viewing", type: 'toggle', description: "If disabled, no one can view your profile page." },
+          { id: 'defaultIdentityId', label: "Default Posting Identity", type: 'select', options: [], description: "The identity selected by default when you create a new post." }
       ]
     },
     {
@@ -98,10 +98,10 @@ const Settings = () => {
       title: "Posting & Content",
       description: "Customize your creative tools and defaults.",
       items: [
-          { id: 'defaultPostType', label: "Default Post Type", type: 'select', options: ['confession', 'poetry', 'letter', 'mood'] },
-          { id: 'defaultMood', label: "Default Mood", type: 'select', options: ['Neutral', 'Happy', 'Sad', 'Anxious', 'Hopeful'] },
-          { id: 'autoContentWarning', label: "Auto Content Warning", type: 'toggle' },
-          { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle' }
+          { id: 'defaultPostType', label: "Default Post Type", type: 'select', options: ['confession', 'poetry', 'letter', 'mood'], description: "The post type selected by default in the editor." },
+          { id: 'defaultMood', label: "Default Mood", type: 'select', options: ['Neutral', 'Happy', 'Sad', 'Anxious', 'Hopeful'], description: "The mood selected by default." },
+          { id: 'autoContentWarning', label: "Auto Content Warning", type: 'toggle', description: "Automatically flag your posts if they contain sensitive keywords." },
+          { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle', description: "Save your work in progress to your local device automatically." }
       ]
     },
     {
@@ -110,10 +110,10 @@ const Settings = () => {
       title: "Interaction Controls",
       description: "Manage how others interact with your moments.",
       items: [
-          { id: 'enableReactions', label: "Enable Reactions", type: 'toggle' },
-          { id: 'enableComments', label: "Enable Comments by Default", type: 'toggle' },
-          { id: 'allowAnonymousComments', label: "Allow Anonymous Comments", type: 'toggle' },
-          { id: 'allowPseudonymComments', label: "Allow Pseudonym Comments", type: 'toggle' }
+          { id: 'enableReactions', label: "Enable Reactions", type: 'toggle', description: "Allow others to react (like) your posts." },
+          { id: 'enableComments', label: "Enable Comments by Default", type: 'toggle', description: "Allow comments on your new posts by default." },
+          { id: 'allowAnonymousComments', label: "Allow Anonymous Comments", type: 'toggle', description: "Allow users to comment on your posts anonymously." },
+          { id: 'allowPseudonymComments', label: "Allow Pseudonym Comments", type: 'toggle', description: "Allow users with pseudonyms to comment on your posts." }
       ]
     },
     {
@@ -122,11 +122,11 @@ const Settings = () => {
       title: "Messaging",
       description: "Privacy settings for direct communications.",
       items: [
-          { id: 'enablePrivateMessaging', label: "Enable Private Messaging", type: 'toggle' },
-          { id: 'allowAnonymousDMs', label: "Allow Anonymous DMs", type: 'toggle' },
-          { id: 'allowPseudonymDMs', label: "Allow Pseudonym DMs", type: 'toggle' },
-          { id: 'readReceipts', label: "Read Receipts", type: 'toggle' },
-          { id: 'showTypingIndicator', label: "Typing Indicator", type: 'toggle' }
+          { id: 'enablePrivateMessaging', label: "Enable Private Messaging", type: 'toggle', description: "Allow others to start private conversations with you." },
+          { id: 'allowAnonymousDMs', label: "Allow Anonymous DMs", type: 'toggle', description: "Receive messages from anonymous identities." },
+          { id: 'allowPseudonymDMs', label: "Allow Pseudonym DMs", type: 'toggle', description: "Receive messages from pseudonym identities." },
+          { id: 'readReceipts', label: "Read Receipts", type: 'toggle', description: "Let others see when you've read their messages." },
+          { id: 'showTypingIndicator', label: "Typing Indicator", type: 'toggle', description: "Show when you are typing a message." }
       ]
     },
     {
@@ -135,12 +135,8 @@ const Settings = () => {
       title: "Safety & Mental Health",
       description: "Tools to protect your peace of mind.",
       items: [
-          { id: 'enableSafeMode', label: "Enable Safe Mode", type: 'toggle' },
-          // Note: showCrisisPrompts is not in DB schema yet, map to enableSafeMode or remove?
-          // Schema has enableSafeMode and triggerKeywords. Let's assume frontend logic handles prompts based on safe mode.
-          // Or add it to schema? User asked to implement all. I'll map it to enableSafeMode for now or just generic boolean that gets saved if schema allows strict: false (mongoose defaults strict).
-          // Safest: Use existing schema keys.
-          { id: 'coolDownTimer', label: "Cool-Down Posting Timer", type: 'select', options: ['Off', '5m', '15m', '1h'] }
+          { id: 'enableSafeMode', label: "Enable Safe Mode", type: 'toggle', description: "Blur content that may be emotionally triggering." },
+          { id: 'coolDownTimer', label: "Cool-Down Posting Timer", type: 'select', options: ['Off', '5m', '15m', '1h'], description: "Enforce a waiting period between your posts." }
       ]
     },
     {

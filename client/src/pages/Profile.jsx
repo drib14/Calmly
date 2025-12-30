@@ -29,6 +29,7 @@ const Profile = () => {
   const [coverPreview, setCoverPreview] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletingPhoto, setDeletingPhoto] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
