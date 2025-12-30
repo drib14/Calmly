@@ -50,14 +50,14 @@ const Navbar = () => {
   return (
     <>
     {/* Bottom Bar (Mobile) */}
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 flex justify-around items-center px-2 py-2 pb-safe">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe">
         {navItems.filter(i => !i.mobileHidden).map((item) => {
             const isActive = location.pathname === item.path;
             return (
                 <NavLink
                     key={item.path}
                     to={item.path}
-                    className={clsx("p-3 rounded-xl relative", isActive ? "text-slate-900" : "text-slate-400")}
+                    className={clsx("p-3 rounded-xl relative", isActive ? "text-text" : "text-secondary")}
                 >
                     <div className="relative">
                         <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
@@ -87,30 +87,30 @@ const Navbar = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="absolute bottom-full right-4 mb-4 w-48 bg-white border border-slate-100 shadow-2xl rounded-2xl p-2 z-50 origin-bottom-right"
+                    className="absolute bottom-full right-4 mb-4 w-48 bg-surface border border-soft-border shadow-2xl rounded-2xl p-2 z-50 origin-bottom-right"
                 >
-                    <div className="p-3 border-b border-slate-50 mb-1">
-                        <p className="text-sm font-bold text-slate-900 truncate">{currentIdentity?.name}</p>
-                        <p className="text-xs text-slate-400 truncate">{currentIdentity?.handle}</p>
+                    <div className="p-3 border-b border-soft-border mb-1">
+                        <p className="text-sm font-bold text-text truncate">{currentIdentity?.name}</p>
+                        <p className="text-xs text-secondary truncate">{currentIdentity?.handle}</p>
                     </div>
                     <button
                         onClick={() => {
                             navigate(currentIdentity ? `/profile/${currentIdentity.handle.replace('@','')}` : '/feed');
                             setShowProfileMenu(false);
                         }}
-                        className="flex items-center space-x-3 w-full p-3 hover:bg-slate-50 rounded-xl text-sm text-slate-700 transition"
+                        className="flex items-center space-x-3 w-full p-3 hover:bg-background rounded-xl text-sm text-text transition"
                     >
                         <User size={18} />
                         <span>Profile</span>
                     </button>
                     <button
                         onClick={() => { navigate('/settings'); setShowProfileMenu(false); }}
-                        className="flex items-center space-x-3 w-full p-3 hover:bg-slate-50 rounded-xl text-sm text-slate-700 transition"
+                        className="flex items-center space-x-3 w-full p-3 hover:bg-background rounded-xl text-sm text-text transition"
                     >
                         <Settings size={18} />
                         <span>Settings</span>
                     </button>
-                    <div className="h-px bg-slate-50 my-1"></div>
+                    <div className="h-px bg-soft-border my-1"></div>
                     <button
                         onClick={handleLogout}
                         className="flex items-center space-x-3 w-full p-3 hover:bg-red-50 rounded-xl text-sm text-red-500 transition"
@@ -126,7 +126,7 @@ const Navbar = () => {
     {/* Sidebar (Desktop) */}
     <nav
       className={clsx(
-        "hidden md:flex fixed top-0 left-0 bottom-0 border-r border-slate-200 bg-white z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300",
+        "hidden md:flex fixed top-0 left-0 bottom-0 border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300",
         isExpanded ? "w-64" : "w-20"
       )}
     >
@@ -143,13 +143,13 @@ const Navbar = () => {
                 )}
             >
                 {/* Always show the 'C' Logo */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-serif font-bold text-lg shadow-md">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center font-serif font-bold text-lg shadow-md">
                     C
                 </div>
 
                 {/* Text Logo - Only visible when expanded */}
                 {isExpanded && (
-                    <span className="font-serif font-bold text-2xl text-slate-800 tracking-tight whitespace-nowrap">
+                    <span className="font-serif font-bold text-2xl text-text tracking-tight whitespace-nowrap">
                         Calmly
                     </span>
                 )}
@@ -158,7 +158,7 @@ const Navbar = () => {
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className={clsx(
-                    "p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition",
+                    "p-1.5 rounded-lg hover:bg-background text-secondary hover:text-text transition",
                     !isExpanded && "mt-2"
                 )}
             >
@@ -179,7 +179,7 @@ const Navbar = () => {
                 clsx(
                   "relative group flex items-center p-3 rounded-xl transition-all duration-300",
                   isExpanded ? "w-full space-x-3 px-4" : "justify-center",
-                  isActive ? "text-slate-900 bg-slate-100 shadow-sm" : "text-gray-400 hover:text-slate-700 hover:bg-slate-50"
+                  isActive ? "text-text bg-background shadow-sm" : "text-secondary hover:text-text hover:bg-background"
                 )
               }
             >
@@ -219,9 +219,9 @@ const Navbar = () => {
         <div
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className={clsx(
-                "flex items-center cursor-pointer hover:bg-slate-50 transition p-1.5 rounded-xl border border-transparent hover:border-slate-100",
+                "flex items-center cursor-pointer hover:bg-background transition p-1.5 rounded-xl border border-transparent hover:border-soft-border",
                 isExpanded ? "w-full space-x-3" : "justify-center",
-                showProfileMenu && "bg-slate-50 border-slate-100"
+                showProfileMenu && "bg-background border-soft-border"
             )}
         >
             <div className="flex-shrink-0">
@@ -229,8 +229,8 @@ const Navbar = () => {
             </div>
             {isExpanded && (
                 <div className="overflow-hidden flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-700 truncate">{currentIdentity?.name || 'Account'}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{currentIdentity?.handle || 'Loading...'}</p>
+                    <p className="text-xs font-bold text-text truncate">{currentIdentity?.name || 'Account'}</p>
+                    <p className="text-[10px] text-secondary truncate">{currentIdentity?.handle || 'Loading...'}</p>
                 </div>
             )}
         </div>
@@ -243,7 +243,7 @@ const Navbar = () => {
                     animate={{ opacity: 1, y: 0, x: 0 }}
                     exit={{ opacity: 0, y: 10, x: isExpanded ? 0 : 20 }}
                     className={clsx(
-                        "absolute bg-white border border-slate-100 shadow-xl rounded-xl p-2 z-[60] min-w-[200px]",
+                        "absolute bg-surface border border-soft-border shadow-xl rounded-xl p-2 z-[60] min-w-[200px]",
                         isExpanded ? "bottom-full left-0 w-full mb-2" : "left-full bottom-0 ml-4 mb-0"
                     )}
                 >
@@ -252,19 +252,19 @@ const Navbar = () => {
                             navigate(currentIdentity ? `/profile/${currentIdentity.handle.replace('@','')}` : '/feed');
                             setShowProfileMenu(false);
                         }}
-                        className="flex items-center space-x-3 w-full p-2 hover:bg-slate-50 rounded-lg text-sm text-slate-700 transition"
+                        className="flex items-center space-x-3 w-full p-2 hover:bg-background rounded-lg text-sm text-text transition"
                     >
                         <User size={18} />
                         <span>Profile</span>
                     </button>
                     <button
                         onClick={() => { navigate('/settings'); setShowProfileMenu(false); }}
-                        className="flex items-center space-x-3 w-full p-2 hover:bg-slate-50 rounded-lg text-sm text-slate-700 transition"
+                        className="flex items-center space-x-3 w-full p-2 hover:bg-background rounded-lg text-sm text-text transition"
                     >
                         <Settings size={18} />
                         <span>Settings</span>
                     </button>
-                    <div className="h-px bg-slate-100 my-1"></div>
+                    <div className="h-px bg-soft-border my-1"></div>
                     <button
                         onClick={handleLogout}
                         className="flex items-center space-x-3 w-full p-2 hover:bg-red-50 rounded-lg text-sm text-red-500 transition"

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { ChevronRight, Check, X } from 'lucide-react';
+import { ChevronRight, Check, X, Smartphone, Globe } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 
 const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => {
   const [loading, setLoading] = useState(false);
@@ -23,8 +24,20 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
           if (setting.type === 'select') {
               setFormData({ [setting.id]: currentValue });
           }
+          if (setting.id === 'sessions') {
+              fetchSessions();
+          }
       }
   }, [isOpen, setting, currentValue]);
+
+  const fetchSessions = async () => {
+      try {
+          const res = await axios.get('/settings/sessions');
+          setActiveSessions(res.data);
+      } catch (err) {
+          console.error(err);
+      }
+  };
 
   if (!setting) return null;
 
@@ -123,6 +136,35 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                       </button>
                   </form>
                );
+
+          case 'sessions':
+              return (
+                  <div className="space-y-4 text-left max-h-[300px] overflow-y-auto custom-scrollbar">
+                      {activeSessions.map((session, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                              <div className="flex items-center space-x-3">
+                                  <div className="p-2 bg-white rounded-lg shadow-sm text-slate-500">
+                                      <Smartphone size={20} />
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-bold text-slate-700">{session.deviceId || 'Unknown Device'}</p>
+                                      <p className="text-xs text-slate-400 truncate max-w-[180px]">{session.userAgent}</p>
+                                  </div>
+                              </div>
+                              <div className="text-right">
+                                  {session.current ? (
+                                      <span className="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full">Current</span>
+                                  ) : (
+                                      <span className="text-xs text-slate-400">{formatDistanceToNow(new Date(session.lastActive), { addSuffix: true })}</span>
+                                  )}
+                              </div>
+                          </div>
+                      ))}
+                      <div className="text-center mt-4">
+                          <p className="text-xs text-slate-400">Log out of all other sessions from the main menu.</p>
+                      </div>
+                  </div>
+              );
 
           default:
               if (setting.type === 'toggle') {

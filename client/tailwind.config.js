@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class', // Enable class-based dark mode
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,15 +8,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#f8fafc', // Slate 50
-        surface: '#ffffff',
-        primary: '#64748b', // Slate 500
-        secondary: '#94a3b8', // Slate 400
-        accent: '#0f172a', // Slate 900
+        background: 'var(--color-background)',
+        surface: 'var(--color-surface)',
+        text: 'var(--color-text)',
+        primary: '#64748b',
+        secondary: '#94a3b8',
+        accent: '#0f172a',
         danger: '#ef4444',
         success: '#22c55e',
-        'soft-border': '#e2e8f0',
-        // Legacy colors for compatibility
+        'soft-border': 'var(--color-border)',
+
+        // Legacy colors
         'soft-light': '#fdfaf6',
         'soft-dark': '#2c2c2c',
         'sage': '#a3b18a',

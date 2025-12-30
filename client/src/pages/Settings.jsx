@@ -4,6 +4,7 @@ import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import SettingsModal from '../components/SettingsModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,28 +23,31 @@ const Settings = () => {
   const handleToolClick = (item) => {
     // Handle immediate actions (Logout, Delete)
     if (item.id === 'logout_all') {
-        if (window.confirm("Are you sure you want to log out from all devices?")) {
-            axios.post('/settings/logout-all').then(() => {
-                toast.success("Logged out everywhere");
-                logout();
-                navigate('/login');
-            });
-        }
+        setConfirmModal({ isOpen: true, type: 'logout' });
         return;
     }
     if (item.id === 'delete_account') {
-        if (window.confirm("This will permanently deactivate your account. Continue?")) {
-             axios.delete('/settings/account').then(() => {
-                toast.success("Account scheduled for deletion");
-                logout();
-                navigate('/login');
-            });
-        }
+        setConfirmModal({ isOpen: true, type: 'delete' });
         return;
     }
 
     setActiveItem(item);
     setShowModal(true);
+  };
+
+  const handleConfirmAction = async () => {
+      if (confirmModal.type === 'logout') {
+          await axios.post('/settings/logout-all');
+          toast.success("Logged out everywhere");
+          logout();
+          navigate('/login');
+      } else if (confirmModal.type === 'delete') {
+          await axios.delete('/settings/account');
+          toast.success("Account scheduled for deletion");
+          logout();
+          navigate('/login');
+      }
+      setConfirmModal({ isOpen: false, type: null });
   };
 
   const updateSetting = (key, value) => {
@@ -203,6 +207,19 @@ const Settings = () => {
         setting={activeItem}
         onUpdate={updateSetting}
         currentValue={activeItem && settings ? settings[activeItem.id] : null}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, type: null })}
+        onConfirm={handleConfirmAction}
+        title={confirmModal.type === 'logout' ? "Log Out All Devices?" : "Delete Account?"}
+        message={confirmModal.type === 'logout'
+            ? "You will be logged out of all active sessions immediately."
+            : "This action will permanently deactivate your account. You have 30 days to recover it by logging in again."}
+        confirmText={confirmModal.type === 'logout' ? "Log Out" : "Delete Forever"}
+        isDanger={true}
       />
     </div>
   );

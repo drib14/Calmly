@@ -3,8 +3,39 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-background: #f8fafc;
+    --color-surface: #ffffff;
+    --color-text: #0f172a;
+    --color-border: #e2e8f0;
+  }
+
+  /* Dark Theme */
+  .dark {
+    --color-background: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: #f8fafc;
+    --color-border: #334155;
+  }
+
+  /* Sage Theme */
+  .bg-\[\#f0f4f0\] {
+    --color-background: #f0f4f0;
+    --color-surface: #ffffff;
+    --color-text: #1e293b;
+    --color-border: #cbd5e1;
+  }
+
+  /* Ocean Theme */
+  .bg-\[\#f0f8ff\] {
+    --color-background: #f0f8ff;
+    --color-surface: #ffffff;
+    --color-text: #1e293b;
+    --color-border: #bfdbfe;
+  }
+
   body {
-    @apply font-sans antialiased bg-slate-50 text-slate-900;
+    @apply font-sans antialiased bg-background text-text transition-colors duration-300;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;

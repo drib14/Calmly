@@ -73,11 +73,30 @@ const updateEmail = async (req, res) => {
 // @route   GET /api/settings/sessions
 // @access  Private
 const getSessions = async (req, res) => {
-    // Mock sessions for now since we aren't strictly tracking session DB objects per login yet
-    // In a full implementation, authController would push to user.sessions on login
-    res.json([
-        { deviceId: 'current', userAgent: req.headers['user-agent'], lastActive: new Date(), current: true }
-    ]);
+    // In a real implementation, we would query a Sessions collection or inspect User.sessions array
+    // if we tracked detailed session info on login.
+    // For now, we return a mock list simulating tracking to fulfill the UI requirement
+    // while keeping the backend changes safe/minimal.
+
+    // Check if we have sessions in user object (from schema update)
+    const user = await User.findById(req.user._id).select('sessions');
+
+    let sessionList = user.sessions || [];
+
+    // If empty (legacy users), return current session mock
+    if (sessionList.length === 0) {
+        sessionList = [
+            {
+                _id: 'current',
+                deviceId: 'Current Device',
+                userAgent: req.headers['user-agent'],
+                lastActive: new Date(),
+                current: true
+            }
+        ];
+    }
+
+    res.json(sessionList);
 };
 
 // @desc    Logout All Devices
@@ -87,6 +106,7 @@ const logoutAllDevices = async (req, res) => {
   const user = await User.findById(req.user._id);
   if (user) {
     user.refreshToken = []; // Clear all refresh tokens
+    user.sessions = []; // Clear session history if tracked
     await user.save();
     res.json({ message: 'Logged out from all devices' });
   } else {
