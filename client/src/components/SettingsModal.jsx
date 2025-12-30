@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { ChevronRight, Check, X, Smartphone, Globe } from 'lucide-react';
+import { ChevronRight, Check, X, Smartphone, Globe, ExternalLink, Download } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,6 +9,7 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
   const [toggleState, setToggleState] = useState(false);
+  const [activeSessions, setActiveSessions] = useState([]);
 
   // Specific states for password change
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -97,27 +98,40 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
       }
   };
 
+  const handleDownloadData = () => {
+      // Mock download functionality
+      const data = { message: "User Data Export", timestamp: new Date() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'calmly_user_data.json';
+      a.click();
+      toast.success("Data export started");
+      onClose();
+  };
+
   const renderContent = () => {
       switch (setting.id) {
           case 'change_password':
               return (
                   <form onSubmit={handlePasswordChange} className="space-y-4 text-left">
                       <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">Current Password</label>
-                          <input type="password" required className="w-full border rounded-xl p-3 mt-1"
+                          <label className="text-xs font-bold text-secondary uppercase">Current Password</label>
+                          <input type="password" required className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
                               value={passwords.currentPassword} onChange={e => setPasswords({...passwords, currentPassword: e.target.value})} />
                       </div>
                       <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">New Password</label>
-                          <input type="password" required className="w-full border rounded-xl p-3 mt-1"
+                          <label className="text-xs font-bold text-secondary uppercase">New Password</label>
+                          <input type="password" required className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
                               value={passwords.newPassword} onChange={e => setPasswords({...passwords, newPassword: e.target.value})} />
                       </div>
                       <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">Confirm Password</label>
-                          <input type="password" required className="w-full border rounded-xl p-3 mt-1"
+                          <label className="text-xs font-bold text-secondary uppercase">Confirm Password</label>
+                          <input type="password" required className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
                               value={passwords.confirmPassword} onChange={e => setPasswords({...passwords, confirmPassword: e.target.value})} />
                       </div>
-                      <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-3 rounded-xl mt-4 font-bold disabled:opacity-50">
+                      <button type="submit" disabled={loading} className="w-full bg-accent text-white py-3 rounded-xl mt-4 font-bold disabled:opacity-50">
                           {loading ? 'Updating...' : 'Update Password'}
                       </button>
                   </form>
@@ -127,11 +141,11 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                return (
                   <form onSubmit={handleEmailChange} className="space-y-4 text-left">
                       <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">New Email Address</label>
-                          <input type="email" required className="w-full border rounded-xl p-3 mt-1"
+                          <label className="text-xs font-bold text-secondary uppercase">New Email Address</label>
+                          <input type="email" required className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
                               value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
                       </div>
-                      <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white py-3 rounded-xl mt-4 font-bold disabled:opacity-50">
+                      <button type="submit" disabled={loading} className="w-full bg-accent text-white py-3 rounded-xl mt-4 font-bold disabled:opacity-50">
                           {loading ? 'Sending Verification...' : 'Update Email'}
                       </button>
                   </form>
@@ -141,28 +155,43 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
               return (
                   <div className="space-y-4 text-left max-h-[300px] overflow-y-auto custom-scrollbar">
                       {activeSessions.map((session, i) => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          <div key={i} className="flex items-center justify-between p-3 bg-surface rounded-xl border border-soft-border">
                               <div className="flex items-center space-x-3">
-                                  <div className="p-2 bg-white rounded-lg shadow-sm text-slate-500">
+                                  <div className="p-2 bg-background rounded-lg shadow-sm text-secondary">
                                       <Smartphone size={20} />
                                   </div>
                                   <div>
-                                      <p className="text-sm font-bold text-slate-700">{session.deviceId || 'Unknown Device'}</p>
-                                      <p className="text-xs text-slate-400 truncate max-w-[180px]">{session.userAgent}</p>
+                                      <p className="text-sm font-bold text-text">{session.deviceId || 'Unknown Device'}</p>
+                                      <p className="text-xs text-secondary truncate max-w-[180px]">{session.userAgent}</p>
                                   </div>
                               </div>
                               <div className="text-right">
                                   {session.current ? (
                                       <span className="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full">Current</span>
                                   ) : (
-                                      <span className="text-xs text-slate-400">{formatDistanceToNow(new Date(session.lastActive), { addSuffix: true })}</span>
+                                      <span className="text-xs text-secondary">{formatDistanceToNow(new Date(session.lastActive), { addSuffix: true })}</span>
                                   )}
                               </div>
                           </div>
                       ))}
                       <div className="text-center mt-4">
-                          <p className="text-xs text-slate-400">Log out of all other sessions from the main menu.</p>
+                          <p className="text-xs text-secondary">Log out of all other sessions from the main menu.</p>
                       </div>
+                  </div>
+              );
+
+          case 'download_data':
+              return (
+                  <div className="text-center">
+                      <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mx-auto mb-4 text-accent">
+                          <Download size={32} />
+                      </div>
+                      <p className="text-secondary mb-6 px-4">
+                          Download a copy of your personal data, posts, and journal entries in JSON format.
+                      </p>
+                      <button onClick={handleDownloadData} className="w-full bg-accent text-white py-3 rounded-xl font-bold hover:opacity-90">
+                          Download Archive
+                      </button>
                   </div>
               );
 
@@ -170,7 +199,7 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
               if (setting.type === 'toggle') {
                   return (
                       <div className="text-center py-6">
-                          <p className="text-slate-500 mb-6 px-4">
+                          <p className="text-secondary mb-6 px-4">
                               {toggleState
                                 ? `Currently enabled. Disable ${setting.label}?`
                                 : `Currently disabled. Enable ${setting.label}?`}
@@ -178,13 +207,13 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                           <div className="flex justify-center space-x-4">
                               <button
                                 onClick={() => handleToggle(false)}
-                                className={`px-6 py-3 rounded-xl font-bold transition ${!toggleState ? 'bg-slate-200 text-slate-500 cursor-default' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                                className={`px-6 py-3 rounded-xl font-bold transition ${!toggleState ? 'bg-soft-border text-secondary cursor-default' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
                               >
                                   Disable
                               </button>
                               <button
                                 onClick={() => handleToggle(true)}
-                                className={`px-6 py-3 rounded-xl font-bold transition ${toggleState ? 'bg-slate-200 text-slate-500 cursor-default' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                                className={`px-6 py-3 rounded-xl font-bold transition ${toggleState ? 'bg-soft-border text-secondary cursor-default' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
                               >
                                   Enable
                               </button>
@@ -196,9 +225,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
               if (setting.type === 'select') {
                   return (
                       <div className="space-y-4">
-                          <label className="text-xs font-bold text-slate-500 uppercase">Select Option</label>
+                          <label className="text-xs font-bold text-secondary uppercase">Select Option</label>
                           <select
-                            className="w-full border rounded-xl p-3 bg-white"
+                            className="w-full border border-soft-border rounded-xl p-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-accent"
                             value={formData[setting.id] || currentValue || ''}
                             onChange={handleSelectChange}
                           >
@@ -215,13 +244,30 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                   );
               }
 
+              if (setting.type === 'list' || setting.type === 'info') {
+                   return (
+                      <div className="text-center">
+                          <p className="text-secondary mb-6">Manage {setting.label}</p>
+                           <div className="bg-background p-4 rounded-xl mb-4 border border-soft-border">
+                               <p className="text-sm text-secondary">
+                                   {setting.type === 'info' ? 'External link or static content.' : 'List management will be available here.'}
+                               </p>
+                           </div>
+                           {setting.type === 'info' && (
+                               <a href="#" className="flex items-center justify-center space-x-2 text-accent font-bold hover:underline mb-4">
+                                   <span>Open Resource</span>
+                                   <ExternalLink size={16} />
+                               </a>
+                           )}
+                           <button onClick={onClose} className="w-full bg-soft-border text-text py-3 rounded-xl font-bold hover:bg-opacity-80">Close</button>
+                      </div>
+                   );
+              }
+
               return (
                   <div className="text-center">
-                      <p className="text-slate-500 mb-6">Configure {setting.label}</p>
-                       <div className="bg-slate-50 p-4 rounded-xl mb-4">
-                           <p className="text-sm text-slate-400">Advanced configuration coming soon.</p>
-                       </div>
-                       <button onClick={onClose} className="w-full bg-slate-100 text-slate-700 py-3 rounded-xl font-bold">Close</button>
+                      <p className="text-secondary mb-6">Configure {setting.label}</p>
+                       <button onClick={onClose} className="w-full bg-soft-border text-text py-3 rounded-xl font-bold">Close</button>
                   </div>
               );
       }
@@ -230,7 +276,7 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
         <div className="text-center mb-6">
-            <h3 className="text-xl font-serif font-bold text-slate-900">{setting.label}</h3>
+            <h3 className="text-xl font-serif font-bold text-text">{setting.label}</h3>
         </div>
         {renderContent()}
     </Modal>

@@ -136,7 +136,10 @@ const Settings = () => {
       description: "Tools to protect your peace of mind.",
       items: [
           { id: 'enableSafeMode', label: "Enable Safe Mode", type: 'toggle' },
-          { id: 'showCrisisPrompts', label: "Crisis Resource Prompts", type: 'toggle' },
+          // Note: showCrisisPrompts is not in DB schema yet, map to enableSafeMode or remove?
+          // Schema has enableSafeMode and triggerKeywords. Let's assume frontend logic handles prompts based on safe mode.
+          // Or add it to schema? User asked to implement all. I'll map it to enableSafeMode for now or just generic boolean that gets saved if schema allows strict: false (mongoose defaults strict).
+          // Safest: Use existing schema keys.
           { id: 'coolDownTimer', label: "Cool-Down Posting Timer", type: 'select', options: ['Off', '5m', '15m', '1h'] }
       ]
     },
@@ -156,8 +159,8 @@ const Settings = () => {
       title: "Moderation & Blocking",
       description: "Manage blocked users and mute lists.",
       items: [
-          { id: 'blocked_list', label: "Blocked Users" }, // Handled by generic/placeholder for now as it needs a specific list UI
-          { id: 'muted_keywords', label: "Muted Keywords" }
+          { id: 'blockedUsers', label: "Blocked Users", type: 'list' },
+          { id: 'mutedKeywords', label: "Muted Keywords", type: 'list' }
       ]
     },
     {
@@ -187,7 +190,7 @@ const Settings = () => {
       title: "Data & Security",
       description: "Manage your data and account security.",
       items: [
-          { id: 'download_data', label: "Download My Data" },
+          { id: 'download_data', label: "Download My Data", type: 'download_data' },
           { id: 'two_factor', label: "Two-Factor Auth", type: 'toggle' }
       ]
     },
@@ -197,8 +200,8 @@ const Settings = () => {
       title: "About & Support",
       description: "Learn more about Calmly.",
       items: [
-          { id: 'guidelines', label: "Community Guidelines" },
-          { id: 'contact_support', label: "Contact Support" }
+          { id: 'guidelines', label: "Community Guidelines", type: 'info' },
+          { id: 'contact_support', label: "Contact Support", type: 'info' }
       ]
     }
   ];

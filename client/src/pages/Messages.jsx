@@ -160,19 +160,19 @@ const Messages = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex relative">
+    <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] bg-surface rounded-3xl shadow-sm border border-soft-border overflow-hidden flex relative">
 
       {/* Sidebar (List View) */}
       <div className={clsx(
-          "w-full md:w-1/3 border-r border-slate-100 flex flex-col absolute md:relative h-full bg-white z-10 transition-transform duration-300",
+          "w-full md:w-1/3 border-r border-soft-border flex flex-col absolute md:relative h-full bg-surface z-10 transition-transform duration-300",
           view === 'list' ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}>
-          <div className="p-4 border-b border-slate-50">
-               <h2 className="text-xl font-serif font-bold text-slate-900 mb-4">Messages</h2>
+          <div className="p-4 border-b border-soft-border">
+               <h2 className="text-xl font-serif font-bold text-text mb-4">Messages</h2>
                <div className="relative mb-4">
-                   <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+                   <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
                    <input
-                      className="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 text-sm focus:ring-1 focus:ring-slate-200"
+                      className="w-full bg-background border-none rounded-xl py-2 pl-9 text-sm focus:ring-1 focus:ring-soft-border text-text placeholder-secondary"
                       placeholder="Search users..."
                       value={searchQuery}
                       onChange={handleSearch}
@@ -181,11 +181,11 @@ const Messages = () => {
 
                {/* Search Results Dropdown */}
                {searchResults.length > 0 && (
-                   <div className="absolute top-28 left-4 right-4 bg-white shadow-xl border border-slate-100 rounded-xl z-20 max-h-60 overflow-y-auto">
+                   <div className="absolute top-28 left-4 right-4 bg-surface shadow-xl border border-soft-border rounded-xl z-20 max-h-60 overflow-y-auto">
                        {searchResults.map(id => (
-                           <div key={id._id} onClick={() => { handleConversationClick(id); setSearchQuery(''); setSearchResults([]); }} className="p-3 hover:bg-slate-50 cursor-pointer flex items-center space-x-3">
+                           <div key={id._id} onClick={() => { handleConversationClick(id); setSearchQuery(''); setSearchResults([]); }} className="p-3 hover:bg-background cursor-pointer flex items-center space-x-3">
                                <Avatar identity={id} size="sm" />
-                               <span className="text-sm font-bold text-slate-700">{id.name}</span>
+                               <span className="text-sm font-bold text-text">{id.name}</span>
                            </div>
                        ))}
                    </div>
@@ -196,7 +196,7 @@ const Messages = () => {
                    {suggestedUsers?.map(user => (
                        <div key={user._id} onClick={() => handleConversationClick(user)} className="flex flex-col items-center space-y-1 cursor-pointer min-w-[60px]">
                            <Avatar identity={user} size="md" />
-                           <span className="text-[10px] text-slate-600 truncate w-full text-center">{user.name.split(' ')[0]}</span>
+                           <span className="text-[10px] text-text truncate w-full text-center">{user.name.split(' ')[0]}</span>
                        </div>
                    ))}
                </div>
@@ -213,19 +213,19 @@ const Messages = () => {
                       <div
                         key={msg._id}
                         onClick={() => handleConversationClick(other)}
-                        className={`p-4 border-b border-slate-50 cursor-pointer hover:bg-slate-50 transition ${activeConversation?._id === other._id ? 'bg-slate-50' : ''}`}
+                        className={`p-4 border-b border-soft-border cursor-pointer hover:bg-background transition ${activeConversation?._id === other._id ? 'bg-background' : ''}`}
                       >
                           <div className="flex items-center space-x-3">
                               <div className="relative">
                                 <Avatar identity={other} />
-                                {isUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+                                {isUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-surface"></span>}
                               </div>
                               <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-baseline mb-1">
-                                      <span className={clsx("text-sm truncate", isUnread ? "font-bold text-slate-900" : "font-medium text-slate-700")}>{other.name}</span>
-                                      <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
+                                      <span className={clsx("text-sm truncate", isUnread ? "font-bold text-text" : "font-medium text-text/80")}>{other.name}</span>
+                                      <span className="text-[10px] text-secondary">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
                                   </div>
-                                  <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-slate-800" : "text-slate-500")}>
+                                  <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-text" : "text-secondary")}>
                                       {isMe ? 'You: ' : ''}{msg.content || 'Sent a file'}
                                   </p>
                               </div>
@@ -238,27 +238,27 @@ const Messages = () => {
 
       {/* Chat Area (Detail View) */}
       <div className={clsx(
-          "w-full md:flex-1 flex flex-col bg-slate-50/50 absolute md:relative h-full transition-transform duration-300",
+          "w-full md:flex-1 flex flex-col bg-background/50 absolute md:relative h-full transition-transform duration-300",
           view === 'chat' ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
       )}>
           {activeConversation ? (
               <>
-                  <div className="p-4 bg-white border-b border-slate-100 flex items-center shadow-sm z-10">
+                  <div className="p-4 bg-surface border-b border-soft-border flex items-center shadow-sm z-10">
                       {/* Back Button (Mobile Only) */}
-                      <button onClick={() => setView('list')} className="md:hidden mr-3 text-slate-500">
+                      <button onClick={() => setView('list')} className="md:hidden mr-3 text-secondary">
                           <ChevronLeft />
                       </button>
 
                       <div className="flex items-center space-x-3">
                           <Avatar identity={activeConversation} />
                           <div>
-                              <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                              <h3 className="font-bold text-text flex items-center gap-2">
                                 {activeConversation.name}
                                 {/* Privacy Indicators */}
                                 {activeConversation.settings?.enablePrivateMessaging === false && <span title="Private Messaging Disabled" className="text-red-400"><Lock size={12} /></span>}
                                 {activeConversation.settings?.allowAnonymousDMs === false && <span title="Anonymous DMs Disabled" className="text-amber-400"><Shield size={12} /></span>}
                               </h3>
-                              <p className="text-xs text-slate-500 uppercase tracking-wide">{activeConversation.type}</p>
+                              <p className="text-xs text-secondary uppercase tracking-wide">{activeConversation.type}</p>
                           </div>
                       </div>
                   </div>
@@ -274,21 +274,21 @@ const Messages = () => {
                                       {msg.media?.map((m, i) => (
                                           <div key={i} className={clsx(
                                               "overflow-hidden shadow-sm border",
-                                              m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-white border-slate-200" : "rounded-2xl border-transparent"
+                                              m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent"
                                           )}>
                                               {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
                                               {m.type === 'video' && <MediaPlayer src={m.url} />}
                                               {m.type === 'audio' && <audio src={m.url} controls className="w-full" />}
                                               {m.type === 'file' && (
                                                   <>
-                                                      <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0 text-slate-500">
+                                                      <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center flex-shrink-0 text-secondary">
                                                           <FileText size={20} />
                                                       </div>
                                                       <div className="flex-1 min-w-0">
-                                                          <p className="text-sm font-medium text-slate-700 truncate">{m.name}</p>
-                                                          <p className="text-[10px] text-slate-400">{m.size ? formatBytes(m.size) : 'File'}</p>
+                                                          <p className="text-sm font-medium text-text truncate">{m.name}</p>
+                                                          <p className="text-[10px] text-secondary">{m.size ? formatBytes(m.size) : 'File'}</p>
                                                       </div>
-                                                      <a href={m.url} download target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-700 transition">
+                                                      <a href={m.url} download target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-background rounded-full text-secondary hover:text-text transition">
                                                           <Download size={16} />
                                                       </a>
                                                   </>
@@ -300,13 +300,13 @@ const Messages = () => {
                                       {msg.content && (
                                           <div className={clsx(
                                               "p-4 text-sm shadow-sm rounded-2xl",
-                                              isMe ? "bg-slate-900 text-white rounded-br-none" : "bg-white text-slate-700 rounded-bl-none border border-slate-100"
+                                              isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border"
                                           )}>
                                               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                           </div>
                                       )}
 
-                                      <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-slate-300'}`}>
+                                      <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>
                                           {formatDistanceToNow(new Date(msg.createdAt))}
                                       </div>
                                   </div>
@@ -316,31 +316,31 @@ const Messages = () => {
                       <div ref={scrollRef} />
                   </div>
 
-                  <div className="p-4 bg-white border-t border-slate-100">
+                  <div className="p-4 bg-surface border-t border-soft-border">
                       {mediaFiles.length > 0 && (
-                          <div className="flex space-x-2 mb-2 overflow-x-auto p-2 bg-slate-50 rounded-xl">
+                          <div className="flex space-x-2 mb-2 overflow-x-auto p-2 bg-background rounded-xl">
                               {mediaFiles.map((file, i) => (
-                                  <div key={i} className="relative group bg-white border rounded-lg p-1">
+                                  <div key={i} className="relative group bg-surface border rounded-lg p-1">
                                       {file.type.startsWith('image') ? (
                                           <img src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-md" />
                                       ) : (
-                                          <div className="w-12 h-12 flex items-center justify-center text-slate-400">
+                                          <div className="w-12 h-12 flex items-center justify-center text-secondary">
                                               <FileText size={20} />
                                           </div>
                                       )}
-                                      <div className="text-[8px] truncate w-12 text-center mt-1 text-slate-500">{formatBytes(file.size, 0)}</div>
+                                      <div className="text-[8px] truncate w-12 text-center mt-1 text-secondary">{formatBytes(file.size, 0)}</div>
                                       <button onClick={() => removeFile(i)} className="absolute -top-1 -right-1 bg-black text-white p-0.5 rounded-full shadow-sm"><X size={8}/></button>
                                   </div>
                               ))}
                           </div>
                       )}
-                      <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-2xl border border-slate-200 focus-within:ring-2 ring-slate-200 transition-shadow">
-                          <label className="p-2 text-slate-400 hover:text-slate-600 cursor-pointer transition">
+                      <div className="flex items-center space-x-2 bg-background p-2 rounded-2xl border border-soft-border focus-within:ring-2 ring-soft-border transition-shadow">
+                          <label className="p-2 text-secondary hover:text-text cursor-pointer transition">
                               <input type="file" multiple className="hidden" onChange={handleFileSelect} />
                               <Plus size={20} />
                           </label>
                           <input
-                              className="flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-slate-400"
+                              className="flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-secondary text-text"
                               placeholder="Type a message..."
                               value={messageText}
                               onChange={(e) => setMessageText(e.target.value)}
@@ -349,7 +349,7 @@ const Messages = () => {
                           <button
                               onClick={handleSend}
                               disabled={sending}
-                              className="bg-slate-900 text-white p-2 rounded-xl hover:scale-105 transition-transform disabled:opacity-50"
+                              className="bg-accent text-white p-2 rounded-xl hover:scale-105 transition-transform disabled:opacity-50"
                           >
                               <Send size={18} />
                           </button>
@@ -357,8 +357,8 @@ const Messages = () => {
                   </div>
               </>
           ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+              <div className="flex-1 flex flex-col items-center justify-center text-secondary">
+                  <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mb-4">
                       <User size={32} />
                   </div>
                   <p className="font-serif text-lg">Select a conversation</p>
