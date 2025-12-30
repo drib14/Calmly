@@ -25,24 +25,24 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, altText = "Image" }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] bg-surface/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm"
         onClick={onClose}
       >
         {/* Toolbar */}
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-[70]" onClick={(e) => e.stopPropagation()}>
-          <span className="text-white/70 text-sm font-medium ml-2">{altText}</span>
+          <span className="text-secondary text-sm font-medium ml-2">{altText}</span>
           <div className="flex items-center space-x-4">
             <a
               href={imageSrc}
               download
-              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition"
+              className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"
               title="Download"
             >
               <Download size={20} />
             </a>
             <button
               onClick={onClose}
-              className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition"
+              className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"
             >
               <X size={24} />
             </button>
