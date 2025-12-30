@@ -8,7 +8,9 @@ const {
   updateEmail,
   logoutAllDevices,
   deleteAccount,
-  getSessions
+  getSessions,
+  toggleJournalLock,
+  verifyJournalPassword
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -21,5 +23,9 @@ router.put('/email', updateEmail);
 router.post('/logout-all', logoutAllDevices);
 router.get('/sessions', getSessions);
 router.delete('/account', deleteAccount);
+
+// Journal Lock Routes
+router.put('/journal-lock', toggleJournalLock);
+router.post('/journal-verify', verifyJournalPassword);
 
 module.exports = router;

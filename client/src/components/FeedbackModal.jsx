@@ -26,8 +26,8 @@ const FeedbackModal = ({ isOpen, onClose }) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="text-center">
-        <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">How is your experience?</h3>
-        <p className="text-slate-500 text-sm mb-6">We'd love to hear your thoughts on Calmly.</p>
+        <h3 className="text-xl font-serif font-bold text-text mb-2">How is your experience?</h3>
+        <p className="text-secondary text-sm mb-6">We'd love to hear your thoughts on Calmly.</p>
 
         <div className="flex justify-center space-x-2 mb-6">
           {[1, 2, 3, 4, 5].map((star) => (
@@ -38,14 +38,14 @@ const FeedbackModal = ({ isOpen, onClose }) => {
             >
               <Star
                 size={32}
-                className={star <= rating ? "fill-amber-400 text-amber-400" : "text-slate-200"}
+                className={star <= rating ? "fill-amber-400 text-amber-400" : "text-soft-border"}
               />
             </button>
           ))}
         </div>
 
         <textarea
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 ring-slate-900 outline-none resize-none mb-4"
+          className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:ring-1 focus:ring-accent outline-none resize-none mb-4 text-text placeholder:text-secondary"
           rows="3"
           placeholder="Any suggestions? (Optional)"
           value={comment}
@@ -55,14 +55,14 @@ const FeedbackModal = ({ isOpen, onClose }) => {
         <div className="flex space-x-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition"
+            className="flex-1 py-3 bg-surface border border-soft-border text-text font-medium rounded-xl hover:bg-background transition"
           >
             Later
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition disabled:opacity-50"
+            className="flex-1 py-3 bg-accent text-white font-medium rounded-xl hover:opacity-90 transition disabled:opacity-50"
           >
             {loading ? 'Sending...' : 'Submit'}
           </button>

@@ -13,10 +13,13 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
 
   // Specific states for password change
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  // Specific state for journal lock
+  const [journalPassword, setJournalPassword] = useState('');
 
   useEffect(() => {
       if (isOpen && setting) {
           setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+          setJournalPassword('');
           setFormData({});
 
           if (setting.type === 'toggle') {
@@ -43,6 +46,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
   if (!setting) return null;
 
   const handleToggle = async (val) => {
+      // Special handling for journal lock
+      if (setting.id === 'journalLocked') return;
+
       setToggleState(val); // Optimistic UI
       try {
           await axios.put('/settings', { [setting.id]: val });
@@ -51,6 +57,30 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
       } catch (err) {
           setToggleState(!val); // Revert
           toast.error("Failed to update");
+      }
+  };
+
+  const handleJournalLock = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      try {
+          // If we are enabling (toggleState is currently false), we are sending locked=true
+          // If we are disabling (toggleState is currently true), we are sending locked=false
+          const targetState = !toggleState;
+
+          await axios.put('/settings/journal-lock', {
+              locked: targetState,
+              password: journalPassword
+          });
+
+          setToggleState(targetState);
+          onUpdate(setting.id, targetState);
+          toast.success(targetState ? "Journal Locked" : "Journal Unlocked");
+          onClose();
+      } catch (err) {
+          toast.error(err.response?.data?.message || "Failed to update journal lock");
+      } finally {
+          setLoading(false);
       }
   };
 
@@ -196,6 +226,35 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
               );
 
           default:
+              if (setting.id === 'journalLocked') {
+                  return (
+                      <div className="text-center py-6">
+                          <p className="text-secondary mb-6 px-4">
+                              {toggleState
+                                ? "Enter your journal password to unlock it."
+                                : "Create a password to lock your journal."}
+                          </p>
+                          <form onSubmit={handleJournalLock} className="space-y-4">
+                              <input
+                                  type="password"
+                                  placeholder={toggleState ? "Enter current password" : "Create new password"}
+                                  className="w-full border border-soft-border rounded-xl p-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                                  value={journalPassword}
+                                  onChange={(e) => setJournalPassword(e.target.value)}
+                                  required
+                              />
+                              <button
+                                  type="submit"
+                                  disabled={loading}
+                                  className={`w-full py-3 rounded-xl font-bold transition text-white ${toggleState ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700'}`}
+                              >
+                                  {loading ? 'Processing...' : (toggleState ? 'Unlock Journal' : 'Lock Journal')}
+                              </button>
+                          </form>
+                      </div>
+                  );
+              }
+
               if (setting.type === 'toggle') {
                   return (
                       <div className="text-center py-6">

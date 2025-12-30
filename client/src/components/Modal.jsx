@@ -25,7 +25,7 @@ const Modal = ({ isOpen, onClose, children }) => {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl relative"
+            className="bg-surface rounded-3xl p-6 w-full max-w-sm shadow-xl relative border border-soft-border"
             onClick={(e) => e.stopPropagation()} // Prevent close when clicking content
           >
             {children}

@@ -7,16 +7,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
+import { useSettings } from '../hooks/useSettings';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
+import ConfirmationModal from './ConfirmationModal';
 
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
+  const { settings } = useSettings();
   const [expanded, setExpanded] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
 
   // Comment Input State
   const [newComment, setNewComment] = useState('');
@@ -49,6 +53,11 @@ const PostCard = ({ post, mutate }) => {
   const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
   const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
   const isOwner = post.identity._id === currentIdentity?._id;
+
+  // Safe Mode Logic
+  const triggeringMoods = ['Melancholy', 'Angry', 'Anxious', 'Numb'];
+  const isTriggering = triggeringMoods.includes(post.mood);
+  const shouldBlur = settings?.enableSafeMode && isTriggering && !isRevealed && !isOwner;
 
   // Close options on outside click
   useEffect(() => {
@@ -269,7 +278,21 @@ const PostCard = ({ post, mutate }) => {
       </div>
 
       {/* Content */}
-      <div className="md:pl-13">
+      <div className="md:pl-13 relative">
+          {shouldBlur && (
+              <div className="absolute inset-0 z-20 backdrop-blur-md bg-white/60 flex flex-col items-center justify-center rounded-xl p-4 text-center">
+                  <EyeOff className="text-secondary mb-2" size={32} />
+                  <p className="text-sm font-bold text-text mb-1">Content Hidden (Safe Mode)</p>
+                  <p className="text-xs text-secondary mb-4">This post contains a mood that might be triggering.</p>
+                  <button
+                      onClick={() => setIsRevealed(true)}
+                      className="px-4 py-2 bg-surface border border-soft-border rounded-full text-xs font-bold text-text hover:bg-background transition"
+                  >
+                      Reveal Content
+                  </button>
+              </div>
+          )}
+
           {post.type === 'letter' ? (
               <div className={clsx(
                   "p-6 md:p-8 rounded-lg mb-4 shadow-sm relative overflow-hidden",
@@ -489,22 +512,15 @@ const PostCard = ({ post, mutate }) => {
       </Modal>
 
       {/* Delete Modal */}
-      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-          <div className="text-center">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                  <Trash2 size={24} />
-              </div>
-              <h3 className="text-xl font-serif font-bold text-slate-900 mb-2">Delete this moment?</h3>
-              <p className="text-slate-500 text-sm mb-6">This action cannot be undone. Are you sure you want to let this go?</p>
-
-              <div className="flex space-x-3">
-                  <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="flex-1 py-3 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition disabled:opacity-50">Cancel</button>
-                  <button onClick={handleDelete} disabled={deleting} className="flex-1 py-3 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition disabled:opacity-50">
-                    {deleting ? 'Deleting...' : 'Delete'}
-                  </button>
-              </div>
-          </div>
-      </Modal>
+      <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+          title="Delete this moment?"
+          message="This action cannot be undone. Are you sure you want to let this go?"
+          confirmText={deleting ? 'Deleting...' : 'Delete'}
+          isDanger={true}
+      />
 
       {/* Report Modal */}
       <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)}>

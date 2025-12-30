@@ -129,6 +129,70 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// @desc    Toggle Journal Lock
+// @route   PUT /api/settings/journal-lock
+// @access  Private
+const toggleJournalLock = async (req, res) => {
+  const { locked, password } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  // Enabling Lock
+  if (locked) {
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required to lock journal' });
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    user.settings.journalLocked = true;
+    user.settings.journalPassword = hashedPassword;
+    await user.save();
+    res.json({ message: 'Journal locked successfully' });
+  }
+  // Disabling Lock
+  else {
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required to unlock journal' });
+    }
+
+    // Verify password against stored journalPassword
+    const isMatch = await bcrypt.compare(password, user.settings.journalPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect journal password' });
+    }
+
+    user.settings.journalLocked = false;
+    user.settings.journalPassword = null; // Clear it or keep it? Clearing is safer.
+    await user.save();
+    res.json({ message: 'Journal unlocked successfully' });
+  }
+};
+
+// @desc    Verify Journal Password
+// @route   POST /api/settings/journal-verify
+// @access  Private
+const verifyJournalPassword = async (req, res) => {
+  const { password } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  if (!user.settings.journalLocked) {
+      return res.json({ success: true, message: 'Journal is not locked' });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.settings.journalPassword);
+  if (isMatch) {
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ success: false, message: 'Incorrect password' });
+  }
+};
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -136,5 +200,7 @@ module.exports = {
   updateEmail,
   logoutAllDevices,
   getSessions,
-  deleteAccount
+  deleteAccount,
+  toggleJournalLock,
+  verifyJournalPassword
 };

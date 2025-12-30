@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import useSWR, { mutate } from 'swr';
 import { Lock, Unlock, Trash2, Plus, Calendar, ChevronLeft } from 'lucide-react';
@@ -11,6 +11,7 @@ import Modal from '../components/Modal';
 const fetcher = url => axios.get(url).then(res => res.data);
 
 const Journal = () => {
+  const { user } = useAuth();
   const { data: entries, error } = useSWR('/journal', fetcher);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isWriting, setIsWriting] = useState(false);
@@ -28,6 +29,31 @@ const Journal = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Lock State
+  const [isLocked, setIsLocked] = useState(false);
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlocking, setUnlocking] = useState(false);
+
+  useEffect(() => {
+      if (user?.settings?.journalLocked) {
+          setIsLocked(true);
+      }
+  }, [user]);
+
+  const handleUnlock = async (e) => {
+      e.preventDefault();
+      setUnlocking(true);
+      try {
+          await axios.post('/settings/journal-verify', { password: unlockPassword });
+          setIsLocked(false);
+          setUnlockPassword('');
+      } catch (err) {
+          toast.error("Incorrect password");
+      } finally {
+          setUnlocking(false);
+      }
+  };
 
   const handleEntryClick = (entry) => {
       setSelectedEntry(entry);
@@ -101,6 +127,36 @@ const Journal = () => {
   };
 
   if (!entries && !error) return <div className="p-10 text-center">Loading your calmly...</div>;
+
+  if (isLocked) {
+      return (
+          <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] flex flex-col items-center justify-center bg-surface rounded-3xl shadow-sm border border-soft-border p-6">
+              <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mb-6 text-accent">
+                  <Lock size={32} />
+              </div>
+              <h2 className="text-2xl font-serif font-bold text-text mb-2">Journal Locked</h2>
+              <p className="text-secondary mb-8">Please enter your password to access your entries.</p>
+
+              <form onSubmit={handleUnlock} className="w-full max-w-xs space-y-4">
+                  <input
+                      type="password"
+                      placeholder="Enter Password"
+                      className="w-full bg-background border border-soft-border rounded-xl p-3 text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                      value={unlockPassword}
+                      onChange={(e) => setUnlockPassword(e.target.value)}
+                      autoFocus
+                  />
+                  <button
+                      type="submit"
+                      disabled={unlocking}
+                      className="w-full bg-accent text-white py-3 rounded-xl font-bold hover:opacity-90 disabled:opacity-50"
+                  >
+                      {unlocking ? 'Unlocking...' : 'Unlock'}
+                  </button>
+              </form>
+          </div>
+      );
+  }
 
   return (
     <div className="h-[calc(100vh-140px)] md:h-[calc(100vh-100px)] flex gap-6 relative overflow-hidden bg-surface md:bg-transparent rounded-3xl md:rounded-none shadow-sm md:shadow-none border md:border-none border-soft-border">

@@ -22,8 +22,34 @@ const CreatePost = () => {
       if (settings) {
           if (settings.defaultPostType) setType(settings.defaultPostType);
           if (settings.defaultMood) setMood(settings.defaultMood);
+
+          // Load Draft
+          if (settings.enableDrafts) {
+              const savedDraft = localStorage.getItem('post_draft');
+              if (savedDraft) {
+                  const draft = JSON.parse(savedDraft);
+                  if (draft.content) setContent(draft.content);
+                  if (draft.title) setTitle(draft.title);
+                  if (draft.type) setType(draft.type);
+                  if (draft.mood) setMood(draft.mood);
+              }
+          }
       }
   }, [settings]);
+
+  // Save Draft
+  useEffect(() => {
+      if (settings?.enableDrafts) {
+          const timeoutId = setTimeout(() => {
+              const draft = { content, title, type, mood };
+              if (content || title) {
+                localStorage.setItem('post_draft', JSON.stringify(draft));
+              }
+          }, 1000);
+          return () => clearTimeout(timeoutId);
+      }
+  }, [content, title, type, mood, settings]);
+
   const [title, setTitle] = useState('');
   const [visibility, setVisibility] = useState('public');
   const [showNewIdentity, setShowNewIdentity] = useState(false);
@@ -128,6 +154,7 @@ const CreatePost = () => {
                 tags: [],
                 isLocked: false
             });
+            localStorage.removeItem('post_draft'); // Clear draft
             toast.success("Journal entry saved");
             navigate('/journal');
         } catch (error) {
@@ -157,6 +184,8 @@ const CreatePost = () => {
             await axios.post('/posts', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+
+            localStorage.removeItem('post_draft'); // Clear draft
 
             const needsFeedback = checkFeedbackEligibility();
             if (!needsFeedback) {
