@@ -9,6 +9,40 @@ import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
 import FeedbackModal from '../components/FeedbackModal';
 
+const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
+
+// Expanded Styles for Letters (Textures)
+const paperStyles = [
+    { id: 'classic', label: 'Classic', class: 'bg-amber-50 text-amber-900 border-amber-100', texture: '' },
+    { id: 'parchment', label: 'Parchment', class: 'bg-[#f0e6d2] text-[#5c4b35] border-[#e6dcc0]', texture: 'https://www.transparenttextures.com/patterns/aged-paper.png' },
+    { id: 'lined', label: 'Lined', class: 'bg-white text-slate-800 border-blue-100', texture: 'https://www.transparenttextures.com/patterns/notebook.png' },
+    { id: 'dark', label: 'Midnight', class: 'bg-slate-900 text-slate-200 border-slate-800', texture: 'https://www.transparenttextures.com/patterns/stardust.png' },
+    { id: 'flower', label: 'Floral', class: 'bg-rose-50 text-rose-900 border-rose-100', texture: 'https://www.transparenttextures.com/patterns/flowers.png' },
+];
+
+// Expanded Colors for Poetry (10+)
+const poemBackgrounds = [
+    { id: 'white', class: 'bg-white text-slate-900 border border-slate-100', preview: 'bg-white border-slate-200' },
+    { id: 'dark', class: 'bg-slate-900 text-white', preview: 'bg-slate-900' },
+    { id: 'sunset', class: 'bg-gradient-to-br from-orange-100 to-rose-200 text-rose-900', preview: 'bg-gradient-to-br from-orange-100 to-rose-200' },
+    { id: 'ocean', class: 'bg-gradient-to-tr from-cyan-100 to-blue-200 text-blue-900', preview: 'bg-gradient-to-tr from-cyan-100 to-blue-200' },
+    { id: 'forest', class: 'bg-gradient-to-b from-emerald-50 to-teal-100 text-teal-900', preview: 'bg-gradient-to-b from-emerald-50 to-teal-100' },
+    { id: 'midnight', class: 'bg-gradient-to-r from-slate-900 to-indigo-950 text-indigo-100', preview: 'bg-gradient-to-r from-slate-900 to-indigo-950' },
+    { id: 'berry', class: 'bg-gradient-to-bl from-pink-200 to-purple-300 text-purple-900', preview: 'bg-gradient-to-bl from-pink-200 to-purple-300' },
+    { id: 'lemon', class: 'bg-yellow-50 text-yellow-800 border border-yellow-100', preview: 'bg-yellow-50 border-yellow-200' },
+    { id: 'sky', class: 'bg-sky-100 text-sky-800', preview: 'bg-sky-100' },
+    { id: 'lavender', class: 'bg-violet-100 text-violet-900', preview: 'bg-violet-100' },
+    { id: 'cherry', class: 'bg-red-50 text-red-900 border border-red-100', preview: 'bg-red-50 border-red-200' },
+    { id: 'gray', class: 'bg-gray-100 text-gray-700', preview: 'bg-gray-100' },
+];
+
+const fontOptions = [
+    { id: 'font-serif', label: 'Serif' },
+    { id: 'font-sans', label: 'Sans' },
+    { id: 'font-mono', label: 'Mono' },
+    { id: 'font-[cursive]', label: 'Handwriting' }, // Tailwind arbitrary value or custom class needed
+];
+
 const CreatePost = () => {
   const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
   const { settings } = useSettings();
@@ -17,6 +51,24 @@ const CreatePost = () => {
   const [type, setType] = useState('confession');
   const [mood, setMood] = useState('Neutral');
   const [content, setContent] = useState('');
+  const [title, setTitle] = useState('');
+  const [visibility, setVisibility] = useState('public');
+  const [showNewIdentity, setShowNewIdentity] = useState(false);
+  const [newIdentityName, setNewIdentityName] = useState('');
+  const [files, setFiles] = useState([]);
+  const [previews, setPreviews] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [creatingIdentity, setCreatingIdentity] = useState(false);
+  const [deletingIdentity, setDeletingIdentity] = useState(false);
+
+  // Modals
+  const [showDeleteIdentityModal, setShowDeleteIdentityModal] = useState(false);
+  const [identityToDelete, setIdentityToDelete] = useState(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  // Specialized Fields
+  const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
+  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
 
   useEffect(() => {
       if (settings) {
@@ -49,59 +101,6 @@ const CreatePost = () => {
           return () => clearTimeout(timeoutId);
       }
   }, [content, title, type, mood, settings]);
-
-  const [title, setTitle] = useState('');
-  const [visibility, setVisibility] = useState('public');
-  const [showNewIdentity, setShowNewIdentity] = useState(false);
-  const [newIdentityName, setNewIdentityName] = useState('');
-  const [files, setFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [creatingIdentity, setCreatingIdentity] = useState(false);
-  const [deletingIdentity, setDeletingIdentity] = useState(false);
-
-  // Modals
-  const [showDeleteIdentityModal, setShowDeleteIdentityModal] = useState(false);
-  const [identityToDelete, setIdentityToDelete] = useState(null);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-
-  // Specialized Fields
-  const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
-  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
-
-  const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
-
-  // Expanded Styles for Letters (Textures)
-  const paperStyles = [
-      { id: 'classic', label: 'Classic', class: 'bg-amber-50 text-amber-900 border-amber-100', texture: '' },
-      { id: 'parchment', label: 'Parchment', class: 'bg-[#f0e6d2] text-[#5c4b35] border-[#e6dcc0]', texture: 'https://www.transparenttextures.com/patterns/aged-paper.png' },
-      { id: 'lined', label: 'Lined', class: 'bg-white text-slate-800 border-blue-100', texture: 'https://www.transparenttextures.com/patterns/notebook.png' },
-      { id: 'dark', label: 'Midnight', class: 'bg-slate-900 text-slate-200 border-slate-800', texture: 'https://www.transparenttextures.com/patterns/stardust.png' },
-      { id: 'flower', label: 'Floral', class: 'bg-rose-50 text-rose-900 border-rose-100', texture: 'https://www.transparenttextures.com/patterns/flowers.png' },
-  ];
-
-  // Expanded Colors for Poetry (10+)
-  const poemBackgrounds = [
-      { id: 'white', class: 'bg-white text-slate-900 border border-slate-100', preview: 'bg-white border-slate-200' },
-      { id: 'dark', class: 'bg-slate-900 text-white', preview: 'bg-slate-900' },
-      { id: 'sunset', class: 'bg-gradient-to-br from-orange-100 to-rose-200 text-rose-900', preview: 'bg-gradient-to-br from-orange-100 to-rose-200' },
-      { id: 'ocean', class: 'bg-gradient-to-tr from-cyan-100 to-blue-200 text-blue-900', preview: 'bg-gradient-to-tr from-cyan-100 to-blue-200' },
-      { id: 'forest', class: 'bg-gradient-to-b from-emerald-50 to-teal-100 text-teal-900', preview: 'bg-gradient-to-b from-emerald-50 to-teal-100' },
-      { id: 'midnight', class: 'bg-gradient-to-r from-slate-900 to-indigo-950 text-indigo-100', preview: 'bg-gradient-to-r from-slate-900 to-indigo-950' },
-      { id: 'berry', class: 'bg-gradient-to-bl from-pink-200 to-purple-300 text-purple-900', preview: 'bg-gradient-to-bl from-pink-200 to-purple-300' },
-      { id: 'lemon', class: 'bg-yellow-50 text-yellow-800 border border-yellow-100', preview: 'bg-yellow-50 border-yellow-200' },
-      { id: 'sky', class: 'bg-sky-100 text-sky-800', preview: 'bg-sky-100' },
-      { id: 'lavender', class: 'bg-violet-100 text-violet-900', preview: 'bg-violet-100' },
-      { id: 'cherry', class: 'bg-red-50 text-red-900 border border-red-100', preview: 'bg-red-50 border-red-200' },
-      { id: 'gray', class: 'bg-gray-100 text-gray-700', preview: 'bg-gray-100' },
-  ];
-
-  const fontOptions = [
-      { id: 'font-serif', label: 'Serif' },
-      { id: 'font-sans', label: 'Sans' },
-      { id: 'font-mono', label: 'Mono' },
-      { id: 'font-[cursive]', label: 'Handwriting' }, // Tailwind arbitrary value or custom class needed
-  ];
 
   const handleFileChange = (e) => {
       const selectedFiles = Array.from(e.target.files);
@@ -232,18 +231,18 @@ const CreatePost = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-sm">
-      <h2 className="text-2xl font-serif mb-6">Share a Moment</h2>
+    <div className="max-w-2xl mx-auto bg-surface p-8 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-serif mb-6 text-text">Share a Moment</h2>
 
       {/* Identity Selector */}
-      <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-3">Posting As</label>
+      <div className="mb-6 p-4 bg-background rounded-2xl border border-soft-border">
+          <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Posting As</label>
           <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
               {identities.map(id => (
                   <div key={id._id} className="relative group">
                       <button
                         onClick={() => selectIdentity(id._id)}
-                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
                       >
                           <Avatar identity={id} size="sm" />
                           <div className="flex flex-col items-start leading-none">
@@ -261,7 +260,7 @@ const CreatePost = () => {
                       )}
                   </div>
               ))}
-              <button onClick={() => setShowNewIdentity(!showNewIdentity)} className="text-sm font-medium text-slate-500 hover:text-slate-800 whitespace-nowrap px-4 py-2 border border-dashed border-slate-300 rounded-full hover:bg-slate-50 transition">
+              <button onClick={() => setShowNewIdentity(!showNewIdentity)} className="text-sm font-medium text-secondary hover:text-text whitespace-nowrap px-4 py-2 border border-dashed border-soft-border rounded-full hover:bg-surface transition">
                   + New Pseudonym
               </button>
           </div>
@@ -271,7 +270,7 @@ const CreatePost = () => {
                   <input
                     type="text"
                     placeholder="Pseudonym Name"
-                    className="border rounded px-2 py-1 text-sm"
+                    className="border border-soft-border bg-surface text-text rounded px-2 py-1 text-sm focus:outline-none"
                     value={newIdentityName}
                     onChange={(e) => setNewIdentityName(e.target.value)}
                   />
@@ -285,11 +284,11 @@ const CreatePost = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <label className="block text-sm font-medium text-text mb-1">Type</label>
                 <select
                     value={type}
                     onChange={(e) => setType(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
+                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
                 >
                     <option value="confession">Confession</option>
                     <option value="poetry">Poetry</option>
@@ -298,11 +297,11 @@ const CreatePost = () => {
                 </select>
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mood</label>
+                <label className="block text-sm font-medium text-text mb-1">Mood</label>
                 <select
                     value={mood}
                     onChange={(e) => setMood(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
+                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
                 >
                     {moods.map(m => <option key={m} value={m}>{m}</option>)}
                 </select>
@@ -398,7 +397,7 @@ const CreatePost = () => {
                     onChange={(e) => setContent(e.target.value)}
                     required={files.length === 0}
                     rows={6}
-                    className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none font-serif text-lg"
+                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none font-serif text-lg"
                     placeholder="Write here..."
                 />
             </div>
@@ -418,14 +417,14 @@ const CreatePost = () => {
             </div>
         )}
 
-        <div className="flex justify-between items-center pt-4 border-t">
+        <div className="flex justify-between items-center pt-4 border-t border-soft-border">
              <div className="flex items-center space-x-4">
                  <div className="flex items-center space-x-2">
-                     <label className="text-sm text-gray-600">Visibility:</label>
+                     <label className="text-sm text-secondary">Visibility:</label>
                      <select
                         value={visibility}
                         onChange={(e) => setVisibility(e.target.value)}
-                        className="text-sm border-none bg-transparent focus:ring-0"
+                        className="text-sm border-none bg-transparent text-text focus:ring-0"
                      >
                          <option value="public">Public</option>
                          <option value="unlisted">Unlisted</option>
@@ -434,7 +433,7 @@ const CreatePost = () => {
                  </div>
 
                  {type !== 'letter' && type !== 'poetry' && (
-                     <label className="cursor-pointer p-2 hover:bg-gray-100 rounded-full text-gray-500 transition">
+                     <label className="cursor-pointer p-2 hover:bg-background rounded-full text-secondary transition">
                          <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
                          <Image size={20} />
                      </label>
@@ -454,10 +453,10 @@ const CreatePost = () => {
       {/* Identity Delete Modal */}
       <Modal isOpen={showDeleteIdentityModal} onClose={() => setShowDeleteIdentityModal(false)}>
           <div className="text-center">
-              <h3 className="text-xl font-bold mb-2">Delete Identity?</h3>
-              <p className="text-slate-500 mb-6 text-sm">This will mark the identity as deleted. Your posts will remain but attribution will be anonymized.</p>
+              <h3 className="text-xl font-bold mb-2 text-text">Delete Identity?</h3>
+              <p className="text-secondary mb-6 text-sm">This will mark the identity as deleted. Your posts will remain but attribution will be anonymized.</p>
               <div className="flex space-x-3">
-                  <button onClick={() => setShowDeleteIdentityModal(false)} disabled={deletingIdentity} className="flex-1 py-2 bg-slate-100 rounded-lg disabled:opacity-50">Cancel</button>
+                  <button onClick={() => setShowDeleteIdentityModal(false)} disabled={deletingIdentity} className="flex-1 py-2 bg-background text-text rounded-lg disabled:opacity-50 border border-soft-border">Cancel</button>
                   <button onClick={executeDeleteIdentity} disabled={deletingIdentity} className="flex-1 py-2 bg-red-500 text-white rounded-lg disabled:opacity-50">
                     {deletingIdentity ? 'Deleting...' : 'Delete'}
                   </button>
