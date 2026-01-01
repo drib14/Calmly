@@ -411,28 +411,32 @@ const PostCard = ({ post, mutate }) => {
               </div>
           ) : (
               <>
+                  {/* Media Grid (Moved Up & Full Bleed) */}
+                  {post.media && post.media.length > 0 && (
+                      <div className={clsx(
+                          "grid gap-0.5 mb-4 -mx-5 md:-mx-6",
+                          post.media.length > 1 ? "grid-cols-2" : "grid-cols-1"
+                      )}>
+                          {post.media.map((file, idx) => (
+                              <div key={idx} className="w-full bg-black/5">
+                                  {file.type === 'video' ? (
+                                      <MediaPlayer src={file.url} />
+                                  ) : (
+                                      <img
+                                        src={file.url}
+                                        className="w-full h-auto max-h-[600px] object-cover cursor-pointer hover:opacity-95 transition"
+                                        onClick={() => openViewer(file.url)}
+                                      />
+                                  )}
+                              </div>
+                          ))}
+                      </div>
+                  )}
+
                   {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-text">{post.title}</h3>}
                   <div className="text-text leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4">
                       {post.content}
                   </div>
-
-                  {/* Media Grid */}
-                  {post.media && post.media.length > 0 && (
-                      <div className={clsx("grid gap-2 mb-4 rounded-2xl overflow-hidden", post.media.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-                          {post.media.map((file, idx) => (
-                              file.type === 'video' ? (
-                                  <MediaPlayer key={idx} src={file.url} />
-                              ) : (
-                                  <img
-                                    key={idx}
-                                    src={file.url}
-                                    className="w-full h-full object-cover aspect-square cursor-pointer hover:opacity-90 transition"
-                                    onClick={() => openViewer(file.url)}
-                                  />
-                              )
-                          ))}
-                      </div>
-                  )}
               </>
           )}
 

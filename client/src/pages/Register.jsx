@@ -27,14 +27,10 @@ const Register = () => {
 
     const res = await register(email, password, realName);
     if (res.success) {
-      // Direct login after registration since verification is removed
-      // The AuthContext.register function currently just returns success/message
-      // We might want to auto-login here or redirect to login.
-      // Since the backend auto-verifies, the user can log in immediately.
-      setMessage("Account created! Redirecting to login...");
+      setMessage("Account created! Redirecting...");
       setTimeout(() => {
-          navigate('/login');
-      }, 1500);
+          navigate('/feed');
+      }, 1000);
     } else {
       setError(res.message);
     }

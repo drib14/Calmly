@@ -3,13 +3,22 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import QuotesWidget from '../components/QuotesWidget';
 import { toast } from 'react-hot-toast';
+
+const moodColors = {
+    'Neutral': 'bg-slate-900 text-white border-slate-900',
+    'Happy': 'bg-yellow-400 text-yellow-900 border-yellow-400',
+    'Sad': 'bg-blue-500 text-white border-blue-500',
+    'Angry': 'bg-red-500 text-white border-red-500',
+    'Hopeful': 'bg-green-500 text-white border-green-500',
+    'Anxious': 'bg-purple-500 text-white border-purple-500',
+};
 
 // Utility to format bytes
 const formatBytes = (bytes, decimals = 2) => {
@@ -366,20 +375,22 @@ const Messages = () => {
 
                                       {/* Reply to Quote Cluster */}
                                       {msg.replyToQuote && (
-                                          <div className={clsx("flex flex-col mb-1", isMe ? "items-end" : "items-start")}>
+                                          <div className={clsx("flex flex-col", isMe ? "items-end" : "items-start")}>
                                               {/* Label */}
-                                              <div className={clsx("text-[10px] text-secondary font-medium mb-1 flex items-center space-x-1", isMe ? "mr-2" : "ml-2")}>
-                                                  <span>Replying to {msg.replyToQuote.identityName}</span>
+                                              <div className={clsx("text-[10px] text-secondary font-medium mb-1 flex items-center space-x-1", isMe ? "mr-1" : "ml-1")}>
+                                                  <Reply size={10} className={isMe ? "scale-x-[-1]" : ""} />
+                                                  <span>{isMe ? "You replied to their note" : "Replied to your note"}</span>
                                               </div>
 
-                                              {/* Top Bubble (Quote Shadow) */}
+                                              {/* Top Bubble (The Quote) */}
                                               <div className={clsx(
-                                                  "p-3 text-xs border border-soft-border/50 shadow-sm max-w-[90%] opacity-90 relative z-0",
-                                                  isMe ? "rounded-3xl rounded-br-md -mb-3" : "rounded-3xl rounded-bl-md -mb-3",
+                                                  "px-4 py-3 text-sm border shadow-sm max-w-full z-0",
+                                                  "rounded-t-3xl",
+                                                  isMe ? "rounded-br-sm rounded-bl-3xl" : "rounded-bl-sm rounded-br-3xl",
                                                   moodColors[msg.replyToQuote.mood] || moodColors['Neutral'],
                                                   msg.replyToQuote.font || 'font-serif'
                                               )}>
-                                                  <p className="line-clamp-2 italic pb-2">"{msg.replyToQuote.content}"</p>
+                                                  <p className="italic">"{msg.replyToQuote.content}"</p>
                                               </div>
                                           </div>
                                       )}
@@ -388,8 +399,14 @@ const Messages = () => {
                                       {msg.content && (
                                           <div className={clsx(
                                               "p-4 text-sm shadow-sm border border-soft-border relative z-10",
-                                              isMe ? "bg-accent text-white rounded-3xl rounded-tr-md" : "bg-surface text-text rounded-3xl rounded-tl-md",
-                                              // Adjust corners based on connection
+                                              isMe ? "bg-accent text-white" : "bg-surface text-text",
+                                              msg.replyToQuote ? (
+                                                  // Smushed styling
+                                                  isMe ? "rounded-b-3xl rounded-tl-3xl rounded-tr-sm -mt-[1px] border-t-0" : "rounded-b-3xl rounded-tr-3xl rounded-tl-sm -mt-[1px] border-t-0"
+                                              ) : (
+                                                  // Standard styling
+                                                  isMe ? "rounded-3xl rounded-tr-md" : "rounded-3xl rounded-tl-md"
+                                              )
                                           )}>
                                               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                           </div>

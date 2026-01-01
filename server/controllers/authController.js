@@ -47,9 +47,23 @@ const registerUser = async (req, res) => {
         html: welcomeEmail(realName)
       });
 
+      const accessToken = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
+
+      user.refreshToken.push(refreshToken);
+      await user.save();
+
+      res.cookie('jwt', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+
       res.status(201).json({
           _id: user._id,
           email: user.email,
+          accessToken,
           message: 'Registration successful! Welcome.',
       });
 
