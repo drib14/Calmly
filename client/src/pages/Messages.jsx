@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
+import QuotesWidget from '../components/QuotesWidget';
 import { toast } from 'react-hot-toast';
 
 // Utility to format bytes
@@ -51,8 +52,8 @@ const Messages = () => {
       } catch (err) { return []; }
   });
 
-  // Filter out my own identities from suggestions
-  const suggestedUsers = suggestedUsersRaw?.filter(u => !identities?.some(id => id._id === u._id)) || [];
+  // Suggested users logic (allow self-chat)
+  const suggestedUsers = suggestedUsersRaw || [];
 
   // Fetch Inbox (Polling)
   const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', async (url) => {
@@ -153,10 +154,10 @@ const Messages = () => {
       setSearchQuery(e.target.value);
       if (e.target.value.length > 2) {
           try {
-              // Ensure we filter out current user identities from search results
               const res = await axios.get(`/search?q=${e.target.value}&type=identities`);
               const results = res.data.identities || [];
-              setSearchResults(results.filter(id => !identities?.some(myId => myId._id === id._id)));
+              // Allow self-chat, so no filtering of own identities
+              setSearchResults(results);
           } catch (err) {
               console.error(err);
           }
@@ -214,6 +215,14 @@ const Messages = () => {
       )}>
           <div className="p-4 border-b border-soft-border">
                <h2 className="text-xl font-serif font-bold text-text mb-4">Messages</h2>
+
+               {/* Quotes in Message Page (Horizontal Profiles) */}
+               <div className="mb-4 -mx-2">
+                   <div className="scale-90 origin-top-left w-[110%]">
+                       <QuotesWidget />
+                   </div>
+               </div>
+
                <div className="relative mb-4">
                    <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
                    <input
@@ -235,16 +244,6 @@ const Messages = () => {
                        ))}
                    </div>
                )}
-
-               {/* Horizontal User List */}
-               <div className="flex space-x-4 overflow-x-auto pb-2 custom-scrollbar">
-                   {suggestedUsers?.map(user => (
-                       <div key={user._id} onClick={() => handleConversationClick(user)} className="flex flex-col items-center space-y-1 cursor-pointer min-w-[60px]">
-                           <Avatar identity={user} size="md" />
-                           <span className="text-[10px] text-text truncate w-full text-center">{user.name.split(' ')[0]}</span>
-                       </div>
-                   ))}
-               </div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">

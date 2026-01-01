@@ -4,6 +4,7 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/generate
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
+const { welcomeEmail, passwordResetEmail } = require('../utils/emailTemplates');
 
 const registerUser = async (req, res) => {
   const { email, password, realName } = req.body;
@@ -15,16 +16,14 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const verificationToken = crypto.randomBytes(20).toString('hex');
-
+    // No verification token needed anymore
     const user = await User.create({
       email,
       password,
-      verificationToken,
+      isVerified: true, // Auto-verify
     });
 
     if (user) {
-      // Create default "Real" identity
       // Create default "Real" identity
       await Identity.create({
         user: user._id,
@@ -38,36 +37,21 @@ const registerUser = async (req, res) => {
         user: user._id,
         type: 'anonymous',
         name: 'Anonymous',
-        handle: `@anon_${user._id.toString().slice(-6)}`, // Generate unique-ish handle
+        handle: `@anon_${user._id.toString().slice(-6)}`,
       });
 
-      // Send verification email
-      const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-
-      const emailSent = await sendEmail({
+      // Send WELCOME email instead of verification
+      await sendEmail({
         to: email,
-        subject: 'Welcome to Calmly - Verify Your Account',
-        html: `
-          <h2>Welcome to your calm space.</h2>
-          <p>We are honored to have you here. Please verify your email to start your journey.</p>
-          <a href="${verificationUrl}" class="button" style="color: white;">Verify Account</a>
-          <p style="margin-top: 20px; font-size: 12px; color: #888;">Or click here: <a href="${verificationUrl}">${verificationUrl}</a></p>
-        `
+        subject: 'Welcome to Calmly',
+        html: welcomeEmail(realName)
       });
 
-      if (emailSent) {
-        res.status(201).json({
-            _id: user._id,
-            email: user.email,
-            message: 'Registration successful! Please check your email.',
-        });
-      } else {
-        res.status(201).json({
-            _id: user._id,
-            email: user.email,
-            message: 'Registration successful! But email failed to send.',
-        });
-      }
+      res.status(201).json({
+          _id: user._id,
+          email: user.email,
+          message: 'Registration successful! Welcome.',
+      });
 
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -77,22 +61,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-const verifyEmail = async (req, res) => {
-    const { token } = req.params;
-    try {
-        const user = await User.findOne({ verificationToken: token });
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid or expired token' });
-        }
-        user.isVerified = true;
-        user.verificationToken = undefined;
-        await user.save();
-        res.status(200).json({ message: 'Email verified successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
-
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -100,14 +68,11 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
-      if (!user.isVerified) {
-          return res.status(401).json({ message: 'Please verify your email first.' });
-      }
+      // Removed isVerified check
 
       const accessToken = generateAccessToken(user._id);
       const refreshToken = generateRefreshToken(user._id);
 
-      // Store refresh token (simple implementation, ideally rotate)
       user.refreshToken.push(refreshToken);
       await user.save();
 
@@ -160,24 +125,18 @@ const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Generate 6-digit OTP
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     const resetTokenHash = crypto.createHash('sha256').update(resetCode).digest('hex');
 
-    // Save hashed token to DB
     user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
     await user.save({ validateBeforeSave: false });
 
-    // Send email
+    // Send styled password reset email
     const emailSent = await sendEmail({
       to: user.email,
       subject: 'Reset Password Code',
-      html: `
-        <p>You requested to reset your password. Use the code below to proceed.</p>
-        <div class="code">${resetCode}</div>
-        <p>This code expires in 10 minutes. If you didn't request this, please ignore this email.</p>
-      `
+      html: passwordResetEmail(resetCode)
     });
 
     if (emailSent) {
@@ -245,8 +204,6 @@ const resetPassword = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
-    // In a real app, remove refreshToken from DB
-    // For now, clear cookie
     const cookies = req.cookies;
     if (!cookies?.jwt) return res.sendStatus(204);
 
@@ -266,4 +223,4 @@ const logoutUser = async (req, res) => {
     res.sendStatus(204);
 }
 
-module.exports = { registerUser, loginUser, verifyEmail, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword };
+module.exports = { registerUser, loginUser, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword };

@@ -31,6 +31,8 @@ const identitySchema = new mongoose.Schema({
     type: String, // URL
     default: '',
   },
+  avatarHistory: [{ type: String }], // Array of URLs
+  coverHistory: [{ type: String }], // Array of URLs
   isLocked: {
     type: Boolean,
     default: false, // If true, cannot be edited/deleted easily

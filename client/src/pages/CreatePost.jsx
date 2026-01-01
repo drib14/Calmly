@@ -3,13 +3,30 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Image, X } from 'lucide-react';
+import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import SelectionCard from '../components/SelectionCard';
+import PillSelection from '../components/PillSelection';
 import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
 import FeedbackModal from '../components/FeedbackModal';
 
-const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
+const moods = [
+    { value: 'Melancholy', label: 'Melancholy', icon: <CloudRain size={16} /> },
+    { value: 'Hopeful', label: 'Hopeful', icon: <Zap size={16} /> },
+    { value: 'Angry', label: 'Angry', icon: <Frown size={16} /> },
+    { value: 'Peaceful', label: 'Peaceful', icon: <Coffee size={16} /> },
+    { value: 'Anxious', label: 'Anxious', icon: <Meh size={16} /> },
+    { value: 'Numb', label: 'Numb', icon: <Lock size={16} /> }, // Using Lock as abstraction for numb/closed off
+    { value: 'Grateful', label: 'Grateful', icon: <Heart size={16} /> },
+];
+
+const postTypes = [
+    { value: 'confession', label: 'Confession', description: 'Share a secret or a thought.' },
+    { value: 'poetry', label: 'Poetry', description: 'Express yourself in verse.' },
+    { value: 'letter', label: 'Letter', description: 'Write a letter to someone.' },
+    { value: 'mood', label: 'Mood Drop', description: 'Just a vibe.' },
+];
 
 // Expanded Styles for Letters (Textures)
 const paperStyles = [
@@ -37,10 +54,16 @@ const poemBackgrounds = [
 ];
 
 const fontOptions = [
-    { id: 'font-serif', label: 'Serif' },
-    { id: 'font-sans', label: 'Sans' },
-    { id: 'font-mono', label: 'Mono' },
-    { id: 'font-[cursive]', label: 'Handwriting' }, // Tailwind arbitrary value or custom class needed
+    { value: 'font-serif', label: 'Serif', fontClass: 'font-serif' },
+    { value: 'font-sans', label: 'Sans', fontClass: 'font-sans' },
+    { value: 'font-mono', label: 'Mono', fontClass: 'font-mono' },
+    { value: 'font-[cursive]', label: 'Handwriting', fontClass: 'font-[cursive]' },
+];
+
+const alignOptions = [
+    { value: 'text-left', label: 'Left', icon: <AlignLeft size={16} /> },
+    { value: 'text-center', label: 'Center', icon: <AlignCenter size={16} /> },
+    { value: 'text-right', label: 'Right', icon: <AlignRight size={16} /> },
 ];
 
 const CreatePost = () => {
@@ -282,29 +305,24 @@ const CreatePost = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-text mb-1">Type</label>
-                <select
+                <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Format</label>
+                <SelectionCard
+                    options={postTypes}
                     value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
-                >
-                    <option value="confession">Confession</option>
-                    <option value="poetry">Poetry</option>
-                    <option value="letter">Letter</option>
-                    <option value="mood">Mood Drop</option>
-                </select>
+                    onChange={setType}
+                    columns={2}
+                />
             </div>
             <div>
-                <label className="block text-sm font-medium text-text mb-1">Mood</label>
-                <select
+                <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Mood</label>
+                <SelectionCard
+                    options={moods}
                     value={mood}
-                    onChange={(e) => setMood(e.target.value)}
-                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
-                >
-                    {moods.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
+                    onChange={setMood}
+                    columns={4}
+                />
             </div>
         </div>
 
@@ -364,15 +382,25 @@ const CreatePost = () => {
                             />
                         ))}
                     </div>
-                    <div className="flex space-x-2">
-                        <select onChange={e => setPoemStyle({...poemStyle, font: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
-                            {fontOptions.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                        </select>
-                        <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
-                            <option value="text-left">Left</option>
-                            <option value="text-center">Center</option>
-                            <option value="text-right">Right</option>
-                        </select>
+                    <div className="flex flex-col space-y-2">
+                        {/* Font Selection */}
+                        <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm">
+                             <SelectionCard
+                                options={fontOptions}
+                                value={poemStyle.font}
+                                onChange={(val) => setPoemStyle({...poemStyle, font: val})}
+                                columns={2}
+                                layout="grid"
+                             />
+                        </div>
+                        {/* Align Selection */}
+                         <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm flex justify-center">
+                            <PillSelection
+                                options={alignOptions}
+                                value={poemStyle.align}
+                                onChange={(val) => setPoemStyle({...poemStyle, align: val})}
+                            />
+                        </div>
                     </div>
                 </div>
                 <input
@@ -420,16 +448,17 @@ const CreatePost = () => {
         <div className="flex justify-between items-center pt-4 border-t border-soft-border">
              <div className="flex items-center space-x-4">
                  <div className="flex items-center space-x-2">
-                     <label className="text-sm text-secondary">Visibility:</label>
-                     <select
-                        value={visibility}
-                        onChange={(e) => setVisibility(e.target.value)}
-                        className="text-sm border-none bg-transparent text-text focus:ring-0"
-                     >
-                         <option value="public">Public</option>
-                         <option value="unlisted">Unlisted</option>
-                         <option value="private">Private (Journal)</option>
-                     </select>
+                    <button
+                        type="button"
+                        onClick={() => setVisibility(v => v === 'public' ? 'unlisted' : v === 'unlisted' ? 'private' : 'public')}
+                        className="flex items-center space-x-1 text-sm font-medium text-secondary hover:text-text px-3 py-1.5 rounded-full hover:bg-background transition"
+                        title="Click to cycle visibility"
+                    >
+                        {visibility === 'public' && <Globe size={16} />}
+                        {visibility === 'unlisted' && <EyeOff size={16} />}
+                        {visibility === 'private' && <Lock size={16} />}
+                        <span className="capitalize">{visibility}</span>
+                    </button>
                  </div>
 
                  {type !== 'letter' && type !== 'poetry' && (

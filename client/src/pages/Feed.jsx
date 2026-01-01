@@ -3,6 +3,8 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { PenTool } from 'lucide-react';
 import PostCard from '../components/PostCard';
+import PillSelection from '../components/PillSelection';
+import QuotesWidget from '../components/QuotesWidget';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -19,20 +21,25 @@ const Feed = () => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
       {/* Main Feed */}
       <div className="lg:col-span-8 lg:col-start-2 max-w-2xl mx-auto w-full">
+
+        {/* Quotes Widget */}
+        <QuotesWidget />
+
         <div className="flex justify-between items-center mb-6 sticky top-0 bg-background/80 backdrop-blur-md z-30 py-4 transition-colors duration-300">
             <h1 className="text-2xl font-serif font-bold text-text">Moments</h1>
 
             <div className="flex space-x-2">
-            <select
-                className="border-none bg-surface rounded-full px-4 py-2 text-sm shadow-sm text-secondary focus:ring-2 focus:ring-slate-200 cursor-pointer hover:bg-background transition"
-                onChange={(e) => setFilter({...filter, type: e.target.value})}
-            >
-                <option value="">All Types</option>
-                <option value="confession">Confession</option>
-                <option value="poetry">Poetry</option>
-                <option value="letter">Letter</option>
-                <option value="mood">Mood</option>
-            </select>
+                <PillSelection
+                    options={[
+                        { value: '', label: 'All' },
+                        { value: 'confession', label: 'Confession' },
+                        { value: 'poetry', label: 'Poetry' },
+                        { value: 'letter', label: 'Letter' },
+                        { value: 'mood', label: 'Mood' },
+                    ]}
+                    value={filter.type}
+                    onChange={(val) => setFilter({...filter, type: val})}
+                />
             </div>
         </div>
 

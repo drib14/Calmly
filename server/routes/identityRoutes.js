@@ -45,11 +45,31 @@ router.put('/:id', protect, upload.fields([{ name: 'avatar', maxCount: 1 }, { na
         const identity = await Identity.findOne({ _id: req.params.id, user: req.user._id });
         if (!identity) return res.status(404).json({ message: 'Identity not found' });
 
-        if (req.files['avatar']) {
+        if (req.files && req.files['avatar']) {
+            if (identity.avatar) {
+                identity.avatarHistory.push(identity.avatar);
+            }
             identity.avatar = req.files['avatar'][0].path;
         }
-        if (req.files['coverPhoto']) {
+        if (req.files && req.files['coverPhoto']) {
+             if (identity.coverPhoto) {
+                identity.coverHistory.push(identity.coverPhoto);
+            }
             identity.coverPhoto = req.files['coverPhoto'][0].path;
+        }
+
+        // Allow setting existing URL as avatar/cover (from history)
+        if (req.body.avatarUrl) {
+            if (identity.avatar && identity.avatar !== req.body.avatarUrl) {
+                identity.avatarHistory.push(identity.avatar);
+            }
+            identity.avatar = req.body.avatarUrl;
+        }
+        if (req.body.coverPhotoUrl) {
+            if (identity.coverPhoto && identity.coverPhoto !== req.body.coverPhotoUrl) {
+                identity.coverHistory.push(identity.coverPhoto);
+            }
+            identity.coverPhoto = req.body.coverPhotoUrl;
         }
 
         // Allow updating text fields too if sent

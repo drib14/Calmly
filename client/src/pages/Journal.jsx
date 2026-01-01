@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
 import PinInput from '../components/PinInput';
+import PillSelection from '../components/PillSelection';
 
 // Custom fetcher that includes PIN header
 const fetcher = (url, pin) => axios.get(url, { headers: { 'x-journal-pin': pin } }).then(res => res.data);
@@ -256,21 +257,19 @@ const Journal = () => {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                     />
-                    <div className="flex items-center space-x-4 mb-6">
-                        <select
-                            value={mood}
-                            onChange={(e) => setMood(e.target.value)}
-                            className="text-xs bg-background border border-soft-border rounded-full px-3 py-1 text-secondary outline-none"
-                        >
-                            <option>Neutral</option>
-                            <option>Happy</option>
-                            <option>Sad</option>
-                            <option>Anxious</option>
-                        </select>
-                        <div className="text-xs text-secondary flex items-center">
-                            <Calendar size={12} className="mr-1" />
-                            Today
+                    <div className="flex flex-col space-y-3 mb-6">
+                        <div className="flex items-center justify-between">
+                             <span className="text-xs font-bold text-secondary uppercase tracking-wide">Mood</span>
+                             <div className="text-xs text-secondary flex items-center">
+                                <Calendar size={12} className="mr-1" />
+                                Today
+                            </div>
                         </div>
+                        <PillSelection
+                            options={['Neutral', 'Happy', 'Sad', 'Anxious']}
+                            value={mood}
+                            onChange={setMood}
+                        />
                     </div>
                     <textarea
                         className="flex-1 w-full resize-none border-none focus:ring-0 p-0 font-serif text-lg leading-loose text-text placeholder:text-secondary bg-transparent"
