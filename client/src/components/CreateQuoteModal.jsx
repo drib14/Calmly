@@ -61,7 +61,7 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
     <Modal isOpen={isOpen} onClose={onClose}>
         <div className="space-y-6">
             <div className="text-center">
-                <h3 className="text-lg font-bold font-serif">New Note</h3>
+                <h3 className="text-lg font-bold font-serif">New Quote</h3>
                 <p className="text-xs text-secondary">Share a thought for 24 hours.</p>
             </div>
 
@@ -72,14 +72,19 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
                 </div>
             </div>
 
-            <textarea
-                className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none"
-                rows="2"
-                placeholder="What's on your mind? (Max 60 chars)"
-                maxLength={60}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-            />
+            <div className="relative">
+                <textarea
+                    className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none pb-6"
+                    rows="2"
+                    placeholder="What's on your mind?"
+                    maxLength={60}
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                />
+                <div className="absolute bottom-2 right-3 text-xs text-secondary font-medium">
+                    {content.length}/60
+                </div>
+            </div>
 
             <div>
                 <label className="text-xs font-bold text-secondary uppercase mb-2 block">Mood</label>

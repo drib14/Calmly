@@ -379,7 +379,7 @@ const Messages = () => {
                                               {/* Label */}
                                               <div className={clsx("text-[10px] text-secondary font-medium mb-1 flex items-center space-x-1", isMe ? "mr-1" : "ml-1")}>
                                                   <Reply size={10} className={isMe ? "scale-x-[-1]" : ""} />
-                                                  <span>{isMe ? "You replied to their note" : "Replied to your note"}</span>
+                                                  <span>{isMe ? "You replied to their quote" : "Replied to your quote"}</span>
                                               </div>
 
                                               {/* Top Bubble (The Quote) */}

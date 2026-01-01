@@ -4,6 +4,7 @@ import { ChevronRight, Check, X, Smartphone, Globe, ExternalLink, Download } fro
 import axios from 'axios';
 import PinInput from './PinInput';
 import SelectionCard from './SelectionCard';
+import Avatar from './Avatar';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -12,6 +13,8 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
   const [formData, setFormData] = useState({});
   const [toggleState, setToggleState] = useState(false);
   const [activeSessions, setActiveSessions] = useState([]);
+  const [listItems, setListItems] = useState([]);
+  const [newItem, setNewItem] = useState('');
 
   // Specific states for password change
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -33,6 +36,9 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
           if (setting.id === 'sessions') {
               fetchSessions();
           }
+          if (setting.type === 'list') {
+              fetchList(setting.id);
+          }
       }
   }, [isOpen, setting, currentValue]);
 
@@ -42,6 +48,45 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
           setActiveSessions(res.data);
       } catch (err) {
           console.error(err);
+      }
+  };
+
+  const fetchList = async (id) => {
+      try {
+          const endpoint = id === 'blockedUsers' ? '/settings/blocked-users' : '/settings/muted-keywords';
+          const res = await axios.get(endpoint);
+          setListItems(res.data);
+      } catch (err) {
+          console.error(err);
+      }
+  };
+
+  const handleAddItem = async () => {
+      if (!newItem.trim()) return;
+      try {
+          const res = await axios.post('/settings/muted-keywords', { keyword: newItem.trim() });
+          setListItems(res.data);
+          setNewItem('');
+          toast.success("Keyword added");
+      } catch (err) {
+          toast.error("Failed to add");
+      }
+  };
+
+  const handleRemoveItem = async (item) => {
+      try {
+          if (setting.id === 'blockedUsers') {
+              await axios.delete(`/settings/blocked-users/${item._id}`);
+              setListItems(listItems.filter(i => i._id !== item._id));
+              toast.success("User unblocked");
+          } else {
+              // Keyword
+              await axios.delete(`/settings/muted-keywords/${encodeURIComponent(item)}`);
+              setListItems(listItems.filter(i => i !== item));
+              toast.success("Keyword removed");
+          }
+      } catch (err) {
+          toast.error("Failed to remove");
       }
   };
 
@@ -312,20 +357,55 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
 
                     if (setting.type === 'list' || setting.type === 'info') {
                         return (
-                            <div className="text-center">
+                            <div className="text-left">
                           <p className="text-secondary mb-6">Manage {setting.label}</p>
-                           <div className="bg-background p-4 rounded-xl mb-4 border border-soft-border">
-                               <p className="text-sm text-secondary">
-                                   {setting.type === 'info' ? 'External link or static content.' : 'List management will be available here.'}
-                               </p>
-                           </div>
-                           {setting.type === 'info' && (
-                               <a href="#" className="flex items-center justify-center space-x-2 text-accent font-bold hover:underline mb-4">
-                                   <span>Open Resource</span>
-                                   <ExternalLink size={16} />
-                               </a>
+
+                           {setting.type === 'info' ? (
+                               <>
+                                   <div className="bg-background p-4 rounded-xl mb-4 border border-soft-border">
+                                       <p className="text-sm text-secondary">
+                                           External link or static content.
+                                       </p>
+                                   </div>
+                                   <a href="#" className="flex items-center justify-center space-x-2 text-accent font-bold hover:underline mb-4">
+                                       <span>Open Resource</span>
+                                       <ExternalLink size={16} />
+                                   </a>
+                               </>
+                           ) : (
+                               <>
+                                {setting.id === 'mutedKeywords' && (
+                                    <div className="flex space-x-2 mb-4">
+                                        <input
+                                            className="flex-1 bg-background border border-soft-border rounded-xl px-3 py-2 text-sm text-text focus:outline-none focus:ring-1 focus:ring-text"
+                                            placeholder="Add keyword..."
+                                            value={newItem}
+                                            onChange={(e) => setNewItem(e.target.value)}
+                                        />
+                                        <button onClick={handleAddItem} className="bg-text text-background px-4 rounded-xl font-bold text-sm">Add</button>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    {listItems.length === 0 && <p className="text-sm text-secondary italic text-center py-4">List is empty.</p>}
+                                    {listItems.map((item, i) => (
+                                        <div key={i} className="flex justify-between items-center p-3 bg-background rounded-xl border border-soft-border">
+                                            {setting.id === 'blockedUsers' ? (
+                                                <div className="flex items-center space-x-3">
+                                                    <Avatar identity={item} size="xs" />
+                                                    <span className="text-sm font-bold text-text">{item.name}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-sm text-text">{item}</span>
+                                            )}
+                                            <button onClick={() => handleRemoveItem(item)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                        </div>
+                                    ))}
+                                </div>
+                               </>
                            )}
-                           <button onClick={onClose} className="w-full bg-soft-border text-text py-3 rounded-xl font-bold hover:bg-opacity-80">Close</button>
+
+                           <button onClick={onClose} className="w-full bg-soft-border text-text py-3 rounded-xl font-bold hover:bg-opacity-80 mt-6">Close</button>
                       </div>
                    );
               }

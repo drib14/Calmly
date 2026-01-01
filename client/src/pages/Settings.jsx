@@ -101,7 +101,8 @@ const Settings = () => {
           { id: 'defaultPostType', label: "Default Post Type", type: 'select', options: ['confession', 'poetry', 'letter', 'mood'], description: "The post type selected by default in the editor." },
           { id: 'defaultMood', label: "Default Mood", type: 'select', options: ['Neutral', 'Happy', 'Sad', 'Anxious', 'Hopeful'], description: "The mood selected by default." },
           { id: 'autoContentWarning', label: "Auto Content Warning", type: 'toggle', description: "Automatically flag your posts if they contain sensitive keywords." },
-          { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle', description: "Save your work in progress to your local device automatically." }
+          { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle', description: "Save your work in progress to your local device automatically." },
+          { id: 'autoDeleteTimer', label: "Auto-Delete Posts", type: 'select', options: [{ value: 0, label: 'Off' }, { value: 24, label: '24 Hours' }, { value: 168, label: '1 Week' }], description: "Automatically delete your posts after a set time." }
       ]
     },
     {
@@ -136,7 +137,8 @@ const Settings = () => {
       description: "Tools to protect your peace of mind.",
       items: [
           { id: 'enableSafeMode', label: "Enable Safe Mode", type: 'toggle', description: "Blur content that may be emotionally triggering." },
-          { id: 'coolDownTimer', label: "Cool-Down Posting Timer", type: 'select', options: ['Off', '5m', '15m', '1h'], description: "Enforce a waiting period between your posts." }
+          { id: 'coolDownTimer', label: "Cool-Down Posting Timer", type: 'select', options: ['Off', '5m', '15m', '1h'], description: "Enforce a waiting period between your posts." },
+          { id: 'region', label: "Region", type: 'select', options: ['Global', 'North America', 'Europe', 'Asia', 'South America', 'Africa', 'Oceania'], description: "Content preference region." }
       ]
     },
     {

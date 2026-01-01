@@ -261,6 +261,45 @@ const downloadUserData = async (req, res) => {
   }
 };
 
+// Blocked Users Management
+const getBlockedUsers = async (req, res) => {
+    const user = await User.findById(req.user._id).populate('settings.blockedUsers', 'name handle avatar');
+    res.json(user.settings.blockedUsers || []);
+};
+
+const unblockUser = async (req, res) => {
+    const user = await User.findById(req.user._id);
+    user.settings.blockedUsers = user.settings.blockedUsers.filter(id => id.toString() !== req.params.id);
+    await user.save();
+    res.json({ message: 'User unblocked' });
+};
+
+// Muted Keywords Management
+const getMutedKeywords = async (req, res) => {
+    const user = await User.findById(req.user._id);
+    res.json(user.settings.mutedKeywords || []);
+};
+
+const addMutedKeyword = async (req, res) => {
+    const { keyword } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user.settings.mutedKeywords.includes(keyword)) {
+        user.settings.mutedKeywords.push(keyword);
+        await user.save();
+    }
+    res.json(user.settings.mutedKeywords);
+};
+
+const removeMutedKeyword = async (req, res) => {
+    const { keyword } = req.params; // keyword passed as param might need encoding, body is safer?
+    // Using body for delete is non-standard but works, or use param.
+    // Let's use body for add, param for delete.
+    const user = await User.findById(req.user._id);
+    user.settings.mutedKeywords = user.settings.mutedKeywords.filter(k => k !== keyword);
+    await user.save();
+    res.json(user.settings.mutedKeywords);
+};
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -271,5 +310,10 @@ module.exports = {
   deleteAccount,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  getBlockedUsers,
+  unblockUser,
+  getMutedKeywords,
+  addMutedKeyword,
+  removeMutedKeyword
 };

@@ -5,6 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
 const Report = require('../models/Report');
+const Notification = require('../models/Notification');
 const { upload } = require('../utils/cloudinary');
 
 // Update a post
@@ -164,6 +165,20 @@ router.put('/:id/like', protect, async (req, res) => {
             post.likes.splice(existingLikeIndex, 1);
         } else {
             post.likes.push({ user: req.user._id, identity: identity._id });
+
+            // Notification
+            if (post.identity.toString() !== identityId.toString()) {
+                const recipientIdentity = await Identity.findById(post.identity);
+                if (recipientIdentity) {
+                    await Notification.create({
+                        recipient: post.identity,
+                        user: recipientIdentity.user,
+                        sender: identity._id,
+                        type: 'like',
+                        post: post._id
+                    });
+                }
+            }
         }
         await post.save();
         res.json(post.likes);
@@ -188,6 +203,20 @@ router.put('/:id/repost', protect, async (req, res) => {
             post.reposts.splice(existingRepostIndex, 1);
         } else {
             post.reposts.push({ user: req.user._id, identity: identity._id });
+
+            // Notification
+            if (post.identity.toString() !== identityId.toString()) {
+                const recipientIdentity = await Identity.findById(post.identity);
+                if (recipientIdentity) {
+                    await Notification.create({
+                        recipient: post.identity,
+                        user: recipientIdentity.user,
+                        sender: identity._id,
+                        type: 'repost',
+                        post: post._id
+                    });
+                }
+            }
         }
         await post.save();
         await post.populate('reposts.identity', 'name type handle avatar');

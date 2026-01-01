@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 import About from './pages/About';
 import Legal from './pages/Legal';
 import Settings from './pages/Settings';
+import Notifications from './pages/Notifications';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -64,6 +65,12 @@ function App() {
                 <Route path="/chat" element={
                   <ProtectedRoute>
                     <Messages />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <Notifications />
                   </ProtectedRoute>
                 } />
 

@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const Message = require('../models/Message');
 const Identity = require('../models/Identity');
+const Notification = require('../models/Notification');
 const { upload } = require('../utils/cloudinary');
 
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
@@ -69,6 +70,19 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
         sharedPost: sharedPost || undefined,
         media
       });
+
+      if (replyToQuote) {
+          // Notify quote owner (recipient)
+          if (recipient.user) {
+             await Notification.create({
+                 recipient: recipientIdentityId,
+                 user: recipient.user._id,
+                 sender: senderIdentityId,
+                 type: 'quote_reply',
+             });
+          }
+      }
+
       res.status(201).json(message);
   } catch (error) {
     console.error("Message Error:", error);

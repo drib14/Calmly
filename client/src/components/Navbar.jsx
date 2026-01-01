@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User } from 'lucide-react';
+import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User, Bell } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useIdentity } from '../context/IdentityContext';
@@ -60,6 +60,8 @@ const Navbar = () => {
       { refreshInterval: 5000 }
   );
 
+  const { unreadCount: notifCount } = useNotifications();
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -70,9 +72,10 @@ const Navbar = () => {
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/feed' },
-    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true }, // Search is topbar on mobile
+    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true },
     { icon: PenTool, label: 'Create', path: '/create' },
     { icon: BookOpen, label: 'Journal', path: '/journal' },
+    { icon: Bell, label: 'Activity', path: '/notifications', badge: notifCount },
     { icon: MessageCircle, label: 'Chat', path: '/chat', badge: unreadData?.count },
   ];
 

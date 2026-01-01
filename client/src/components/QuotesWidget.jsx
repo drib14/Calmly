@@ -72,7 +72,7 @@ const QuotesWidget = () => {
 
   return (
     <div className="mb-2">
-        <div className="flex space-x-4 overflow-x-auto pb-2 pt-16 px-2 custom-scrollbar items-end">
+        <div className="flex space-x-4 overflow-x-auto pb-2 pt-16 px-6 custom-scrollbar items-end">
 
             {/* My Slot (Add or View Mine) */}
             <div className="flex flex-col items-center space-y-1 min-w-[70px] relative z-10">

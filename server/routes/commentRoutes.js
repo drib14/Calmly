@@ -4,6 +4,7 @@ const { protect } = require('../middleware/authMiddleware');
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
+const Notification = require('../models/Notification');
 const { upload } = require('../utils/cloudinary');
 
 // Get comments for a post
@@ -49,6 +50,39 @@ router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
       media,
       parentComment: parentCommentId || null
     });
+
+    // Notification to Post Owner
+    if (post.identity.toString() !== identityId.toString()) {
+         const recipientIdentity = await Identity.findById(post.identity);
+         if (recipientIdentity) {
+             await Notification.create({
+                 recipient: post.identity,
+                 user: recipientIdentity.user,
+                 sender: identityId,
+                 type: 'comment',
+                 post: post._id,
+                 comment: comment._id
+             });
+         }
+    }
+
+    // Notification to Parent Comment Owner (if reply)
+    if (parentCommentId) {
+        const parent = await Comment.findById(parentCommentId);
+        if (parent && parent.identity.toString() !== identityId.toString()) {
+             const parentIdentity = await Identity.findById(parent.identity);
+             if (parentIdentity) {
+                 await Notification.create({
+                     recipient: parent.identity,
+                     user: parentIdentity.user,
+                     sender: identityId,
+                     type: 'reply',
+                     post: post._id,
+                     comment: comment._id
+                 });
+             }
+        }
+    }
 
     // Populate for immediate frontend display
     await comment.populate('identity', 'name type handle avatar');

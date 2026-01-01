@@ -60,7 +60,7 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
                 /* Empty State (Add Note) */
                 <div className={`relative ${bubbleClasses} rounded-full shadow-sm border px-3 py-1.5 whitespace-nowrap`}>
                     <div className="text-[10px] font-bold opacity-80">
-                        + Note
+                        + Quote
                     </div>
                     <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 ${bgClass} rotate-45 transform`}></div>
                 </div>

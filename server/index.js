@@ -31,6 +31,7 @@ app.use('/api/comments', require('./routes/commentRoutes'));
 app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/quotes', require('./routes/quoteRoutes'));
 
