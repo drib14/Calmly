@@ -57,6 +57,10 @@ const Messages = () => {
   const socket = useSocket();
   const [viewQuote, setViewQuote] = useState(null); // For modal
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
   useEffect(() => {
     if (location.state?.startConversationWith) {
       setActiveConversation(location.state.startConversationWith);
