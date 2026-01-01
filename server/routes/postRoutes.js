@@ -32,6 +32,32 @@ router.put('/:id', protect, async (req, res) => {
     }
 });
 
+// Get Single Post
+router.get('/:id', protect, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id)
+            .populate('identity')
+            .populate({
+                path: 'identity',
+                populate: { path: 'user' } // Populate user for settings/permissions
+            })
+            .populate('reposts.identity', 'name type handle avatar');
+
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Privacy check for private posts
+        if (post.visibility === 'private') {
+            if (!post.identity || !post.identity.user || post.identity.user._id.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'Unauthorized access to private post' });
+            }
+        }
+
+        res.json(post);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Create a post
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
@@ -170,13 +196,19 @@ router.put('/:id/like', protect, async (req, res) => {
             if (post.identity.toString() !== identityId.toString()) {
                 const recipientIdentity = await Identity.findById(post.identity);
                 if (recipientIdentity) {
-                    await Notification.create({
+                    const notification = await Notification.create({
                         recipient: post.identity,
                         user: recipientIdentity.user,
                         sender: identity._id,
                         type: 'like',
                         post: post._id
                     });
+
+                    // Real-time Notification
+                    const io = req.app.get('io');
+                    if (io) {
+                        io.to(recipientIdentity.user.toString()).emit('new_notification', notification);
+                    }
                 }
             }
         }
@@ -208,13 +240,19 @@ router.put('/:id/repost', protect, async (req, res) => {
             if (post.identity.toString() !== identityId.toString()) {
                 const recipientIdentity = await Identity.findById(post.identity);
                 if (recipientIdentity) {
-                    await Notification.create({
+                    const notification = await Notification.create({
                         recipient: post.identity,
                         user: recipientIdentity.user,
                         sender: identity._id,
                         type: 'repost',
                         post: post._id
                     });
+
+                    // Real-time Notification
+                    const io = req.app.get('io');
+                    if (io) {
+                        io.to(recipientIdentity.user.toString()).emit('new_notification', notification);
+                    }
                 }
             }
         }
@@ -263,6 +301,29 @@ router.post('/:id/report', protect, async (req, res) => {
         res.status(201).json({ message: 'Report submitted' });
     } catch (error) {
         console.error("Report Post Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Toggle Save Post
+router.put('/:id/save', protect, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        const user = req.user;
+        const index = user.savedPosts.indexOf(post._id);
+
+        if (index > -1) {
+            user.savedPosts.splice(index, 1);
+            await user.save();
+            res.json({ saved: false });
+        } else {
+            user.savedPosts.push(post._id);
+            await user.save();
+            res.json({ saved: true });
+        }
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
+import { useSocket } from '../context/SocketContext';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply } from 'lucide-react';
@@ -9,6 +10,7 @@ import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import QuotesWidget from '../components/QuotesWidget';
+import QuoteAnalyticsModal from '../components/QuoteAnalyticsModal'; // Use for viewing quote details
 import { toast } from 'react-hot-toast';
 
 const moodColors = {
@@ -43,6 +45,9 @@ const Messages = () => {
 
   // Mobile View State ('list' or 'chat')
   const [view, setView] = useState('list');
+  const [expiredQuotes, setExpiredQuotes] = useState(new Set());
+  const socket = useSocket();
+  const [viewQuote, setViewQuote] = useState(null); // For modal
 
   useEffect(() => {
     if (location.state?.startConversationWith) {
@@ -104,6 +109,16 @@ const Messages = () => {
   useEffect(() => {
       scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Socket: Listen for Quote Expiry
+  useEffect(() => {
+      if (!socket) return;
+      const handleExpired = (quoteId) => {
+          setExpiredQuotes(prev => new Set(prev).add(quoteId));
+      };
+      socket.on('quote_expired', handleExpired);
+      return () => socket.off('quote_expired', handleExpired);
+  }, [socket]);
 
   const handleConversationClick = (identity) => {
       setActiveConversation(identity);
@@ -383,15 +398,32 @@ const Messages = () => {
                                               </div>
 
                                               {/* Top Bubble (The Quote) */}
-                                              <div className={clsx(
-                                                  "px-4 py-3 text-sm border shadow-sm max-w-full z-0",
-                                                  "rounded-t-3xl",
-                                                  isMe ? "rounded-br-sm rounded-bl-3xl" : "rounded-bl-sm rounded-br-3xl",
-                                                  moodColors[msg.replyToQuote.mood] || moodColors['Neutral'],
-                                                  msg.replyToQuote.font || 'font-serif'
-                                              )}>
-                                                  <p className="italic">"{msg.replyToQuote.content}"</p>
-                                              </div>
+                                              {(expiredQuotes.has(msg.replyToQuote._id || 'unknown') || msg.replyToQuote.isExpired) ? (
+                                                   <div className={clsx(
+                                                        "px-4 py-3 text-sm border shadow-sm max-w-full z-0 bg-surface border-soft-border text-secondary italic",
+                                                        "rounded-t-3xl",
+                                                        isMe ? "rounded-br-sm rounded-bl-3xl" : "rounded-bl-sm rounded-br-3xl",
+                                                   )}>
+                                                       This quote has been expired
+                                                   </div>
+                                              ) : (
+                                                <div
+                                                    onClick={() => {
+                                                        setViewQuote({
+                                                            ...msg.replyToQuote,
+                                                            identity: { name: msg.replyToQuote.identityName }
+                                                        });
+                                                    }}
+                                                    className={clsx(
+                                                        "px-4 py-3 text-sm border shadow-sm max-w-full z-0 cursor-pointer hover:opacity-90 active:scale-95 transition",
+                                                        "rounded-t-3xl",
+                                                        isMe ? "rounded-br-sm rounded-bl-3xl" : "rounded-bl-sm rounded-br-3xl",
+                                                        moodColors[msg.replyToQuote.mood] || moodColors['Neutral'],
+                                                        msg.replyToQuote.font || 'font-serif'
+                                                )}>
+                                                    <p className="italic">"{msg.replyToQuote.content}"</p>
+                                                </div>
+                                              )}
                                           </div>
                                       )}
 
@@ -471,6 +503,11 @@ const Messages = () => {
               </div>
           )}
       </div>
+
+      {/* View Quote Modal */}
+      {viewQuote && (
+          <QuoteAnalyticsModal quote={viewQuote} onClose={() => setViewQuote(null)} />
+      )}
     </div>
   );
 };

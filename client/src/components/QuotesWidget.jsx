@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Send, Trash2 } from 'lucide-react';
 import Avatar from './Avatar';
 import Modal from './Modal';
-import NoteBubble from './NoteBubble';
+import QuoteBubble from './QuoteBubble';
 import CreateQuoteModal from './CreateQuoteModal';
 import ReplyQuoteModal from './ReplyQuoteModal';
 import { useIdentity } from '../context/IdentityContext';
@@ -76,7 +76,7 @@ const QuotesWidget = () => {
 
             {/* My Slot (Add or View Mine) */}
             <div className="flex flex-col items-center space-y-1 min-w-[70px] relative z-10">
-                <NoteBubble
+                <QuoteBubble
                     identity={currentIdentity}
                     quote={myQuote}
                     isMe={true}
@@ -89,7 +89,7 @@ const QuotesWidget = () => {
             {/* Other Quotes */}
             {otherQuotes.map((quote) => (
                 <div key={quote._id} className="flex flex-col items-center space-y-1 min-w-[70px] relative">
-                    <NoteBubble
+                    <QuoteBubble
                         identity={quote.identity}
                         quote={quote}
                         onQuoteClick={() => setReplyQuote(quote)}

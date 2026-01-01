@@ -16,9 +16,10 @@ import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
 import EditPostModal from './EditPostModal';
-import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import { Share2, Link as LinkIcon, ExternalLink, Bookmark } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
+  const { user } = useAuth();
   const { currentIdentity, identities } = useIdentity();
   const { settings } = useSettings();
   const [expanded, setExpanded] = useState(false);
@@ -66,6 +67,7 @@ const PostCard = ({ post, mutate }) => {
   const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
   const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
   const isOwner = post.identity._id === currentIdentity?._id;
+  const isSaved = user?.savedPosts?.includes(post._id);
 
   // Safe Mode Logic
   const triggeringMoods = ['Melancholy', 'Angry', 'Anxious', 'Numb'];
@@ -222,10 +224,28 @@ const PostCard = ({ post, mutate }) => {
   };
 
   const handleCopyLink = () => {
-      const link = `${window.location.origin}/profile/${post.identity.handle?.replace('@', '') || 'anon'}`;
+      // Direct link to post if possible, otherwise profile
+      // We don't have /post/:id route yet in UI generally, but we might implement it or anchor it
+      const link = `${window.location.origin}/feed?post=${post._id}`;
       navigator.clipboard.writeText(link);
       toast.success("Link copied to clipboard");
       setShowShareMenu(false);
+  };
+
+  const handleSave = async () => {
+      try {
+          const { data } = await axios.put(`/posts/${post._id}/save`);
+          if (data.saved) {
+              toast.success("Post saved");
+          } else {
+              toast.success("Post unsaved");
+          }
+          // We need to update local user state or revalidate auth
+          // Assuming AuthContext allows revalidation or we just optimistically toggle
+          // For now, let's just toast. Optimistic UI is complex without global mutation.
+      } catch (err) {
+          toast.error("Failed to save post");
+      }
   };
 
   const openViewer = (src) => {
@@ -345,10 +365,18 @@ const PostCard = ({ post, mutate }) => {
                             </>
                         )}
                         {!isOwner && (
-                            <button onClick={handleHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
-                                <EyeOff size={14} /> <span>Hide Post</span>
-                            </button>
+                            <>
+                                <button onClick={handleHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <EyeOff size={14} /> <span>Hide Post</span>
+                                </button>
+                            </>
                         )}
+                         <button onClick={() => { handleSave(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                            <Bookmark size={14} /> <span>{isSaved ? 'Unsave Post' : 'Save Post'}</span>
+                        </button>
+                         <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                            <LinkIcon size={14} /> <span>Copy Link</span>
+                        </button>
                         <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
                             <Flag size={14} /> <span>Report Content</span>
                         </button>

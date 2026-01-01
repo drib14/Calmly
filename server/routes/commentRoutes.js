@@ -55,7 +55,7 @@ router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
     if (post.identity.toString() !== identityId.toString()) {
          const recipientIdentity = await Identity.findById(post.identity);
          if (recipientIdentity) {
-             await Notification.create({
+             const notification = await Notification.create({
                  recipient: post.identity,
                  user: recipientIdentity.user,
                  sender: identityId,
@@ -63,6 +63,12 @@ router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
                  post: post._id,
                  comment: comment._id
              });
+
+            // Real-time Notification
+            const io = req.app.get('io');
+            if (io) {
+                io.to(recipientIdentity.user.toString()).emit('new_notification', notification);
+            }
          }
     }
 
@@ -72,7 +78,7 @@ router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
         if (parent && parent.identity.toString() !== identityId.toString()) {
              const parentIdentity = await Identity.findById(parent.identity);
              if (parentIdentity) {
-                 await Notification.create({
+                 const notification = await Notification.create({
                      recipient: parent.identity,
                      user: parentIdentity.user,
                      sender: identityId,
@@ -80,6 +86,12 @@ router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
                      post: post._id,
                      comment: comment._id
                  });
+
+                 // Real-time Notification
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(parentIdentity.user.toString()).emit('new_notification', notification);
+                }
              }
         }
     }

@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useIdentity } from '../context/IdentityContext';
 import Avatar from './Avatar';
+import NotificationBell from './NotificationBell';
 import axios from 'axios';
 import useSWR from 'swr';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -60,8 +61,6 @@ const Navbar = () => {
       { refreshInterval: 5000 }
   );
 
-  const { unreadCount: notifCount } = useNotifications();
-
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -75,7 +74,7 @@ const Navbar = () => {
     { icon: Search, label: 'Explore', path: '/search', mobileHidden: true },
     { icon: PenTool, label: 'Create', path: '/create' },
     { icon: BookOpen, label: 'Journal', path: '/journal' },
-    { icon: Bell, label: 'Activity', path: '/notifications', badge: notifCount },
+    { icon: Bell, label: 'Activity', path: '/notifications', component: <NotificationBell /> },
     { icon: MessageCircle, label: 'Chat', path: '/chat', badge: unreadData?.count },
   ];
 
@@ -85,6 +84,9 @@ const Navbar = () => {
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe">
         {navItems.filter(i => !i.mobileHidden).map((item) => {
             const isActive = location.pathname === item.path;
+            if (item.component) {
+                 return <div key={item.path} className="p-3">{item.component}</div>;
+            }
             return (
                 <NavLink
                     key={item.path}
@@ -206,6 +208,21 @@ const Navbar = () => {
       <div className="flex flex-col w-full space-y-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
+          if (item.component && !isExpanded) {
+              return <div key={item.path} className="flex justify-center py-2 relative">{item.component}</div>;
+          }
+
+          if (item.component && isExpanded) {
+              return (
+                   <div key={item.path} className="flex items-center p-3 rounded-xl w-full space-x-3 px-4 text-secondary hover:text-text hover:bg-background cursor-pointer">
+                        <div className="relative pointer-events-auto">
+                            {item.component}
+                        </div>
+                        <span className="font-medium text-sm whitespace-nowrap flex-1">{item.label}</span>
+                   </div>
+              );
+          }
+
           return (
             <NavLink
               key={item.path}

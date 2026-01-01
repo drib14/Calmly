@@ -158,7 +158,8 @@ const Settings = () => {
       description: "Manage blocked users and mute lists.",
       items: [
           { id: 'blockedUsers', label: "Blocked Users", type: 'list', description: "Manage users you have blocked." },
-          { id: 'mutedKeywords', label: "Muted Keywords", type: 'list', description: "Manage keywords you don't want to see." }
+          { id: 'mutedKeywords', label: "Muted Keywords", type: 'list', description: "Manage keywords you don't want to see." },
+          { id: 'saved_posts', label: "Saved Posts", type: 'action', description: "View your saved posts." }
       ]
     },
     {

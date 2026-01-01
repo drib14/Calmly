@@ -24,6 +24,17 @@ const quoteSchema = new mongoose.Schema({
     type: String,
     default: 'font-serif',
   },
+  views: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      identity: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' },
+      timestamp: { type: Date, default: Date.now }
+  }],
+  reactions: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      identity: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' },
+      type: { type: String, default: 'heart' }
+  }],
+  lastCheckedViews: { type: Date },
   createdAt: {
     type: Date,
     default: Date.now,

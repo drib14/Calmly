@@ -6,7 +6,7 @@ import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, 
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
-import NoteBubble from '../components/NoteBubble';
+import QuoteBubble from '../components/QuoteBubble';
 import ImageViewer from '../components/ImageViewer';
 import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
@@ -211,9 +211,9 @@ const Profile = () => {
           </div>
 
           <div className="px-6 pb-6 relative pt-20 rounded-b-3xl">
-              {/* Avatar with Note */}
+              {/* Avatar with Quote */}
               <div className="absolute -top-16 left-6 w-32 h-32 z-30">
-                  <NoteBubble
+                  <QuoteBubble
                     identity={identity}
                     quote={quote}
                     isMe={isOwner}

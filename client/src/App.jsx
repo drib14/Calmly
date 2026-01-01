@@ -20,6 +20,8 @@ import About from './pages/About';
 import Legal from './pages/Legal';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
+import PostView from './pages/PostView';
+import SavedPosts from './pages/SavedPosts';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -89,6 +91,18 @@ function App() {
                 <Route path="/create" element={
                   <ProtectedRoute>
                     <CreatePost />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/post/:id" element={
+                  <ProtectedRoute>
+                    <PostView />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/saved" element={
+                  <ProtectedRoute>
+                    <SavedPosts />
                   </ProtectedRoute>
                 } />
               </Routes>

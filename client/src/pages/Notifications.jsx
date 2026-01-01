@@ -1,17 +1,63 @@
-import React, { useEffect } from 'react';
-import { useNotifications } from '../hooks/useNotifications';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { formatDistanceToNow } from 'date-fns';
 import { Heart, MessageCircle, Repeat, Trash2, Quote, User } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
 
 const Notifications = () => {
-    const { notifications, isLoading, markAllRead, clearAll } = useNotifications();
+    const [notifications, setNotifications] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
+    const socket = useSocket();
+
+    const fetchNotifications = async () => {
+        try {
+            const { data } = await axios.get('/notifications');
+            setNotifications(data);
+            setIsLoading(false);
+        } catch (err) {
+            console.error(err);
+            setIsLoading(false);
+        }
+    };
+
+    const markAllRead = async () => {
+        try {
+            await axios.put('/notifications/read');
+            // Update local state to show as read
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const clearAll = async () => {
+        if (window.confirm("Clear all notifications?")) {
+            try {
+                await axios.delete('/notifications');
+                setNotifications([]);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    }
 
     useEffect(() => {
+        fetchNotifications();
         markAllRead();
     }, []);
+
+    // Listen for new notifications
+    useEffect(() => {
+        if (!socket) return;
+        const handleNew = (newNotification) => {
+            setNotifications(prev => [newNotification, ...prev]);
+        };
+        socket.on('new_notification', handleNew);
+        return () => socket.off('new_notification', handleNew);
+    }, [socket]);
 
     if (isLoading) return <div className="text-center py-10 text-secondary">Loading...</div>;
 
@@ -22,6 +68,7 @@ const Notifications = () => {
             case 'reply': return <MessageCircle className="text-blue-500" size={16} />;
             case 'repost': return <Repeat className="text-green-500" size={16} />;
             case 'quote_reply': return <Quote className="text-purple-500" size={16} />;
+            case 'quote_reaction': return <Heart className="text-pink-500" size={16} fill="currentColor" />;
             default: return <User className="text-secondary" size={16} />;
         }
     };
@@ -64,6 +111,7 @@ const Notifications = () => {
                                         {n.type === 'comment' && 'commented on your post.'}
                                         {n.type === 'reply' && 'replied to your comment.'}
                                         {n.type === 'quote_reply' && 'replied to your quote.'}
+                                        {n.type === 'quote_reaction' && 'reacted to your quote.'}
                                     </span>
                                 </p>
                                 {n.comment && <p className="text-xs text-secondary mt-1 line-clamp-1">"{n.comment.content}"</p>}
