@@ -91,7 +91,7 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       if (onAvatarClick) onAvatarClick();
   };
 
-  // Base classes for the "Note" style: White bubble, rounded-2xl, border
+  // Base classes for the "Quote" style: White bubble, rounded-2xl, border
   const baseClasses = "bg-white text-slate-800 rounded-2xl px-3 py-2 border";
   const moodStyle = hasQuote ? (moodStyles[quote.mood] || moodStyles['Neutral']) : 'border-gray-200';
 
@@ -147,9 +147,10 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
                         </div>
                     )}
 
-                    {/* Tail: Rounded Thought Bubble Style */}
-                     <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                        <div className={`w-3 h-3 bg-white border-b border-r ${moodStyle.split(' ')[0]} rotate-45 transform translate-y-[-50%] rounded-sm`}></div>
+                    {/* Tail: Rounded Thought Bubble Style with circles */}
+                     <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-[-2px]">
+                        <div className={`w-2 h-2 rounded-full bg-white border border-gray-200 ${moodStyle.split(' ')[0]}`}></div>
+                        <div className={`w-1 h-1 rounded-full bg-white border border-gray-200 ${moodStyle.split(' ')[0]}`}></div>
                      </div>
                 </div>
             ) : (
@@ -157,7 +158,7 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
                 <div className="relative bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-200 px-3 py-1.5 whitespace-nowrap hover:bg-white transition-colors">
                     <div className="text-[10px] font-bold text-gray-500 flex items-center space-x-1">
                         <Plus size={10} />
-                        <span>Add Note</span>
+                        <span>Add Quote</span>
                     </div>
                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white rotate-45 border-b border-r border-gray-200"></div>
                 </div>

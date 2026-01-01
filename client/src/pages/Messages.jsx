@@ -4,8 +4,8 @@ import useSWR from 'swr';
 import { useSocket } from '../context/SocketContext';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, MoreVertical, BellOff, Bell, Ban, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, MoreVertical, BellOff, Bell, Ban, Trash2, Smile } from 'lucide-react';
+import { formatDistanceToNowStrict } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
@@ -48,6 +48,9 @@ const Messages = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, data: null });
 
+  // Message Context Menu State
+  const [messageContextMenu, setMessageContextMenu] = useState({ visible: false, x: 0, y: 0, message: null });
+
   // Mobile View State ('list' or 'chat')
   const [view, setView] = useState('list');
   const [expiredQuotes, setExpiredQuotes] = useState(new Set());
@@ -61,7 +64,17 @@ const Messages = () => {
     }
   }, [location.state]);
 
-  // Suggested Users (All identities for now, horizontal scroll)
+  // Handle outside click to close menus
+  useEffect(() => {
+      const handleClick = () => {
+          setOpenMenuId(null);
+          setMessageContextMenu({ visible: false, x: 0, y: 0, message: null });
+      };
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+  }, []);
+
+  // Suggested Users
   const { data: suggestedUsersRaw } = useSWR('/search?q=&type=identities', async (url) => {
       try {
           const res = await axios.get(url);
@@ -184,7 +197,6 @@ const Messages = () => {
       }
   };
 
-  // Helper to trigger confirmation
   const requestConfirmation = (e, type, data) => {
       e.stopPropagation();
       setConfirmModal({ isOpen: true, type, data });
@@ -202,7 +214,6 @@ const Messages = () => {
                   setView('list');
               }
           } else if (type === 'block') {
-               // "Add to blocked users" logic:
                await axios.post('/settings/blocked-users', { identityId: data });
                toast.success("User blocked");
           }
@@ -214,10 +225,28 @@ const Messages = () => {
       }
   };
 
+  // Message Bubble Context Menu
+  const handleMessageContextMenu = (e, msg) => {
+      e.preventDefault();
+      setMessageContextMenu({
+          visible: true,
+          x: e.clientX,
+          y: e.clientY,
+          message: msg
+      });
+  };
 
-  // Search
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  // Placeholder for message options
+  const handleMessageOption = (action, msg) => {
+      // Implement logic (e.g., delete single message, reply)
+      // Since backend doesn't support single message deletion for now (only conversation), we can mock or add later.
+      // User asked for "options per chat bubble".
+      if (action === 'copy') {
+          navigator.clipboard.writeText(msg.content);
+          toast.success("Copied");
+      }
+      setMessageContextMenu({ visible: false, x: 0, y: 0, message: null });
+  };
 
   const handleSearch = async (e) => {
       setSearchQuery(e.target.value);
@@ -339,13 +368,16 @@ const Messages = () => {
                                 <Avatar identity={other} />
                                 {isUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-surface"></span>}
                               </div>
-                              <div className="flex-1 min-w-0">
+                              <div className="flex-1 min-w-0 pr-6"> {/* Added padding-right for kebab menu space */}
                                   <div className="flex justify-between items-baseline mb-1">
                                       <div className="flex items-center gap-1">
                                           <span className={clsx("text-sm truncate", isUnread ? "font-bold text-text" : "font-medium text-text/80")}>{other.name}</span>
                                           {isMuted && <BellOff size={10} className="text-secondary" />}
                                       </div>
-                                      <span className="text-[10px] text-secondary">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
+                                      {/* Shortened Timestamp using strict formatting */}
+                                      <span className="text-[10px] text-secondary whitespace-nowrap">
+                                          {formatDistanceToNowStrict(new Date(msg.createdAt), { addSuffix: false }).split(' ')[0] + formatDistanceToNowStrict(new Date(msg.createdAt), { addSuffix: false }).split(' ')[1][0]}
+                                      </span>
                                   </div>
                                   <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-text" : "text-secondary")}>
                                       {isSenderMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a post' : msg.content || 'Sent a file'}
@@ -353,8 +385,8 @@ const Messages = () => {
                               </div>
                           </div>
 
-                          {/* Kebab Menu */}
-                          <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Kebab Menu - Ensure click handling */}
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                               <button
                                 onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === other._id ? null : other._id); }}
                                 className="p-2 hover:bg-soft-border rounded-full text-secondary"
@@ -365,7 +397,7 @@ const Messages = () => {
 
                           {/* Dropdown Menu */}
                           {openMenuId === other._id && (
-                              <div className="absolute right-10 top-8 w-40 bg-surface shadow-xl border border-soft-border rounded-xl z-30 animate-in fade-in zoom-in-95 duration-200">
+                              <div className="absolute right-8 top-8 w-40 bg-surface shadow-xl border border-soft-border rounded-xl z-30 animate-in fade-in zoom-in-95 duration-200">
                                   <button onClick={(e) => handleMute(e, other._id, isMuted)} className="w-full text-left px-4 py-2 text-xs font-bold text-text hover:bg-background flex items-center gap-2">
                                       {isMuted ? <Bell size={12}/> : <BellOff size={12}/>}
                                       {isMuted ? 'Unmute' : 'Mute'}
@@ -422,7 +454,10 @@ const Messages = () => {
                           return (
                               <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
-                                  <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
+                                  <div
+                                    className={`max-w-[85%] md:max-w-[70%] space-y-2 group relative`}
+                                    onContextMenu={(e) => handleMessageContextMenu(e, msg)}
+                                  >
                                       {/* Media Bubbles */}
                                       {msg.media?.map((m, i) => (
                                           <div key={i} className={clsx(
@@ -592,6 +627,19 @@ const Messages = () => {
           confirmText={confirmModal.type === 'delete' ? "Delete" : "Block"}
           isDanger={true}
       />
+
+      {/* Message Context Menu */}
+      {messageContextMenu.visible && (
+          <div
+              className="fixed bg-surface shadow-xl border border-soft-border rounded-xl z-50 animate-in fade-in zoom-in-95 duration-200 min-w-[150px] overflow-hidden"
+              style={{ top: messageContextMenu.y, left: messageContextMenu.x }}
+          >
+              <button onClick={() => handleMessageOption('copy', messageContextMenu.message)} className="w-full text-left px-4 py-3 text-sm hover:bg-background flex items-center gap-2">
+                  <FileText size={14} /> Copy Text
+              </button>
+              {/* Add more options here later */}
+          </div>
+      )}
     </div>
   );
 };
