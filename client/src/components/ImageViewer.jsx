@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { X, ZoomIn, ZoomOut, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0, altText = "Image" }) => {
+const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0, altText = "Image", actions = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [showOptions, setShowOptions] = useState(false);
 
   // Sync internal state if props change (e.g. opening different image)
   useEffect(() => {
@@ -13,6 +14,7 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
           } else {
               setCurrentIndex(0);
           }
+          setShowOptions(false);
       }
   }, [isOpen, initialIndex, images]);
 
@@ -60,6 +62,32 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
         <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-[70]" onClick={(e) => e.stopPropagation()}>
           <span className="text-secondary text-sm font-medium ml-2">{altText} {hasMultiple ? `(${currentIndex + 1}/${images.length})` : ''}</span>
           <div className="flex items-center space-x-4">
+
+            {/* Actions Menu */}
+            {actions.length > 0 && (
+                <div className="relative">
+                    <button
+                        onClick={() => setShowOptions(!showOptions)}
+                        className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"
+                    >
+                        <MoreVertical size={20} />
+                    </button>
+                    {showOptions && (
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-surface border border-soft-border rounded-xl shadow-xl overflow-hidden py-1 z-[80]">
+                            {actions.map((action, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => { action.onClick(currentImage); setShowOptions(false); }}
+                                    className="w-full text-left px-4 py-2 text-sm text-text hover:bg-background transition"
+                                >
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             <a
               href={currentImage}
               download
@@ -102,7 +130,7 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.2 }}
             className="relative max-w-full max-h-full flex items-center justify-center overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}
         >
             <img
               src={currentImage}

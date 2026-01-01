@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
 import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,6 +12,7 @@ import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
 import CreateQuoteModal from '../components/CreateQuoteModal';
+import ReplyQuoteModal from '../components/ReplyQuoteModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
@@ -21,7 +22,8 @@ const fetcher = url => axios.get(url).then(res => res.data);
 const Profile = () => {
   const { handle } = useParams();
   const navigate = useNavigate();
-  const { data, error, isLoading, mutate } = useSWR(`/profile/${handle}`, fetcher);
+  const { data, error, isLoading } = useSWR(`/profile/${handle}`, fetcher);
+  const { mutate } = useSWRConfig();
   const { currentIdentity, identities } = useIdentity();
 
   // Edit State
@@ -36,12 +38,15 @@ const Profile = () => {
   const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerImage, setViewerImage] = useState(null);
   const [viewerImages, setViewerImages] = useState([]); // For navigation
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerType, setViewerType] = useState(null); // 'avatar' or 'coverPhoto' context for options
 
   // Quote State
   const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [replyQuote, setReplyQuote] = useState(null);
+  const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
+  const [deletingQuote, setDeletingQuote] = useState(false);
 
   const [activeTab, setActiveTab] = useState('moments');
 
@@ -62,28 +67,62 @@ const Profile = () => {
       setShowEditModal(true);
   };
 
-  const openViewer = (src, history = []) => {
+  const handleSetProfilePhoto = async (type, url) => {
+      try {
+          // Optimistic update
+          const newIdentity = { ...identity };
+          if (type === 'avatar') newIdentity.avatar = url;
+          else newIdentity.coverPhoto = url;
+
+          // Mutate local data
+          mutate(`/profile/${handle}`, { ...data, identity: newIdentity }, false);
+
+          await axios.put(`/identities/${identity._id}`, {
+              [type === 'avatar' ? 'avatarUrl' : 'coverPhotoUrl']: url
+          });
+          toast.success(`${type === 'avatar' ? 'Profile picture' : 'Cover photo'} updated`);
+          mutate(`/profile/${handle}`); // Re-fetch
+          setViewerOpen(false); // Close viewer after setting
+      } catch (err) {
+          console.error(err);
+          toast.error("Failed to update photo");
+      }
+  };
+
+  const openViewer = (src, history = [], type = null) => {
       if (!src) return;
-      // Combine current src with history for navigation
-      // Ensure current src is first or we handle index
       let images = [src, ...history].filter(Boolean);
-      // Remove duplicates
       images = [...new Set(images)];
 
       setViewerImages(images);
       setViewerIndex(0);
+      setViewerType(type); // 'avatar' or 'coverPhoto' or null
       setViewerOpen(true);
   };
 
   const openMediaViewer = (mediaUrl) => {
-      // Collect all media from posts
       const allMedia = posts.flatMap(p => p.media).filter(Boolean);
-      // Add profile/cover to the pool? Maybe strictly post media for this view.
-      // Let's stick to post media.
       setViewerImages(allMedia);
       const idx = allMedia.indexOf(mediaUrl);
       setViewerIndex(idx >= 0 ? idx : 0);
+      setViewerType(null); // No specific type context from media grid (could be ambiguous)
       setViewerOpen(true);
+  };
+
+  const handleDeleteQuote = async () => {
+      if (!quote) return;
+      setDeletingQuote(true);
+      try {
+          await axios.delete(`/quotes/${quote._id}`);
+          toast.success("Quote removed");
+          mutate(`/profile/${handle}`);
+          mutate('/quotes/feed');
+          setShowMyQuoteOptions(false);
+      } catch (err) {
+          toast.error("Failed to remove quote");
+      } finally {
+          setDeletingQuote(false);
+      }
   };
 
   const handleSaveProfile = async () => {
@@ -99,7 +138,7 @@ const Profile = () => {
               headers: { 'Content-Type': 'multipart/form-data' }
           });
           toast.success("Profile updated");
-          mutate(); // Refresh data
+          mutate(`/profile/${handle}`); // Refresh data
           setShowEditModal(false);
       } catch (err) {
           console.error(err);
@@ -119,7 +158,7 @@ const Profile = () => {
       try {
           await axios.delete(`/identities/${identity._id}/photo?type=${type}`);
           toast.success("Photo removed");
-          mutate();
+          mutate(`/profile/${handle}`);
           if (type === 'avatar') setAvatarPreview('');
           if (type === 'coverPhoto') setCoverPreview('');
       } catch (err) {
@@ -153,7 +192,7 @@ const Profile = () => {
           {/* Cover Photo */}
           <div
             className="h-48 bg-background relative overflow-hidden cursor-pointer"
-            onClick={() => openViewer(identity.coverPhoto, identity.coverHistory)}
+            onClick={() => openViewer(identity.coverPhoto, identity.coverHistory, 'coverPhoto')}
           >
               {identity.coverPhoto ? (
                   <img src={identity.coverPhoto} className="w-full h-full object-cover transition-transform hover:scale-105 duration-700" />
@@ -172,15 +211,14 @@ const Profile = () => {
                     quote={quote}
                     isMe={isOwner}
                     size="xl"
-                    onClick={(e) => {
-                        if (isOwner && !quote) {
-                            e.stopPropagation();
-                            setShowQuoteModal(true);
-                        } else {
-                            e.stopPropagation();
-                            openViewer(identity.avatar, identity.avatarHistory);
+                    onQuoteClick={() => {
+                        if (isOwner) {
+                            setShowMyQuoteOptions(true);
+                        } else if (quote) {
+                            setReplyQuote(quote);
                         }
                     }}
+                    onAvatarClick={() => openViewer(identity.avatar, identity.avatarHistory, 'avatar')}
                   />
               </div>
 
@@ -274,7 +312,7 @@ const Profile = () => {
                       </div>
                   ) : (
                       posts.map((post) => (
-                        <PostCard key={post._id} post={post} mutate={mutate} />
+                        <PostCard key={post._id} post={post} mutate={() => mutate(`/profile/${handle}`)} />
                       ))
                   )}
               </div>
@@ -314,6 +352,34 @@ const Profile = () => {
         isOpen={showQuoteModal}
         onClose={() => setShowQuoteModal(false)}
         identityId={currentIdentity?._id}
+      />
+
+      {/* My Quote Options Modal */}
+      <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
+             <div className="text-center space-y-4">
+                 <h3 className="text-lg font-bold text-text">Your Note</h3>
+                 <div className="grid grid-cols-2 gap-3 pt-4">
+                     <button
+                        onClick={() => { setShowMyQuoteOptions(false); setShowQuoteModal(true); }}
+                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
+                     >
+                         New note
+                     </button>
+                     <button
+                        onClick={handleDeleteQuote}
+                        disabled={deletingQuote}
+                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50"
+                     >
+                         {deletingQuote ? 'Deleting...' : 'Delete'}
+                     </button>
+                 </div>
+             </div>
+      </Modal>
+
+      {/* Reply Modal */}
+      <ReplyQuoteModal
+        quote={replyQuote}
+        onClose={() => setReplyQuote(null)}
       />
 
       {/* Edit Profile Modal */}
@@ -409,6 +475,12 @@ const Profile = () => {
         images={viewerImages}
         initialIndex={viewerIndex}
         altText="Media"
+        actions={isOwner && viewerType ? [
+            {
+                label: viewerType === 'avatar' ? "Make Profile Picture" : "Make Cover Photo",
+                onClick: (url) => handleSetProfilePhoto(viewerType, url)
+            }
+        ] : []}
       />
     </div>
   );

@@ -6,8 +6,10 @@ import Avatar from './Avatar';
 import Modal from './Modal';
 import NoteBubble from './NoteBubble';
 import CreateQuoteModal from './CreateQuoteModal';
+import ReplyQuoteModal from './ReplyQuoteModal';
 import { useIdentity } from '../context/IdentityContext';
 import { toast } from 'react-hot-toast';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -23,39 +25,18 @@ const moodColors = {
 const QuotesWidget = () => {
   const { data: quotes, isLoading } = useSWR('/quotes/feed', fetcher, { refreshInterval: 30000 });
   const { currentIdentity } = useIdentity();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Reply Modal State
   const [replyQuote, setReplyQuote] = useState(null);
-  const [replyText, setReplyText] = useState('');
-  const [replying, setReplying] = useState(false);
 
   // My Quote Options Modal
   const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
   const [deletingQuote, setDeletingQuote] = useState(false);
-
-  const handleReply = async () => {
-      if (!replyText.trim() || !replyQuote) return;
-      setReplying(true);
-      try {
-          // Send message with context
-          const formData = new FormData();
-          formData.append('senderIdentityId', currentIdentity._id);
-          formData.append('recipientIdentityId', replyQuote.identity._id);
-          formData.append('content', `Replying to your note: "${replyQuote.content}"\n\n${replyText}`);
-
-          await axios.post('/messages', formData);
-          toast.success("Reply sent");
-          setReplyQuote(null);
-          setReplyText('');
-      } catch (err) {
-          toast.error("Failed to send reply");
-      } finally {
-          setReplying(false);
-      }
-  };
 
   const handleDelete = async () => {
       const myQuote = quotes?.find(q => q.identity?._id === currentIdentity?._id);
@@ -74,6 +55,18 @@ const QuotesWidget = () => {
       }
   };
 
+  // Avatar Click Handler
+  const handleAvatarClick = (identity) => {
+      if (location.pathname === '/chat' || location.pathname === '/messages') {
+          // In Chat/Messages page: Open conversation
+          // We can use navigate with state to trigger conversation open in Messages.jsx
+          navigate('/chat', { state: { startConversationWith: identity } });
+      } else {
+          // Default: Go to Profile
+          navigate(`/profile/${identity.handle.replace('@', '')}`);
+      }
+  };
+
   const myQuote = quotes?.find(q => q.identity?._id === currentIdentity?._id);
   const otherQuotes = quotes?.filter(q => q.identity?._id !== currentIdentity?._id) || [];
 
@@ -87,7 +80,8 @@ const QuotesWidget = () => {
                     identity={currentIdentity}
                     quote={myQuote}
                     isMe={true}
-                    onClick={() => myQuote ? setShowMyQuoteOptions(true) : setShowCreateModal(true)}
+                    onQuoteClick={() => myQuote ? setShowMyQuoteOptions(true) : setShowCreateModal(true)}
+                    onAvatarClick={() => handleAvatarClick(currentIdentity)}
                 />
                 <span className="text-xs text-secondary font-medium mt-1">Your Note</span>
             </div>
@@ -98,7 +92,8 @@ const QuotesWidget = () => {
                     <NoteBubble
                         identity={quote.identity}
                         quote={quote}
-                        onClick={() => setReplyQuote(quote)}
+                        onQuoteClick={() => setReplyQuote(quote)}
+                        onAvatarClick={() => handleAvatarClick(quote.identity)}
                     />
                     <span className="text-xs text-secondary font-medium truncate w-20 text-center">{quote.identity.name}</span>
                 </div>
@@ -142,39 +137,10 @@ const QuotesWidget = () => {
         </Modal>
 
         {/* Reply Modal */}
-        <Modal isOpen={!!replyQuote} onClose={() => setReplyQuote(null)}>
-            {replyQuote && (
-                <div className="space-y-4">
-                    <div className="flex items-center space-x-3 mb-2">
-                        <Avatar identity={replyQuote.identity} />
-                        <div>
-                            <p className="text-sm font-bold text-text">{replyQuote.identity.name}</p>
-                            <p className="text-xs text-secondary">{replyQuote.identity.handle}</p>
-                        </div>
-                    </div>
-
-                    <div className={`p-4 rounded-xl text-sm border ${moodColors[replyQuote.mood] || moodColors['Neutral']} ${replyQuote.font} mb-4`}>
-                        {replyQuote.content}
-                    </div>
-
-                    <textarea
-                        className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none"
-                        rows="3"
-                        placeholder={`Reply to ${replyQuote.identity.name}...`}
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                    />
-
-                    <button
-                        onClick={handleReply}
-                        disabled={replying || !replyText.trim()}
-                        className="w-full bg-text text-background py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center space-x-2"
-                    >
-                        {replying ? <span>Sending...</span> : <><span>Send Reply</span><Send size={16}/></>}
-                    </button>
-                </div>
-            )}
-        </Modal>
+        <ReplyQuoteModal
+            quote={replyQuote}
+            onClose={() => setReplyQuote(null)}
+        />
     </div>
   );
 };

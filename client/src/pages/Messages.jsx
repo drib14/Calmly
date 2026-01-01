@@ -52,8 +52,8 @@ const Messages = () => {
       } catch (err) { return []; }
   });
 
-  // Filter out my own identities from suggestions
-  const suggestedUsers = suggestedUsersRaw?.filter(u => !identities?.some(id => id._id === u._id)) || [];
+  // Suggested users logic (allow self-chat)
+  const suggestedUsers = suggestedUsersRaw || [];
 
   // Fetch Inbox (Polling)
   const { data: inbox, mutate: mutateInbox } = useSWR('/messages/inbox', async (url) => {
@@ -154,10 +154,10 @@ const Messages = () => {
       setSearchQuery(e.target.value);
       if (e.target.value.length > 2) {
           try {
-              // Ensure we filter out current user identities from search results
               const res = await axios.get(`/search?q=${e.target.value}&type=identities`);
               const results = res.data.identities || [];
-              setSearchResults(results.filter(id => !identities?.some(myId => myId._id === id._id)));
+              // Allow self-chat, so no filtering of own identities
+              setSearchResults(results);
           } catch (err) {
               console.error(err);
           }
