@@ -195,10 +195,10 @@ const Profile = () => {
   return (
     <div className="max-w-2xl mx-auto pb-20">
       {/* Header Card */}
-      <div className="bg-surface border border-soft-border rounded-3xl overflow-hidden mb-6 shadow-sm relative group">
+      <div className="bg-surface border border-soft-border rounded-3xl mb-6 shadow-sm relative group">
           {/* Cover Photo */}
           <div
-            className="h-48 bg-background relative overflow-hidden cursor-pointer"
+            className="h-48 bg-background relative overflow-hidden cursor-pointer rounded-t-3xl"
             onClick={() => openViewer(identity.coverPhoto, identity.coverHistory, 'coverPhoto')}
           >
               {identity.coverPhoto ? (
@@ -210,9 +210,9 @@ const Profile = () => {
               )}
           </div>
 
-          <div className="px-6 pb-6 relative pt-20">
+          <div className="px-6 pb-6 relative pt-20 rounded-b-3xl">
               {/* Avatar with Note */}
-              <div className="absolute -top-16 left-6 w-32 h-32">
+              <div className="absolute -top-16 left-6 w-32 h-32 z-30">
                   <NoteBubble
                     identity={identity}
                     quote={quote}

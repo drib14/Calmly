@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, Eye, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -15,6 +15,7 @@ import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
+import EditPostModal from './EditPostModal';
 import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
@@ -26,6 +27,7 @@ const PostCard = ({ post, mutate }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   // Image Viewer
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -42,6 +44,7 @@ const PostCard = ({ post, mutate }) => {
   const [showAnonError, setShowAnonError] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -166,6 +169,24 @@ const PostCard = ({ post, mutate }) => {
       setShowDeleteModal(false);
   };
 
+  const handleHide = async () => {
+      if (isOwner) {
+          // Owner hide = set visibility to private
+          try {
+              await axios.put(`/posts/${post._id}`, { visibility: 'private' });
+              toast.success("Post set to private");
+              mutate();
+          } catch (err) {
+              console.error(err);
+              toast.error("Failed to hide post");
+          }
+      } else {
+          // Visitor hide = local toggle
+          setIsHidden(true);
+      }
+      setShowOptions(false);
+  };
+
   const handleReport = async () => {
       setReporting(true);
       try {
@@ -221,6 +242,28 @@ const PostCard = ({ post, mutate }) => {
           default: return '';
       }
   };
+
+  if (isHidden) {
+      return (
+          <motion.div
+            layout
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-surface text-text p-4 rounded-xl shadow-sm border border-soft-border mb-6 flex items-center justify-between"
+          >
+              <div className="flex items-center space-x-3 text-secondary text-sm">
+                  <EyeOff size={16} />
+                  <span>Post hidden</span>
+              </div>
+              <button
+                onClick={() => setIsHidden(false)}
+                className="text-xs font-bold text-text bg-background border border-soft-border px-3 py-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              >
+                  Undo
+              </button>
+          </motion.div>
+      );
+  }
 
   return (
     <motion.div
@@ -289,8 +332,21 @@ const PostCard = ({ post, mutate }) => {
                         className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
                         {isOwner && (
-                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
-                                <Trash2 size={14} /> <span>Delete Post</span>
+                            <>
+                                <button onClick={() => { setShowEditModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <Edit2 size={14} /> <span>Edit Post</span>
+                                </button>
+                                <button onClick={handleHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    {post.visibility === 'private' ? <Eye size={14} /> : <EyeOff size={14} />} <span>{post.visibility === 'private' ? 'Make Public' : 'Hide from Feed'}</span>
+                                </button>
+                                <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                                    <Trash2 size={14} /> <span>Delete Post</span>
+                                </button>
+                            </>
+                        )}
+                        {!isOwner && (
+                            <button onClick={handleHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                <EyeOff size={14} /> <span>Hide Post</span>
                             </button>
                         )}
                         <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
@@ -623,6 +679,13 @@ const PostCard = ({ post, mutate }) => {
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         imageSrc={viewerImage}
+      />
+
+      <EditPostModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        post={post}
+        mutate={mutate}
       />
 
     </motion.div>

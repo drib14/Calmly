@@ -19,38 +19,32 @@ const Navbar = () => {
 
   const profileMenuRef = useRef(null);
   const mobileProfileRef = useRef(null);
+  const sidebarRef = useRef(null); // Ref for the sidebar container
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        // Only close if we are in desktop view logic (assumed by ref presence)
-        // But since we share state, we should be careful.
-        // If the click is inside mobileProfileRef, don't close.
-        if (mobileProfileRef.current && mobileProfileRef.current.contains(event.target)) return;
-
-        setShowProfileMenu(false);
-      }
-      if (mobileProfileRef.current && !mobileProfileRef.current.contains(event.target)) {
-         if (profileMenuRef.current && profileMenuRef.current.contains(event.target)) return;
-         setShowProfileMenu(false);
-      }
-    };
-
-    // Simplification: Just check if target is in EITHER ref.
+    // Handle click outside for Profile Menu AND Sidebar Collapse
     const handleGlobalClick = (e) => {
-        const inDesktop = profileMenuRef.current?.contains(e.target);
-        const inMobile = mobileProfileRef.current?.contains(e.target);
+        // Profile Menu Logic
+        const inDesktopProfile = profileMenuRef.current?.contains(e.target);
+        const inMobileProfile = mobileProfileRef.current?.contains(e.target);
 
-        if (!inDesktop && !inMobile) {
+        if (!inDesktopProfile && !inMobileProfile) {
             setShowProfileMenu(false);
+        }
+
+        // Sidebar Collapse Logic
+        // If expanded (w-64) and click is outside the sidebar, collapse it.
+        // We check if click is NOT in sidebarRef
+        if (isExpanded && sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+            setIsExpanded(false);
         }
     };
 
-    if (showProfileMenu) {
+    if (showProfileMenu || isExpanded) {
         document.addEventListener('mousedown', handleGlobalClick);
     }
     return () => document.removeEventListener('mousedown', handleGlobalClick);
-  }, [showProfileMenu]);
+  }, [showProfileMenu, isExpanded]);
 
   // Poll for Unread Messages
   const { data: unreadData } = useSWR(
@@ -162,6 +156,7 @@ const Navbar = () => {
 
     {/* Sidebar (Desktop) */}
     <nav
+      ref={sidebarRef}
       className={clsx(
         "hidden md:flex fixed top-0 left-0 bottom-0 border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300",
         isExpanded ? "w-64" : "w-20"

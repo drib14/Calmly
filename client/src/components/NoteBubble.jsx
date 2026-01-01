@@ -32,8 +32,6 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
   };
 
   // Get tail color from mood class (bg-...)
-  // We need to extract the color class to apply to the tail
-  // moodColors value format: 'bg-color text-color border-color'
   const bubbleClasses = hasQuote
     ? (moodColors[quote.mood] || moodColors['Neutral'])
     : 'bg-surface border-soft-border text-secondary';
@@ -51,15 +49,12 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
             onClick={handleQuoteClick}
         >
             {hasQuote ? (
-                <div className={`
-                    relative px-3 py-2 rounded-2xl shadow-sm border text-[11px] leading-tight max-w-[100px] text-center
-                    ${bubbleClasses} ${quote.font || ''}
-                    line-clamp-3 animate-in fade-in zoom-in duration-300
-                `}>
-                    {quote.content}
+                <div className={`relative ${bubbleClasses} rounded-2xl shadow-sm border max-w-[100px] animate-in fade-in zoom-in duration-300`}>
+                    <div className={`px-3 py-2 text-[11px] leading-tight text-center ${quote.font || ''} line-clamp-3`}>
+                        {quote.content}
+                    </div>
 
                     {/* Tail: Bottom-Left pointing to avatar */}
-                    {/* Creating a small tail using pseudo-element style div */}
                     <div className={`
                         absolute -bottom-1.5 left-2 w-3 h-3
                         ${bgClass}
@@ -69,13 +64,9 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
                 </div>
             ) : (
                 /* Empty State (Add Note) */
-                <div className={`
-                    relative px-3 py-2 rounded-2xl shadow-sm border text-[10px] whitespace-nowrap
-                    ${bubbleClasses}
-                `}>
-                    <span className="opacity-70">Share a thought...</span>
-                    <div className="absolute -top-2 -right-2 bg-accent text-white rounded-full p-0.5 border-2 border-surface shadow-sm">
-                        <Plus size={10} />
+                <div className={`relative ${bubbleClasses} rounded-2xl shadow-sm border whitespace-nowrap`}>
+                    <div className="px-3 py-2 text-[10px] opacity-70">
+                        Share a thought...
                     </div>
                     {/* Tail */}
                     <div className={`

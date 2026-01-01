@@ -11,7 +11,6 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Feed from './pages/Feed';
 import CreatePost from './pages/CreatePost';
-import VerifyEmail from './pages/VerifyEmail';
 import Journal from './pages/Journal';
 import Messages from './pages/Messages';
 import ForgotPassword from './pages/ForgotPassword';
@@ -40,7 +39,6 @@ function App() {
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/verify-email/:token" element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/legal" element={<Legal />} />

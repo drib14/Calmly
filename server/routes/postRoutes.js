@@ -7,6 +7,30 @@ const Identity = require('../models/Identity');
 const Report = require('../models/Report');
 const { upload } = require('../utils/cloudinary');
 
+// Update a post
+router.put('/:id', protect, async (req, res) => {
+    const { content, visibility } = req.body;
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Verify ownership
+        const identity = await Identity.findOne({ _id: post.identity, user: req.user._id });
+        if (!identity) {
+            return res.status(403).json({ message: 'Not authorized to edit this post' });
+        }
+
+        if (content !== undefined) post.content = content;
+        if (visibility) post.visibility = visibility;
+
+        await post.save();
+        res.json(post);
+    } catch (error) {
+        console.error("Edit Post Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Create a post
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
