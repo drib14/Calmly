@@ -171,35 +171,44 @@ const Messages = () => {
 
       return (
           <div
-                onClick={() => {
-                    // Navigate to feed but use state to potentially scroll to post?
-                    // Or since we don't have a dedicated post page, we'll try to find it in feed.
-                    // Actually, let's assume there is a way to view a single post, or we just go to feed.
-                    // User requested "redirect to that post".
-                    // I will verify if I can create a simple Post View or if Feed supports #hash.
-                    // For now, I will use a hash which is a standard web pattern.
-                    navigate(`/feed#post-${post._id}`);
-                    // Trigger a custom event or check location hash in Feed to scroll?
-                    // Given the constraints, I'll stick to the hash approach.
-                }}
+            onClick={() => navigate(`/feed#post-${post._id}`)}
             className={clsx(
-                "rounded-xl overflow-hidden cursor-pointer border mb-1 transition-colors w-full max-w-sm",
-                isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-background border-soft-border hover:bg-background/80"
+                "relative rounded-2xl overflow-hidden cursor-pointer shadow-sm border transition-transform hover:scale-[1.02] w-full max-w-sm group",
+                isMe ? "bg-surface border-soft-border/50" : "bg-surface border-soft-border"
             )}
           >
+              {/* Media Preview (if any) */}
               {post.media && post.media.length > 0 && post.media[0].type === 'image' && (
-                  <img src={post.media[0].url} className="w-full h-32 object-cover" />
-              )}
-              <div className="p-3">
-                  <div className="flex items-center space-x-2 mb-1">
-                      {post.identity && <Avatar identity={post.identity} size="xs" />}
-                      <span className={clsx("text-xs font-bold truncate", isMe ? "text-white" : "text-text")}>
-                          {post.identity?.name || 'Unknown'}
-                      </span>
+                  <div className="relative h-32 w-full">
+                      <img src={post.media[0].url} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                   </div>
-                  <p className={clsx("text-xs line-clamp-2", isMe ? "text-white/80" : "text-secondary")}>
-                      {post.content || (post.media?.length ? 'Shared media' : 'Shared content')}
-                  </p>
+              )}
+
+              <div className="p-3">
+                  {/* Header: Avatar + Name */}
+                  <div className="flex items-center space-x-2 mb-2">
+                       <Avatar identity={post.identity} size="xs" />
+                       <div className="min-w-0">
+                           <p className="text-xs font-bold text-text truncate">{post.identity?.name}</p>
+                           <p className="text-[10px] text-secondary truncate">{post.identity?.handle}</p>
+                       </div>
+                  </div>
+
+                  {/* Content Preview */}
+                  {post.content && (
+                      <p className="text-xs text-text/90 line-clamp-3 font-serif leading-relaxed mb-2">
+                          {post.content}
+                      </p>
+                  )}
+
+                  {/* Footer Label */}
+                  <div className="flex items-center justify-between pt-2 border-t border-soft-border">
+                       <span className="text-[10px] text-secondary font-medium uppercase tracking-wider">Shared Post</span>
+                       <div className="p-1 rounded-full bg-background group-hover:bg-accent group-hover:text-white transition-colors text-secondary">
+                           <ChevronLeft className="rotate-180" size={12} />
+                       </div>
+                  </div>
               </div>
           </div>
       );
@@ -362,12 +371,35 @@ const Messages = () => {
                                       {/* Shared Post Bubble */}
                                       {msg.sharedPost && renderSharedPost(msg.sharedPost, isMe)}
 
+                                      {/* Reply Quote Bubble (Shadow) */}
+                                      {msg.replyToQuote && (
+                                          <div className="mb-1 opacity-80 scale-95 origin-bottom-right">
+                                              <div className={clsx(
+                                                  "p-3 rounded-2xl text-xs border shadow-sm",
+                                                  moodColors[msg.replyToQuote.mood] || moodColors['Neutral'],
+                                                  msg.replyToQuote.font || 'font-serif'
+                                              )}>
+                                                  <p className="font-bold mb-1 text-[10px] uppercase opacity-70">
+                                                      Replying to {msg.replyToQuote.identityName}
+                                                  </p>
+                                                  <p className="line-clamp-2">{msg.replyToQuote.content}</p>
+                                              </div>
+                                          </div>
+                                      )}
+
                                       {/* Text Bubble */}
                                       {msg.content && (
                                           <div className={clsx(
-                                              "p-4 text-sm shadow-sm rounded-2xl",
+                                              "p-4 text-sm shadow-sm rounded-2xl relative",
                                               isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border"
                                           )}>
+                                              {/* Connection Line if replying */}
+                                              {msg.replyToQuote && (
+                                                  <div className={clsx(
+                                                      "absolute -top-3 w-0.5 h-3 bg-current opacity-20",
+                                                      isMe ? "right-6" : "left-6"
+                                                  )}></div>
+                                              )}
                                               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                           </div>
                                       )}

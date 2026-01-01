@@ -53,7 +53,7 @@ const Profile = () => {
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
-  const { identity, posts, quote } = data;
+  const { identity, posts, reposts, quote } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
@@ -346,8 +346,16 @@ const Profile = () => {
           )}
 
           {activeTab === 'reposts' && (
-               <div className="text-center py-10 opacity-50">
-                  <p className="text-secondary">No reposts yet.</p>
+              <div className="space-y-6">
+                  {!reposts || reposts.length === 0 ? (
+                      <div className="text-center py-10 opacity-50">
+                          <p className="text-secondary">No reposts yet.</p>
+                      </div>
+                  ) : (
+                      reposts.map((post) => (
+                        <PostCard key={post._id} post={post} mutate={() => mutate(`/profile/${handle}`)} />
+                      ))
+                  )}
               </div>
           )}
       </div>

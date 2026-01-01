@@ -71,11 +71,11 @@ const QuotesWidget = () => {
   const otherQuotes = quotes?.filter(q => q.identity?._id !== currentIdentity?._id) || [];
 
   return (
-    <div className="mb-6">
-        <div className="flex space-x-6 overflow-x-auto pb-4 pt-8 px-2 custom-scrollbar items-end">
+    <div className="mb-2">
+        <div className="flex space-x-4 overflow-x-auto pb-2 pt-6 px-2 custom-scrollbar items-end">
 
             {/* My Slot (Add or View Mine) */}
-            <div className="flex flex-col items-center space-y-2 min-w-[80px] relative z-10">
+            <div className="flex flex-col items-center space-y-1 min-w-[70px] relative z-10">
                 <NoteBubble
                     identity={currentIdentity}
                     quote={myQuote}
@@ -83,19 +83,19 @@ const QuotesWidget = () => {
                     onQuoteClick={() => myQuote ? setShowMyQuoteOptions(true) : setShowCreateModal(true)}
                     onAvatarClick={() => handleAvatarClick(currentIdentity)}
                 />
-                <span className="text-xs text-secondary font-medium mt-1">Your Quote</span>
+                <span className="text-xs text-secondary font-medium mt-0.5">You</span>
             </div>
 
             {/* Other Quotes */}
             {otherQuotes.map((quote) => (
-                <div key={quote._id} className="flex flex-col items-center space-y-2 min-w-[80px] relative">
+                <div key={quote._id} className="flex flex-col items-center space-y-1 min-w-[70px] relative">
                     <NoteBubble
                         identity={quote.identity}
                         quote={quote}
                         onQuoteClick={() => setReplyQuote(quote)}
                         onAvatarClick={() => handleAvatarClick(quote.identity)}
                     />
-                    <span className="text-xs text-secondary font-medium truncate w-20 text-center">{quote.identity.name}</span>
+                    <span className="text-xs text-secondary font-medium truncate w-16 text-center">{quote.identity.name}</span>
                 </div>
             ))}
         </div>

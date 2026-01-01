@@ -7,8 +7,17 @@ const { upload } = require('../utils/cloudinary');
 
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
   try {
-      const { senderIdentityId, recipientIdentityId, content } = req.body;
+      const { senderIdentityId, recipientIdentityId, content, replyToQuote } = req.body;
       let media = [];
+      let parsedReplyQuote = null;
+
+      if (replyToQuote) {
+        try {
+            parsedReplyQuote = JSON.parse(replyToQuote);
+        } catch (e) {
+            console.error("Failed to parse replyToQuote", e);
+        }
+      }
 
       if (req.files) {
           media = req.files.map(file => {
@@ -56,6 +65,7 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
         sender: senderIdentityId,
         recipient: recipientIdentityId,
         content: content || '',
+        replyToQuote: parsedReplyQuote,
         media
       });
       res.status(201).json(message);
