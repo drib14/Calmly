@@ -71,8 +71,8 @@ const QuotesWidget = () => {
   const otherQuotes = quotes?.filter(q => q.identity?._id !== currentIdentity?._id) || [];
 
   return (
-    <div className="mb-8">
-        <div className="flex space-x-6 overflow-x-auto pb-8 pt-12 px-2 custom-scrollbar items-end">
+    <div className="mb-6">
+        <div className="flex space-x-6 overflow-x-auto pb-4 pt-8 px-2 custom-scrollbar items-end">
 
             {/* My Slot (Add or View Mine) */}
             <div className="flex flex-col items-center space-y-2 min-w-[80px] relative z-10">

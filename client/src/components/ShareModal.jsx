@@ -20,8 +20,10 @@ const ShareModal = ({ isOpen, onClose, post }) => {
       } catch (err) { return []; }
   });
 
-  // Filter out my own identities
-  const suggestedUsers = suggestedUsersRaw?.filter(u => !identities?.some(id => id._id === u._id)) || [];
+  // Suggested users (allow self-share?) - Usually you can share to yourself.
+  // User said "searching for user by sending post isnt working well".
+  // Assuming they might want to share to anyone including self.
+  const suggestedUsers = suggestedUsersRaw || [];
 
   const [searchResults, setSearchResults] = useState([]);
 
@@ -31,7 +33,8 @@ const ShareModal = ({ isOpen, onClose, post }) => {
           try {
               const res = await axios.get(`/search?q=${e.target.value}&type=identities`);
               const results = res.data.identities || [];
-              setSearchResults(results.filter(u => !identities?.some(id => id._id === u._id)));
+              // Allow sending to anyone
+              setSearchResults(results);
           } catch (err) {
               console.error(err);
           }

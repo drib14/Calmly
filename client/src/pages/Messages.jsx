@@ -214,16 +214,16 @@ const Messages = () => {
           view === 'list' ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}>
           <div className="p-4 border-b border-soft-border">
-               <h2 className="text-xl font-serif font-bold text-text mb-4">Messages</h2>
+               <h2 className="text-lg font-serif font-bold text-text mb-2">Messages</h2>
 
                {/* Quotes in Message Page (Horizontal Profiles) */}
-               <div className="mb-4 -mx-2">
+               <div className="mb-2 -mx-2">
                    <div className="scale-90 origin-top-left w-[110%]">
                        <QuotesWidget />
                    </div>
                </div>
 
-               <div className="relative mb-4">
+               <div className="relative mb-2">
                    <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
                    <input
                       className="w-full bg-background border-none rounded-xl py-2 pl-9 text-sm focus:ring-1 focus:ring-soft-border text-text placeholder-secondary"
