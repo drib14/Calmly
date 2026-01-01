@@ -1,24 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Avatar from './Avatar';
-import { Plus, Eye } from 'lucide-react';
+import { Eye, Music, Play, Pause } from 'lucide-react';
 import axios from 'axios';
 import QuoteAnalyticsModal from './QuoteAnalyticsModal';
 
-const moodColors = {
-    'Neutral': 'bg-slate-900 text-white border-slate-900',
-    'Happy': 'bg-yellow-400 text-yellow-900 border-yellow-400',
-    'Sad': 'bg-blue-500 text-white border-blue-500',
-    'Angry': 'bg-red-500 text-white border-red-500',
-    'Hopeful': 'bg-green-500 text-white border-green-500',
-    'Anxious': 'bg-purple-500 text-white border-purple-500',
+// Mood effects (subtle borders/glows for white bubble)
+const moodStyles = {
+    'Neutral': 'border-gray-200 shadow-sm',
+    'Happy': 'border-yellow-300 shadow-yellow-100 ring-1 ring-yellow-200',
+    'Sad': 'border-blue-200 shadow-blue-50 ring-1 ring-blue-100',
+    'Angry': 'border-red-200 shadow-red-50 ring-1 ring-red-100',
+    'Hopeful': 'border-green-200 shadow-green-50 ring-1 ring-green-100',
+    'Anxious': 'border-purple-200 shadow-purple-50 ring-1 ring-purple-100',
 };
 
 const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size = "lg", align = "center" }) => {
   const hasQuote = !!quote;
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
 
   // Check for new views (blue badge)
-  // Logic: If there are views, and (no last check time OR last check time < latest view time)
   const hasNewViews = isMe && quote && quote.views && quote.views.length > 0 && (
       !quote.lastCheckedViews ||
       (quote.views[quote.views.length - 1]?.timestamp && new Date(quote.lastCheckedViews) < new Date(quote.views[quote.views.length - 1].timestamp))
@@ -38,12 +40,41 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
     }
   }, [hasQuote, isMe, quote?._id]);
 
-  // Position: Centered above the avatar
+  useEffect(() => {
+      // Pause audio if quote changes or component unmounts
+      return () => {
+          if (audioRef.current) {
+              audioRef.current.pause();
+          }
+      };
+  }, [quote?._id]);
+
+  const toggleAudio = (e) => {
+      e.stopPropagation();
+      if (!audioRef.current) return;
+
+      if (isPlaying) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+      } else {
+          // Pause other audios if any (global event or simple assumption)
+          document.querySelectorAll('audio').forEach(el => el !== audioRef.current && el.pause());
+
+          audioRef.current.play();
+          setIsPlaying(true);
+      }
+  };
+
+  const handleAudioEnded = () => {
+      setIsPlaying(false);
+  };
+
+  // Position: Centered above the avatar, offset adjusted for new design
   const bubblePosition = {
-      md: "-top-10",
-      lg: "-top-12",
-      xl: "-top-14",
-  }[size] || "-top-12";
+      md: "-top-14",
+      lg: "-top-16",
+      xl: "-top-20",
+  }[size] || "-top-16";
 
   // Alignment classes
   const alignmentClass = align === "left"
@@ -60,57 +91,75 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       if (onAvatarClick) onAvatarClick();
   };
 
-  const bubbleClasses = hasQuote
-    ? (moodColors[quote.mood] || moodColors['Neutral'])
-    : 'bg-surface border-soft-border text-secondary';
-
-  // Extract bg class for tail
-  const bgClass = bubbleClasses.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-900';
-  const borderClass = bubbleClasses.split(' ').find(c => c.startsWith('border-')) || 'border-slate-900';
+  // Base classes for the "Note" style: White bubble, rounded-2xl, border
+  const baseClasses = "bg-white text-slate-800 rounded-2xl px-3 py-2 border";
+  const moodStyle = hasQuote ? (moodStyles[quote.mood] || moodStyles['Neutral']) : 'border-gray-200';
 
   return (
-    <div className="relative inline-block group">
+    <div className="relative inline-block group z-10">
       {/* The Quote Bubble */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} ${alignmentClass} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom cursor-pointer w-max max-w-[200px] flex justify-center`}
+            className={`absolute ${bubblePosition} ${alignmentClass} z-20 transition-all duration-300 hover:-translate-y-1 origin-bottom cursor-pointer flex flex-col items-center`}
+            style={{ width: 'max-content', maxWidth: '160px' }}
             onClick={handleQuoteClick}
         >
             {hasQuote ? (
-                <div className={`relative ${bubbleClasses} rounded-3xl shadow-lg border px-4 py-3 animate-in fade-in zoom-in duration-300 w-full`}>
-                    <div className={`text-sm font-medium leading-tight text-center ${quote.font || ''} break-words whitespace-normal`}>
-                        {quote.content}
+                <div className={`relative ${baseClasses} ${moodStyle} shadow-sm animate-in fade-in zoom-in duration-300 w-full`}>
+
+                    {/* Content */}
+                    <div className="flex flex-col space-y-1">
+                         {/* Music Player if present */}
+                         {quote.music && (
+                             <div className="flex items-center space-x-2 bg-gray-50 rounded-full px-2 py-1 mb-1 border border-gray-100 max-w-full overflow-hidden">
+                                 <button
+                                    onClick={toggleAudio}
+                                    className="flex-shrink-0 w-5 h-5 bg-black text-white rounded-full flex items-center justify-center hover:scale-105 transition"
+                                 >
+                                     {isPlaying ? <Pause size={8} fill="white" /> : <Play size={8} fill="white" ml={1}/>}
+                                 </button>
+                                 <div className="flex flex-col overflow-hidden w-full">
+                                     <span className="text-[9px] font-bold truncate leading-tight">{quote.music.trackName}</span>
+                                     <span className="text-[8px] text-gray-500 truncate leading-tight">{quote.music.artistName}</span>
+                                 </div>
+                                 <audio ref={audioRef} src={quote.music.previewUrl} onEnded={handleAudioEnded} />
+                             </div>
+                         )}
+
+                        <div className={`text-xs font-medium leading-snug text-center ${quote.font || ''} break-words whitespace-normal text-slate-700`}>
+                            {quote.content}
+                        </div>
                     </div>
 
-                    {/* View Count (Owner Only) */}
+                    {/* View Count (Owner Only) - Floating outside or tiny inside */}
                     {hasQuote && isMe && (
                         <div
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAnalytics(true);
                             }}
-                            className="flex justify-center mt-1 items-center space-x-1 opacity-70 hover:opacity-100 transition-opacity relative"
+                            className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 border border-gray-100 shadow-sm flex items-center justify-center w-5 h-5 hover:scale-110 transition"
                         >
-                            <div className="relative">
-                                <Eye size={10} />
-                                {hasNewViews && (
-                                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full border border-white"></span>
-                                )}
-                            </div>
-                            <span className="text-[10px]">{quote.views?.length || 0}</span>
+                             <Eye size={10} className="text-gray-400" />
+                             {hasNewViews && (
+                                <span className="absolute top-0 right-0 w-1.5 h-1.5 bg-blue-500 rounded-full border border-white"></span>
+                             )}
                         </div>
                     )}
 
-                    {/* Tail: Two dots style (Thought bubble-ish) or Simple Point */}
-                     <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 ${bgClass} rotate-45 transform rounded-sm`}></div>
+                    {/* Tail: Rounded Thought Bubble Style */}
+                     <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                        <div className={`w-3 h-3 bg-white border-b border-r ${moodStyle.split(' ')[0]} rotate-45 transform translate-y-[-50%] rounded-sm`}></div>
+                     </div>
                 </div>
             ) : (
                 /* Empty State (Add Quote) */
-                <div className={`relative ${bubbleClasses} rounded-full shadow-sm border px-3 py-1.5 whitespace-nowrap`}>
-                    <div className="text-[10px] font-bold opacity-80">
-                        + Quote
+                <div className="relative bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-200 px-3 py-1.5 whitespace-nowrap hover:bg-white transition-colors">
+                    <div className="text-[10px] font-bold text-gray-500 flex items-center space-x-1">
+                        <Plus size={10} />
+                        <span>Add Note</span>
                     </div>
-                    <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 ${bgClass} rotate-45 transform`}></div>
+                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-white rotate-45 border-b border-r border-gray-200"></div>
                 </div>
             )}
         </div>
