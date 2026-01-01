@@ -3,13 +3,29 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Image, X } from 'lucide-react';
+import { Image, X, Globe, Lock, EyeOff } from 'lucide-react';
 import Avatar from '../components/Avatar';
+import SelectionCard from '../components/SelectionCard';
 import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
 import FeedbackModal from '../components/FeedbackModal';
 
-const moods = ['Melancholy', 'Hopeful', 'Angry', 'Peaceful', 'Anxious', 'Numb', 'Grateful'];
+const moods = [
+    { value: 'Melancholy', label: 'Melancholy' },
+    { value: 'Hopeful', label: 'Hopeful' },
+    { value: 'Angry', label: 'Angry' },
+    { value: 'Peaceful', label: 'Peaceful' },
+    { value: 'Anxious', label: 'Anxious' },
+    { value: 'Numb', label: 'Numb' },
+    { value: 'Grateful', label: 'Grateful' },
+];
+
+const postTypes = [
+    { value: 'confession', label: 'Confession', description: 'Share a secret or a thought.' },
+    { value: 'poetry', label: 'Poetry', description: 'Express yourself in verse.' },
+    { value: 'letter', label: 'Letter', description: 'Write a letter to someone.' },
+    { value: 'mood', label: 'Mood Drop', description: 'Just a vibe.' },
+];
 
 // Expanded Styles for Letters (Textures)
 const paperStyles = [
@@ -282,29 +298,24 @@ const CreatePost = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-6">
             <div>
-                <label className="block text-sm font-medium text-text mb-1">Type</label>
-                <select
+                <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Format</label>
+                <SelectionCard
+                    options={postTypes}
                     value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
-                >
-                    <option value="confession">Confession</option>
-                    <option value="poetry">Poetry</option>
-                    <option value="letter">Letter</option>
-                    <option value="mood">Mood Drop</option>
-                </select>
+                    onChange={setType}
+                    columns={2}
+                />
             </div>
             <div>
-                <label className="block text-sm font-medium text-text mb-1">Mood</label>
-                <select
+                <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Mood</label>
+                <SelectionCard
+                    options={moods}
                     value={mood}
-                    onChange={(e) => setMood(e.target.value)}
-                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none"
-                >
-                    {moods.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
+                    onChange={setMood}
+                    columns={4}
+                />
             </div>
         </div>
 
@@ -420,16 +431,17 @@ const CreatePost = () => {
         <div className="flex justify-between items-center pt-4 border-t border-soft-border">
              <div className="flex items-center space-x-4">
                  <div className="flex items-center space-x-2">
-                     <label className="text-sm text-secondary">Visibility:</label>
-                     <select
-                        value={visibility}
-                        onChange={(e) => setVisibility(e.target.value)}
-                        className="text-sm border-none bg-transparent text-text focus:ring-0"
-                     >
-                         <option value="public">Public</option>
-                         <option value="unlisted">Unlisted</option>
-                         <option value="private">Private (Journal)</option>
-                     </select>
+                    <button
+                        type="button"
+                        onClick={() => setVisibility(v => v === 'public' ? 'unlisted' : v === 'unlisted' ? 'private' : 'public')}
+                        className="flex items-center space-x-1 text-sm font-medium text-secondary hover:text-text px-3 py-1.5 rounded-full hover:bg-background transition"
+                        title="Click to cycle visibility"
+                    >
+                        {visibility === 'public' && <Globe size={16} />}
+                        {visibility === 'unlisted' && <EyeOff size={16} />}
+                        {visibility === 'private' && <Lock size={16} />}
+                        <span className="capitalize">{visibility}</span>
+                    </button>
                  </div>
 
                  {type !== 'letter' && type !== 'poetry' && (

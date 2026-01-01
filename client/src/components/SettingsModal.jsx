@@ -3,6 +3,7 @@ import Modal from './Modal';
 import { ChevronRight, Check, X, Smartphone, Globe, ExternalLink, Download } from 'lucide-react';
 import axios from 'axios';
 import PinInput from './PinInput';
+import SelectionCard from './SelectionCard';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -90,8 +91,7 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
       }
   };
 
-  const handleSelectChange = async (e) => {
-      const val = e.target.value;
+  const handleSelectChange = async (val) => {
       setFormData({ ...formData, [setting.id]: val });
       try {
           await axios.put('/settings', { [setting.id]: val });
@@ -289,26 +289,26 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
               }
 
                     if (setting.type === 'select') {
+                        // Transform options to unified format for SelectionCard
+                        const cardOptions = setting.options?.map(opt => {
+                            if (typeof opt === 'object') {
+                                return { value: opt.value, label: opt.label, description: opt.description };
+                            }
+                            return { value: opt, label: opt }; // Simple string
+                        });
+
                         return (
                             <div className="space-y-4">
-                          <label className="text-xs font-bold text-secondary uppercase">Select Option</label>
-                          <select
-                            className="w-full border border-soft-border rounded-xl p-3 bg-surface text-text focus:outline-none focus:ring-1 focus:ring-accent"
-                            value={formData[setting.id] || currentValue || ''}
-                            onChange={handleSelectChange}
-                          >
-                              {setting.options?.map(opt => {
-                                  // Handle simple strings or object { value, label }
-                                  const val = typeof opt === 'object' ? opt.value : opt;
-                                  const label = typeof opt === 'object' ? opt.label : opt;
-                                  return (
-                                      <option key={val} value={val}>{label}</option>
-                                  );
-                              })}
-                          </select>
-                      </div>
-                  );
-              }
+                                <label className="text-xs font-bold text-secondary uppercase">Select Option</label>
+                                <SelectionCard
+                                    options={cardOptions || []}
+                                    value={formData[setting.id] || currentValue}
+                                    onChange={handleSelectChange}
+                                    columns={1}
+                                />
+                            </div>
+                        );
+                    }
 
                     if (setting.type === 'list' || setting.type === 'info') {
                         return (

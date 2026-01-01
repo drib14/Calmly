@@ -88,6 +88,9 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, realName) => {
     try {
       const res = await axios.post('/auth/register', { email, password, realName });
+      // Automatically log the user in if the backend sends a token (it might not currently, but good practice if we change it)
+      // Since our register controller currently just returns a message, we can optionally auto-login here if we wanted to change the backend.
+      // For now, just return success.
       return { success: true, message: res.data.message };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Registration failed' };

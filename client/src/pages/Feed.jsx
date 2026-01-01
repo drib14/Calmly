@@ -3,6 +3,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { PenTool } from 'lucide-react';
 import PostCard from '../components/PostCard';
+import PillSelection from '../components/PillSelection';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -23,16 +24,17 @@ const Feed = () => {
             <h1 className="text-2xl font-serif font-bold text-text">Moments</h1>
 
             <div className="flex space-x-2">
-            <select
-                className="border-none bg-surface rounded-full px-4 py-2 text-sm shadow-sm text-secondary focus:ring-2 focus:ring-slate-200 cursor-pointer hover:bg-background transition"
-                onChange={(e) => setFilter({...filter, type: e.target.value})}
-            >
-                <option value="">All Types</option>
-                <option value="confession">Confession</option>
-                <option value="poetry">Poetry</option>
-                <option value="letter">Letter</option>
-                <option value="mood">Mood</option>
-            </select>
+                <PillSelection
+                    options={[
+                        { value: '', label: 'All' },
+                        { value: 'confession', label: 'Confession' },
+                        { value: 'poetry', label: 'Poetry' },
+                        { value: 'letter', label: 'Letter' },
+                        { value: 'mood', label: 'Mood' },
+                    ]}
+                    value={filter.type}
+                    onChange={(val) => setFilter({...filter, type: val})}
+                />
             </div>
         </div>
 

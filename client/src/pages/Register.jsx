@@ -64,7 +64,7 @@ const Register = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <p className="text-xs text-amber-600 mt-1">Please use a real email address. You will need to verify it to access your account.</p>
+          <p className="text-xs text-secondary mt-1">Please use a real email address for account recovery.</p>
         </div>
         <div className="relative">
           <label className="block text-sm font-medium text-secondary mb-1">Password</label>
