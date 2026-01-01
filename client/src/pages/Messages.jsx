@@ -375,11 +375,11 @@ const Messages = () => {
                                               {/* Top Bubble (Quote Shadow) */}
                                               <div className={clsx(
                                                   "p-3 text-xs border border-soft-border/50 shadow-sm max-w-[90%] opacity-90 relative z-0",
-                                                  isMe ? "rounded-t-2xl rounded-bl-2xl rounded-br-md" : "rounded-t-2xl rounded-br-2xl rounded-bl-md",
+                                                  isMe ? "rounded-3xl rounded-br-md -mb-3" : "rounded-3xl rounded-bl-md -mb-3",
                                                   moodColors[msg.replyToQuote.mood] || moodColors['Neutral'],
                                                   msg.replyToQuote.font || 'font-serif'
                                               )}>
-                                                  <p className="line-clamp-2 italic">"{msg.replyToQuote.content}"</p>
+                                                  <p className="line-clamp-2 italic pb-2">"{msg.replyToQuote.content}"</p>
                                               </div>
                                           </div>
                                       )}
@@ -388,9 +388,8 @@ const Messages = () => {
                                       {msg.content && (
                                           <div className={clsx(
                                               "p-4 text-sm shadow-sm border border-soft-border relative z-10",
-                                              isMe ? "bg-accent text-white rounded-2xl rounded-tr-md rounded-br-none -mt-2 mr-0" : "bg-surface text-text rounded-2xl rounded-tl-md rounded-bl-none -mt-2 ml-0",
+                                              isMe ? "bg-accent text-white rounded-3xl rounded-tr-md" : "bg-surface text-text rounded-3xl rounded-tl-md",
                                               // Adjust corners based on connection
-                                              msg.replyToQuote && (isMe ? "rounded-tr-md" : "rounded-tl-md")
                                           )}>
                                               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                           </div>
@@ -410,16 +409,16 @@ const Messages = () => {
                       {mediaFiles.length > 0 && (
                           <div className="flex space-x-2 mb-2 overflow-x-auto p-2 bg-background rounded-xl">
                               {mediaFiles.map((file, i) => (
-                                  <div key={i} className="relative group bg-surface border rounded-lg p-1">
-                                      {file.type.startsWith('image') ? (
-                                          <img src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-md" />
+                                  <div key={i} className="relative group bg-surface border rounded-lg p-1 min-w-[60px]">
+                                      {previews[i] ? (
+                                          <img src={previews[i]} className="w-12 h-12 object-cover rounded-md mx-auto" />
                                       ) : (
-                                          <div className="w-12 h-12 flex items-center justify-center text-secondary">
+                                          <div className="w-12 h-12 flex items-center justify-center text-secondary mx-auto bg-soft-border/30 rounded-md">
                                               <FileText size={20} />
                                           </div>
                                       )}
-                                      <div className="text-[8px] truncate w-12 text-center mt-1 text-secondary">{formatBytes(file.size, 0)}</div>
-                                      <button onClick={() => removeFile(i)} className="absolute -top-1 -right-1 bg-black text-white p-0.5 rounded-full shadow-sm"><X size={8}/></button>
+                                      <div className="text-[8px] truncate w-full text-center mt-1 text-secondary">{formatBytes(file.size, 0)}</div>
+                                      <button onClick={() => removeFile(i)} className="absolute -top-1 -right-1 bg-black/80 text-white p-0.5 rounded-full shadow-sm hover:bg-black"><X size={10}/></button>
                                   </div>
                               ))}
                           </div>

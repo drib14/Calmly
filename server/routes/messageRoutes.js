@@ -87,7 +87,11 @@ router.get('/conversation', protect, async (req, res) => {
         })
         .sort({ createdAt: 1 })
         .populate('sender', 'name type handle avatar')
-        .populate('recipient', 'name type handle avatar'); // We might want to populate user settings here too for read receipts logic in frontend if needed
+        .populate('recipient', 'name type handle avatar')
+        .populate({
+            path: 'sharedPost',
+            populate: { path: 'identity', select: 'name handle avatar' }
+        });
 
         res.json(messages);
     } catch (error) {
@@ -114,6 +118,11 @@ router.get('/inbox', protect, async (req, res) => {
         path: 'sender', // Double populate for when WE are recipient to know sender's settings?
         select: 'name type handle avatar',
         populate: { path: 'user', select: 'settings' }
+    })
+    .populate({
+        path: 'sharedPost',
+        select: 'content media',
+        populate: { path: 'identity', select: 'name' }
     });
 
     // Note: The structure above is a bit tricky because sender/recipient swaps.
