@@ -32,6 +32,26 @@ router.put('/:id', protect, async (req, res) => {
     }
 });
 
+// Get Saved Posts
+router.get('/saved', protect, async (req, res) => {
+    try {
+        const user = req.user;
+        const posts = await Post.find({
+            _id: { $in: user.savedPosts }
+        })
+        .populate('identity')
+        .populate({
+            path: 'identity',
+            populate: { path: 'user' }
+        })
+        .populate('reposts.identity', 'name type handle avatar');
+
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Get Single Post
 router.get('/:id', protect, async (req, res) => {
     try {

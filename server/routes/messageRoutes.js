@@ -105,7 +105,8 @@ router.get('/conversation', protect, async (req, res) => {
         .populate({
             path: 'sharedPost',
             populate: { path: 'identity', select: 'name handle avatar' }
-        });
+        })
+        .populate('replyToQuote.quoteId');
 
         res.json(messages);
     } catch (error) {

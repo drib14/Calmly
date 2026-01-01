@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken'); // Added for socket auth
 
 // Load env vars
 dotenv.config();
@@ -50,16 +51,30 @@ app.get('/', (req, res) => {
   res.send('Calmly API is running...');
 });
 
+// Socket.io Middleware for Authentication
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+    if (!token) {
+        return next(new Error('Authentication error'));
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.user = decoded; // Attach user to socket
+        next();
+    } catch (err) {
+        next(new Error('Authentication error'));
+    }
+});
+
 // Socket.io connection handler
 io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
-  socket.on('join_user', (userId) => {
-    if (userId) {
-        socket.join(userId);
-        console.log(`User joined room: ${userId}`);
-    }
-  });
+  // Auto-join user room based on authenticated ID
+  if (socket.user && socket.user.id) {
+      socket.join(socket.user.id);
+      console.log(`User joined room: ${socket.user.id}`);
+  }
 
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`);

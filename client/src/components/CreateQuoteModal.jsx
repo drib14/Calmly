@@ -81,6 +81,7 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                 />
+                {/* Character Counter */}
                 <div className="absolute bottom-2 right-3 text-xs text-secondary font-medium">
                     {content.length}/60
                 </div>

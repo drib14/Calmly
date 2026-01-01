@@ -32,7 +32,8 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
             content: quote.content,
             mood: quote.mood,
             font: quote.font,
-            identityName: quote.identity.name
+            identityName: quote.identity.name,
+            quoteId: quote._id
           }));
 
           await axios.post('/messages', formData);

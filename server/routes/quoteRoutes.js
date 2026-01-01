@@ -40,7 +40,15 @@ router.post('/', protect, async (req, res) => {
     if (!identity) return res.status(403).json({ message: 'Unauthorized identity' });
 
     // Optional: Delete previous active quote for this identity
-    await Quote.deleteMany({ identity: identityId });
+    const oldQuotes = await Quote.find({ identity: identityId });
+    if (oldQuotes.length > 0) {
+        const io = req.app.get('io');
+        // Emit expiry for each old quote
+        for (const oldQuote of oldQuotes) {
+            if (io) io.emit('quote_expired', oldQuote._id);
+        }
+        await Quote.deleteMany({ identity: identityId });
+    }
 
     const quote = await Quote.create({
       user: req.user._id,

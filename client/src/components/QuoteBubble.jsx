@@ -19,9 +19,9 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
 
   // Check for new views (blue badge)
   // Logic: If there are views, and (no last check time OR last check time < latest view time)
-  const hasNewViews = isMe && quote?.views?.length > 0 && (
+  const hasNewViews = isMe && quote && quote.views && quote.views.length > 0 && (
       !quote.lastCheckedViews ||
-      (quote.views[quote.views.length - 1].timestamp && new Date(quote.lastCheckedViews) < new Date(quote.views[quote.views.length - 1].timestamp))
+      (quote.views[quote.views.length - 1]?.timestamp && new Date(quote.lastCheckedViews) < new Date(quote.views[quote.views.length - 1].timestamp))
   );
 
   useEffect(() => {
@@ -68,21 +68,21 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       {/* The Quote Bubble */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom cursor-pointer min-w-[max-content] flex justify-center max-w-[200px]`}
+            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom cursor-pointer w-max max-w-[200px] flex justify-center`}
             onClick={handleQuoteClick}
         >
             {hasQuote ? (
                 <div className={`relative ${bubbleClasses} rounded-3xl shadow-lg border px-4 py-3 animate-in fade-in zoom-in duration-300 w-full`}>
-                    <div className={`text-sm font-medium leading-tight text-center ${quote.font || ''} break-words`}>
+                    <div className={`text-sm font-medium leading-tight text-center ${quote.font || ''} break-words whitespace-normal`}>
                         {quote.content}
                     </div>
 
-                    {/* View Count */}
-                    {hasQuote && (
+                    {/* View Count (Owner Only) */}
+                    {hasQuote && isMe && (
                         <div
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (isMe) setShowAnalytics(true);
+                                setShowAnalytics(true);
                             }}
                             className="flex justify-center mt-1 items-center space-x-1 opacity-70 hover:opacity-100 transition-opacity relative"
                         >

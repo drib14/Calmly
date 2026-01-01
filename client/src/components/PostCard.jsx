@@ -67,7 +67,11 @@ const PostCard = ({ post, mutate }) => {
   const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
   const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
   const isOwner = post.identity._id === currentIdentity?._id;
-  const isSaved = user?.savedPosts?.includes(post._id);
+  const [isSaved, setIsSaved] = useState(user?.savedPosts?.includes(post._id));
+
+  useEffect(() => {
+      setIsSaved(user?.savedPosts?.includes(post._id));
+  }, [user, post._id]);
 
   // Safe Mode Logic
   const triggeringMoods = ['Melancholy', 'Angry', 'Anxious', 'Numb'];
@@ -224,15 +228,17 @@ const PostCard = ({ post, mutate }) => {
   };
 
   const handleCopyLink = () => {
-      // Direct link to post if possible, otherwise profile
-      // We don't have /post/:id route yet in UI generally, but we might implement it or anchor it
-      const link = `${window.location.origin}/feed?post=${post._id}`;
+      const link = `${window.location.origin}/post/${post._id}`;
       navigator.clipboard.writeText(link);
       toast.success("Link copied to clipboard");
       setShowShareMenu(false);
   };
 
   const handleSave = async () => {
+      // Optimistic update
+      const prevState = isSaved;
+      setIsSaved(!isSaved);
+
       try {
           const { data } = await axios.put(`/posts/${post._id}/save`);
           if (data.saved) {
@@ -240,10 +246,9 @@ const PostCard = ({ post, mutate }) => {
           } else {
               toast.success("Post unsaved");
           }
-          // We need to update local user state or revalidate auth
-          // Assuming AuthContext allows revalidation or we just optimistically toggle
-          // For now, let's just toast. Optimistic UI is complex without global mutation.
+          // We could ideally revalidate user here, but optimistic is enough for UI feedback
       } catch (err) {
+          setIsSaved(prevState); // Revert
           toast.error("Failed to save post");
       }
   };

@@ -17,19 +17,19 @@ export const SocketProvider = ({ children }) => {
     if (user) {
         // In Vite, use import.meta.env, but fallback to localhost if not set
         // The backend server URL usually matches what's in api.js or proxy
-        const socketUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5080';
+        const socketUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
 
+        const token = localStorage.getItem('accessToken');
         const newSocket = io(socketUrl, {
             withCredentials: true,
-            transports: ['websocket', 'polling']
+            transports: ['websocket', 'polling'],
+            auth: {
+                token: token
+            }
         });
 
         newSocket.on('connect', () => {
             console.log('Socket connected');
-            // Join a room specific to this user for private notifications
-            if (user._id) {
-                newSocket.emit('join_user', user._id);
-            }
         });
 
         setSocket(newSocket);

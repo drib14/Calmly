@@ -398,7 +398,7 @@ const Messages = () => {
                                               </div>
 
                                               {/* Top Bubble (The Quote) */}
-                                              {(expiredQuotes.has(msg.replyToQuote._id || 'unknown') || msg.replyToQuote.isExpired) ? (
+                                              {(expiredQuotes.has(msg.replyToQuote.quoteId?._id || msg.replyToQuote.quoteId || 'unknown') || msg.replyToQuote.isExpired || (msg.replyToQuote.quoteId === null)) ? (
                                                    <div className={clsx(
                                                         "px-4 py-3 text-sm border shadow-sm max-w-full z-0 bg-surface border-soft-border text-secondary italic",
                                                         "rounded-t-3xl",
@@ -411,6 +411,7 @@ const Messages = () => {
                                                     onClick={() => {
                                                         setViewQuote({
                                                             ...msg.replyToQuote,
+                                                            _id: msg.replyToQuote.quoteId || msg.replyToQuote._id, // Use real ID
                                                             identity: { name: msg.replyToQuote.identityName }
                                                         });
                                                     }}

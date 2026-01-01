@@ -22,7 +22,8 @@ const messageSchema = new mongoose.Schema({
     content: String,
     mood: String,
     font: String,
-    identityName: String
+    identityName: String,
+    quoteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quote' }
   },
   media: [{
     url: String,
