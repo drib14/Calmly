@@ -14,12 +14,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 const fetcher = url => axios.get(url).then(res => res.data);
 
 const moodColors = {
-    'Neutral': 'bg-slate-100 text-slate-900 border-slate-200',
-    'Happy': 'bg-yellow-100 text-yellow-900 border-yellow-200',
-    'Sad': 'bg-blue-100 text-blue-900 border-blue-200',
-    'Angry': 'bg-red-100 text-red-900 border-red-200',
-    'Hopeful': 'bg-green-100 text-green-900 border-green-200',
-    'Anxious': 'bg-purple-100 text-purple-900 border-purple-200',
+    'Neutral': 'bg-slate-900 text-white border-slate-900',
+    'Happy': 'bg-yellow-400 text-yellow-900 border-yellow-400',
+    'Sad': 'bg-blue-500 text-white border-blue-500',
+    'Angry': 'bg-red-500 text-white border-red-500',
+    'Hopeful': 'bg-green-500 text-white border-green-500',
+    'Anxious': 'bg-purple-500 text-white border-purple-500',
 };
 
 const QuotesWidget = () => {
@@ -72,7 +72,7 @@ const QuotesWidget = () => {
 
   return (
     <div className="mb-2">
-        <div className="flex space-x-4 overflow-x-auto pb-2 pt-6 px-2 custom-scrollbar items-end">
+        <div className="flex space-x-4 overflow-x-auto pb-2 pt-16 px-2 custom-scrollbar items-end">
 
             {/* My Slot (Add or View Mine) */}
             <div className="flex flex-col items-center space-y-1 min-w-[70px] relative z-10">
