@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const Identity = require('../models/Identity'); // Required for populating blocked users
 
 // @desc    Get user settings
 // @route   GET /api/settings
@@ -73,11 +74,6 @@ const updateEmail = async (req, res) => {
 // @route   GET /api/settings/sessions
 // @access  Private
 const getSessions = async (req, res) => {
-    // In a real implementation, we would query a Sessions collection or inspect User.sessions array
-    // if we tracked detailed session info on login.
-    // For now, we return a mock list simulating tracking to fulfill the UI requirement
-    // while keeping the backend changes safe/minimal.
-
     // Check if we have sessions in user object (from schema update)
     const user = await User.findById(req.user._id).select('sessions');
 
@@ -119,7 +115,6 @@ const logoutAllDevices = async (req, res) => {
 // @access  Private
 const deleteAccount = async (req, res) => {
   try {
-    const Identity = require('../models/Identity');
     const Post = require('../models/Post');
     const Comment = require('../models/Comment');
     const Message = require('../models/Message');
@@ -223,7 +218,6 @@ const verifyJournalPassword = async (req, res) => {
 // Download User Data
 const downloadUserData = async (req, res) => {
   try {
-    const Identity = require('../models/Identity');
     const Post = require('../models/Post');
     const Comment = require('../models/Comment');
     const Message = require('../models/Message');
@@ -267,10 +261,25 @@ const getBlockedUsers = async (req, res) => {
     res.json(user.settings.blockedUsers || []);
 };
 
+const blockUser = async (req, res) => {
+    const { identityId } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user.settings.blockedUsers) user.settings.blockedUsers = [];
+
+    if (!user.settings.blockedUsers.includes(identityId)) {
+        user.settings.blockedUsers.push(identityId);
+        await user.save();
+    }
+    // Return full list or just success
+    res.json({ message: 'User blocked', blockedUsers: user.settings.blockedUsers });
+};
+
 const unblockUser = async (req, res) => {
     const user = await User.findById(req.user._id);
-    user.settings.blockedUsers = user.settings.blockedUsers.filter(id => id.toString() !== req.params.id);
-    await user.save();
+    if (user.settings.blockedUsers) {
+        user.settings.blockedUsers = user.settings.blockedUsers.filter(id => id.toString() !== req.params.id);
+        await user.save();
+    }
     res.json({ message: 'User unblocked' });
 };
 
@@ -291,13 +300,35 @@ const addMutedKeyword = async (req, res) => {
 };
 
 const removeMutedKeyword = async (req, res) => {
-    const { keyword } = req.params; // keyword passed as param might need encoding, body is safer?
-    // Using body for delete is non-standard but works, or use param.
-    // Let's use body for add, param for delete.
+    const { keyword } = req.params;
     const user = await User.findById(req.user._id);
     user.settings.mutedKeywords = user.settings.mutedKeywords.filter(k => k !== keyword);
     await user.save();
     res.json(user.settings.mutedKeywords);
+};
+
+// Muted Conversations Management
+const getMutedConversations = async (req, res) => {
+    // Populate muted conversations with Identity details
+    // Muted conversations stores Identity IDs (as strings or ObjectIds)
+    const user = await User.findById(req.user._id);
+    const mutedIds = user.settings.mutedConversations || [];
+
+    // Find identities for these IDs
+    const mutedIdentities = await Identity.find({ _id: { $in: mutedIds } }).select('name handle avatar');
+
+    res.json(mutedIdentities);
+};
+
+const unmuteConversation = async (req, res) => {
+    const { id } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (user.settings.mutedConversations) {
+        user.settings.mutedConversations = user.settings.mutedConversations.filter(mutedId => mutedId.toString() !== id);
+        await user.save();
+    }
+    res.json({ message: 'Conversation unmuted' });
 };
 
 module.exports = {
@@ -312,8 +343,11 @@ module.exports = {
   verifyJournalPassword,
   downloadUserData,
   getBlockedUsers,
+  blockUser,
   unblockUser,
   getMutedKeywords,
   addMutedKeyword,
-  removeMutedKeyword
+  removeMutedKeyword,
+  getMutedConversations,
+  unmuteConversation
 };
