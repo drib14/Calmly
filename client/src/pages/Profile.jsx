@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import ImageViewer from '../components/ImageViewer';
+import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
+import clsx from 'clsx';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -33,11 +35,15 @@ const Profile = () => {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState(null);
+  const [viewerImages, setViewerImages] = useState([]); // For navigation
+  const [viewerIndex, setViewerIndex] = useState(0);
+
+  const [activeTab, setActiveTab] = useState('moments');
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
-  const { identity, posts } = data;
+  const { identity, posts, quote } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
@@ -51,9 +57,27 @@ const Profile = () => {
       setShowEditModal(true);
   };
 
-  const openViewer = (src) => {
+  const openViewer = (src, history = []) => {
       if (!src) return;
-      setViewerImage(src);
+      // Combine current src with history for navigation
+      // Ensure current src is first or we handle index
+      let images = [src, ...history].filter(Boolean);
+      // Remove duplicates
+      images = [...new Set(images)];
+
+      setViewerImages(images);
+      setViewerIndex(0);
+      setViewerOpen(true);
+  };
+
+  const openMediaViewer = (mediaUrl) => {
+      // Collect all media from posts
+      const allMedia = posts.flatMap(p => p.media).filter(Boolean);
+      // Add profile/cover to the pool? Maybe strictly post media for this view.
+      // Let's stick to post media.
+      setViewerImages(allMedia);
+      const idx = allMedia.indexOf(mediaUrl);
+      setViewerIndex(idx >= 0 ? idx : 0);
       setViewerOpen(true);
   };
 
@@ -114,6 +138,9 @@ const Profile = () => {
       }
   };
 
+  // Aggregate Media for Gallery
+  const mediaPosts = posts.filter(p => p.media && p.media.length > 0);
+
   return (
     <div className="max-w-2xl mx-auto pb-20">
       {/* Header Card */}
@@ -121,7 +148,7 @@ const Profile = () => {
           {/* Cover Photo */}
           <div
             className="h-48 bg-background relative overflow-hidden cursor-pointer"
-            onClick={() => openViewer(identity.coverPhoto)}
+            onClick={() => openViewer(identity.coverPhoto, identity.coverHistory)}
           >
               {identity.coverPhoto ? (
                   <img src={identity.coverPhoto} className="w-full h-full object-cover transition-transform hover:scale-105 duration-700" />
@@ -135,10 +162,10 @@ const Profile = () => {
           <div className="px-6 pb-6 relative pt-20">
               {/* Avatar */}
               <div
-                className="absolute -top-16 left-6 w-32 h-32 rounded-full bg-surface flex items-center justify-center shadow-md overflow-hidden cursor-pointer hover:opacity-90 transition"
-                onClick={(e) => { e.stopPropagation(); openViewer(identity.avatar); }}
+                className="absolute -top-16 left-6 w-32 h-32 rounded-full bg-surface flex items-center justify-center shadow-md overflow-hidden cursor-pointer hover:opacity-90 transition border border-soft-border"
+                onClick={(e) => { e.stopPropagation(); openViewer(identity.avatar, identity.avatarHistory); }}
               >
-                  <Avatar identity={identity} size="xl" className="w-full h-full border-none" />
+                  <Avatar identity={identity} size="xl" />
               </div>
 
               {/* Close/Back Button */}
@@ -149,11 +176,21 @@ const Profile = () => {
                   <X size={20} />
               </button>
 
-              <div className="flex justify-between items-start mt-2">
+              <div className="flex justify-between items-start mt-2 relative">
                   <div>
                       <h1 className="text-2xl font-serif text-text font-bold">{identity.name}</h1>
                       <p className="text-secondary text-sm">{identity.handle}</p>
                   </div>
+
+                  {/* Active Quote Bubble */}
+                  {quote && (
+                      <div className="hidden md:block absolute left-[200px] top-0 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                          <div className="relative bg-surface border border-soft-border shadow-sm p-3 rounded-2xl rounded-bl-none max-w-[200px]">
+                              <p className={`text-xs font-medium italic ${quote.font}`}>{quote.content}</p>
+                          </div>
+                      </div>
+                  )}
+
                   {isOwner ? (
                       <button
                         onClick={openEditModal}
@@ -197,20 +234,71 @@ const Profile = () => {
 
       {/* Tabs */}
       <div className="flex border-b border-soft-border mb-6">
-          <button className="px-4 py-3 text-sm font-bold text-text border-b-2 border-text">Moments</button>
-          <button className="px-4 py-3 text-sm font-medium text-secondary hover:text-text transition">Reposts</button>
+          <button
+            onClick={() => setActiveTab('moments')}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+          >
+              <Grid size={16} />
+              <span>Moments</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('media')}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+          >
+              <ImageIcon size={16} />
+              <span>Media</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('reposts')}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+          >
+              <Repeat size={16} />
+              <span>Reposts</span>
+          </button>
       </div>
 
-      {/* Posts Grid */}
-      <div className="space-y-6">
-          {posts.length === 0 ? (
-              <div className="text-center py-10 opacity-50">
-                  <p className="text-secondary">This soul is quiet for now.</p>
+      {/* Tab Content */}
+      <div className="min-h-[200px]">
+          {activeTab === 'moments' && (
+              <div className="space-y-6">
+                  {posts.length === 0 ? (
+                      <div className="text-center py-10 opacity-50">
+                          <p className="text-secondary">This soul is quiet for now.</p>
+                      </div>
+                  ) : (
+                      posts.map((post) => (
+                        <PostCard key={post._id} post={post} mutate={mutate} />
+                      ))
+                  )}
               </div>
-          ) : (
-              posts.map((post) => (
-                <PostCard key={post._id} post={post} mutate={mutate} />
-              ))
+          )}
+
+          {activeTab === 'media' && (
+              <div className="grid grid-cols-3 gap-1">
+                  {mediaPosts.length === 0 ? (
+                       <div className="col-span-3 text-center py-10 opacity-50">
+                          <p className="text-secondary">No visual memories yet.</p>
+                      </div>
+                  ) : (
+                      mediaPosts.map(post => (
+                          post.media.map((media, idx) => (
+                              <div key={`${post._id}-${idx}`} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer hover:opacity-90 transition" onClick={() => openMediaViewer(media)}>
+                                  {media.match(/\.(mp4|webm)$/) ? (
+                                      <video src={media} className="w-full h-full object-cover" />
+                                  ) : (
+                                      <img src={media} className="w-full h-full object-cover" loading="lazy" />
+                                  )}
+                              </div>
+                          ))
+                      ))
+                  )}
+              </div>
+          )}
+
+          {activeTab === 'reposts' && (
+               <div className="text-center py-10 opacity-50">
+                  <p className="text-secondary">No reposts yet.</p>
+              </div>
           )}
       </div>
 
@@ -218,16 +306,16 @@ const Profile = () => {
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)}>
           <div className="text-left">
               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-slate-900">Edit Profile</h3>
-                  <button onClick={() => setShowEditModal(false)}><X size={20} className="text-slate-400" /></button>
+                  <h3 className="text-xl font-bold text-text">Edit Profile</h3>
+                  <button onClick={() => setShowEditModal(false)}><X size={20} className="text-secondary hover:text-text" /></button>
               </div>
 
               {/* Cover Edit */}
-              <div className="relative h-32 bg-slate-100 rounded-xl overflow-hidden mb-8 group">
+              <div className="relative h-32 bg-background rounded-xl overflow-hidden mb-8 group border border-soft-border">
                   {coverPreview ? (
                       <img src={coverPreview} className="w-full h-full object-cover" />
                   ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-300"><ImageIcon /></div>
+                      <div className="w-full h-full flex items-center justify-center text-secondary"><ImageIcon /></div>
                   )}
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
                       <label className="p-2 bg-white/20 backdrop-blur rounded-full text-white cursor-pointer hover:bg-white/30">
@@ -244,7 +332,7 @@ const Profile = () => {
 
               {/* Avatar Edit */}
               <div className="relative -mt-16 ml-4 mb-6 inline-block group">
-                  <div className="w-24 h-24 rounded-full border-4 border-white bg-white overflow-hidden shadow-sm">
+                  <div className="w-24 h-24 rounded-full bg-white overflow-hidden shadow-sm border border-soft-border">
                       {avatarPreview ? (
                           <img src={avatarPreview} className="w-full h-full object-cover" />
                       ) : (
@@ -261,17 +349,17 @@ const Profile = () => {
 
               <div className="space-y-4">
                   <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label>
+                      <label className="block text-xs font-bold text-secondary uppercase mb-1">Name</label>
                       <input
-                          className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-slate-900 outline-none"
+                          className="w-full border border-soft-border rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-slate-900 outline-none bg-surface text-text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                       />
                   </div>
                   <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Bio</label>
+                      <label className="block text-xs font-bold text-secondary uppercase mb-1">Bio</label>
                       <textarea
-                          className="w-full border rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-slate-900 outline-none resize-none"
+                          className="w-full border border-soft-border rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-slate-900 outline-none resize-none bg-surface text-text"
                           rows="3"
                           value={editBio}
                           onChange={(e) => setEditBio(e.target.value)}
@@ -304,9 +392,9 @@ const Profile = () => {
       <ImageViewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
-        imageSrc={viewerImage}
-        altText="Profile Photo"
-        showChevrons={false} // Hide chevrons as requested
+        images={viewerImages}
+        initialIndex={viewerIndex}
+        altText="Media"
       />
     </div>
   );

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const { protect } = require('../middleware/authMiddleware');
 const Identity = require('../models/Identity');
 const Post = require('../models/Post');
+const Quote = require('../models/Quote');
 
 // Get profile by handle
 router.get('/:handle', protect, async (req, res) => {
@@ -72,8 +73,12 @@ router.get('/:handle', protect, async (req, res) => {
     // In aggregate $match, it also works if identity._id is ObjectId.
     const repostedPosts = await fetchWithComments({ 'reposts.identity': identity._id, visibility: 'public' });
 
+    // Get Active Quote
+    const activeQuote = await Quote.findOne({ identity: identity._id }).sort({ createdAt: -1 });
+
     res.json({
         identity,
+        quote: activeQuote,
         posts: authoredPosts,
         reposts: repostedPosts
     });

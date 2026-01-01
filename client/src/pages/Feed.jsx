@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { PenTool } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import PillSelection from '../components/PillSelection';
+import QuotesWidget from '../components/QuotesWidget';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -20,6 +21,10 @@ const Feed = () => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
       {/* Main Feed */}
       <div className="lg:col-span-8 lg:col-start-2 max-w-2xl mx-auto w-full">
+
+        {/* Quotes Widget */}
+        <QuotesWidget />
+
         <div className="flex justify-between items-center mb-6 sticky top-0 bg-background/80 backdrop-blur-md z-30 py-4 transition-colors duration-300">
             <h1 className="text-2xl font-serif font-bold text-text">Moments</h1>
 

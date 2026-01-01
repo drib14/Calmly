@@ -22,12 +22,12 @@ const Avatar = ({ identity, size = "md" }) => {
   // 1. Real Identity: Initials or Custom Avatar
   if (identity.type === 'real') {
       if (identity.avatar) {
-          return <img src={identity.avatar} className={`${sizeClasses[size]} rounded-full object-cover shadow-sm border border-slate-100`} />;
+          return <img src={identity.avatar} className={`${sizeClasses[size]} rounded-full object-cover shadow-sm border border-soft-border`} />;
       }
       // Initials
       const initials = identity.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       return (
-          <div className={`${sizeClasses[size]} rounded-full bg-slate-800 text-white flex items-center justify-center font-serif font-bold shadow-sm`}>
+          <div className={`${sizeClasses[size]} rounded-full bg-slate-900 text-white flex items-center justify-center font-serif font-bold shadow-sm border border-transparent`}>
               {initials}
           </div>
       );

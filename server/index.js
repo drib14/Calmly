@@ -32,6 +32,7 @@ app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/quotes', require('./routes/quoteRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Calmly API is running...');

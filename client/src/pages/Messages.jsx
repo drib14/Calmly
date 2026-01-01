@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
+import QuotesWidget from '../components/QuotesWidget';
 import { toast } from 'react-hot-toast';
 
 // Utility to format bytes
@@ -214,6 +215,14 @@ const Messages = () => {
       )}>
           <div className="p-4 border-b border-soft-border">
                <h2 className="text-xl font-serif font-bold text-text mb-4">Messages</h2>
+
+               {/* Quotes in Message Page (Horizontal Profiles) */}
+               <div className="mb-4 -mx-2">
+                   <div className="scale-90 origin-top-left w-[110%]">
+                       <QuotesWidget />
+                   </div>
+               </div>
+
                <div className="relative mb-4">
                    <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
                    <input
