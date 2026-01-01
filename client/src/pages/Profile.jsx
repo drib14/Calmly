@@ -182,8 +182,15 @@ const Profile = () => {
       }
   };
 
-  // Aggregate Media for Gallery
-  const mediaPosts = posts.filter(p => p.media && p.media.length > 0);
+  // Aggregate Media for Gallery (Posts + Profile History)
+  const postMedia = posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media);
+  const avatarMedia = identity.avatarHistory || [];
+  if (identity.avatar) avatarMedia.unshift(identity.avatar);
+  const coverMedia = identity.coverHistory || [];
+  if (identity.coverPhoto) coverMedia.unshift(identity.coverPhoto);
+
+  // Combine unique
+  const allMedia = [...new Set([...postMedia, ...avatarMedia, ...coverMedia])].filter(Boolean);
 
   return (
     <div className="max-w-2xl mx-auto pb-20">
@@ -320,21 +327,19 @@ const Profile = () => {
 
           {activeTab === 'media' && (
               <div className="grid grid-cols-3 gap-1">
-                  {mediaPosts.length === 0 ? (
+                  {allMedia.length === 0 ? (
                        <div className="col-span-3 text-center py-10 opacity-50">
                           <p className="text-secondary">No visual memories yet.</p>
                       </div>
                   ) : (
-                      mediaPosts.map(post => (
-                          post.media.map((media, idx) => (
-                              <div key={`${post._id}-${idx}`} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer hover:opacity-90 transition" onClick={() => openMediaViewer(media)}>
-                                  {media.match(/\.(mp4|webm)$/) ? (
-                                      <video src={media} className="w-full h-full object-cover" />
-                                  ) : (
-                                      <img src={media} className="w-full h-full object-cover" loading="lazy" />
-                                  )}
-                              </div>
-                          ))
+                      allMedia.map((media, idx) => (
+                          <div key={idx} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer hover:opacity-90 transition" onClick={() => openMediaViewer(media)}>
+                              {media.match(/\.(mp4|webm)$/) ? (
+                                  <video src={media} className="w-full h-full object-cover" />
+                              ) : (
+                                  <img src={media} className="w-full h-full object-cover" loading="lazy" />
+                              )}
+                          </div>
                       ))
                   )}
               </div>
@@ -357,13 +362,13 @@ const Profile = () => {
       {/* My Quote Options Modal */}
       <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
              <div className="text-center space-y-4">
-                 <h3 className="text-lg font-bold text-text">Your Note</h3>
+                 <h3 className="text-lg font-bold text-text">Your Quote</h3>
                  <div className="grid grid-cols-2 gap-3 pt-4">
                      <button
                         onClick={() => { setShowMyQuoteOptions(false); setShowQuoteModal(true); }}
                         className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
                      >
-                         New note
+                         New quote
                      </button>
                      <button
                         onClick={handleDeleteQuote}

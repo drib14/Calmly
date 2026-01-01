@@ -57,9 +57,9 @@ const QuotesWidget = () => {
 
   // Avatar Click Handler
   const handleAvatarClick = (identity) => {
-      if (location.pathname === '/chat' || location.pathname === '/messages') {
+      const path = location.pathname;
+      if (path.includes('/chat') || path.includes('/messages')) {
           // In Chat/Messages page: Open conversation
-          // We can use navigate with state to trigger conversation open in Messages.jsx
           navigate('/chat', { state: { startConversationWith: identity } });
       } else {
           // Default: Go to Profile
@@ -83,7 +83,7 @@ const QuotesWidget = () => {
                     onQuoteClick={() => myQuote ? setShowMyQuoteOptions(true) : setShowCreateModal(true)}
                     onAvatarClick={() => handleAvatarClick(currentIdentity)}
                 />
-                <span className="text-xs text-secondary font-medium mt-1">Your Note</span>
+                <span className="text-xs text-secondary font-medium mt-1">Your Quote</span>
             </div>
 
             {/* Other Quotes */}
@@ -110,7 +110,7 @@ const QuotesWidget = () => {
         {/* My Quote Options Modal */}
         <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
              <div className="text-center space-y-4">
-                 <h3 className="text-lg font-bold text-text">Your Note</h3>
+                 <h3 className="text-lg font-bold text-text">Your Quote</h3>
                  <div className="flex justify-center">
                      {myQuote && (
                         <div className={`relative p-4 rounded-2xl w-48 text-center text-sm shadow-sm border ${moodColors[myQuote.mood]} ${myQuote.font}`}>
@@ -123,14 +123,14 @@ const QuotesWidget = () => {
                         onClick={() => { setShowMyQuoteOptions(false); setShowCreateModal(true); }}
                         className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
                      >
-                         Leave a new note
+                         New quote
                      </button>
                      <button
                         onClick={handleDelete}
                         disabled={deletingQuote}
                         className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50"
                      >
-                         {deletingQuote ? 'Deleting...' : 'Delete note'}
+                         {deletingQuote ? 'Deleting...' : 'Delete quote'}
                      </button>
                  </div>
              </div>

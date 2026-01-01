@@ -244,16 +244,6 @@ const Messages = () => {
                        ))}
                    </div>
                )}
-
-               {/* Horizontal User List */}
-               <div className="flex space-x-4 overflow-x-auto pb-2 custom-scrollbar">
-                   {suggestedUsers?.map(user => (
-                       <div key={user._id} onClick={() => handleConversationClick(user)} className="flex flex-col items-center space-y-1 cursor-pointer min-w-[60px]">
-                           <Avatar identity={user} size="md" />
-                           <span className="text-[10px] text-text truncate w-full text-center">{user.name.split(' ')[0]}</span>
-                       </div>
-                   ))}
-               </div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">

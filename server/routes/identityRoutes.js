@@ -45,13 +45,13 @@ router.put('/:id', protect, upload.fields([{ name: 'avatar', maxCount: 1 }, { na
         const identity = await Identity.findOne({ _id: req.params.id, user: req.user._id });
         if (!identity) return res.status(404).json({ message: 'Identity not found' });
 
-        if (req.files['avatar']) {
+        if (req.files && req.files['avatar']) {
             if (identity.avatar) {
                 identity.avatarHistory.push(identity.avatar);
             }
             identity.avatar = req.files['avatar'][0].path;
         }
-        if (req.files['coverPhoto']) {
+        if (req.files && req.files['coverPhoto']) {
              if (identity.coverPhoto) {
                 identity.coverHistory.push(identity.coverPhoto);
             }
