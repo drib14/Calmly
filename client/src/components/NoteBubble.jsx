@@ -16,10 +16,10 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
 
   // Position: Top-Right of Avatar (approx 1 o'clock)
   const bubblePosition = {
-      md: "-top-8 -right-4",
-      lg: "-top-10 -right-6",
-      xl: "-top-12 -right-8",
-  }[size] || "-top-10 -right-6";
+      md: "-top-6 -right-2",
+      lg: "-top-8 -right-4",
+      xl: "-top-10 -right-6",
+  }[size] || "-top-8 -right-4";
 
   const handleQuoteClick = (e) => {
       e.stopPropagation();

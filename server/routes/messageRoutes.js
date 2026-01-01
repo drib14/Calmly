@@ -7,7 +7,7 @@ const { upload } = require('../utils/cloudinary');
 
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
   try {
-      const { senderIdentityId, recipientIdentityId, content, replyToQuote } = req.body;
+      const { senderIdentityId, recipientIdentityId, content, replyToQuote, sharedPost } = req.body;
       let media = [];
       let parsedReplyQuote = null;
 
@@ -66,6 +66,7 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
         recipient: recipientIdentityId,
         content: content || '',
         replyToQuote: parsedReplyQuote,
+        sharedPost: sharedPost || undefined,
         media
       });
       res.status(201).json(message);

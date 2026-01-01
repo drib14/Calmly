@@ -371,18 +371,18 @@ const Messages = () => {
                                       {/* Shared Post Bubble */}
                                       {msg.sharedPost && renderSharedPost(msg.sharedPost, isMe)}
 
-                                      {/* Reply Quote Bubble (Shadow) */}
+                                      {/* Reply Quote Bubble */}
                                       {msg.replyToQuote && (
-                                          <div className="mb-1 opacity-80 scale-95 origin-bottom-right">
+                                          <div className={clsx("mb-1 flex", isMe ? "justify-end" : "justify-start")}>
                                               <div className={clsx(
-                                                  "p-3 rounded-2xl text-xs border shadow-sm",
+                                                  "p-3 rounded-2xl text-xs border shadow-sm max-w-[90%]",
                                                   moodColors[msg.replyToQuote.mood] || moodColors['Neutral'],
                                                   msg.replyToQuote.font || 'font-serif'
                                               )}>
-                                                  <p className="font-bold mb-1 text-[10px] uppercase opacity-70">
+                                                  <p className="font-bold mb-1 text-[10px] uppercase opacity-60">
                                                       Replying to {msg.replyToQuote.identityName}
                                                   </p>
-                                                  <p className="line-clamp-2">{msg.replyToQuote.content}</p>
+                                                  <p className="line-clamp-2 italic opacity-90">"{msg.replyToQuote.content}"</p>
                                               </div>
                                           </div>
                                       )}
@@ -390,16 +390,10 @@ const Messages = () => {
                                       {/* Text Bubble */}
                                       {msg.content && (
                                           <div className={clsx(
-                                              "p-4 text-sm shadow-sm rounded-2xl relative",
-                                              isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border"
+                                              "p-4 text-sm shadow-sm rounded-2xl relative z-10",
+                                              isMe ? "bg-accent text-white rounded-br-none rounded-tr-sm ml-auto" : "bg-surface text-text rounded-bl-none rounded-tl-sm border border-soft-border mr-auto",
+                                              msg.replyToQuote && (isMe ? "-mt-2" : "-mt-2")
                                           )}>
-                                              {/* Connection Line if replying */}
-                                              {msg.replyToQuote && (
-                                                  <div className={clsx(
-                                                      "absolute -top-3 w-0.5 h-3 bg-current opacity-20",
-                                                      isMe ? "right-6" : "left-6"
-                                                  )}></div>
-                                              )}
                                               <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                           </div>
                                       )}

@@ -52,7 +52,7 @@ const ShareModal = ({ isOpen, onClose, post }) => {
               senderIdentityId: currentIdentity._id,
               recipientIdentityId: recipient._id,
               content: '', // Empty content, just shared post
-              sharedPostId: post._id
+              sharedPost: post._id // Backend expects 'sharedPost' not 'sharedPostId'
           });
           toast.success(`Sent to ${recipient.name}`);
       } catch (err) {
