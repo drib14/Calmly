@@ -13,7 +13,7 @@ const moodColors = {
     'Anxious': 'bg-purple-500 text-white border-purple-500',
 };
 
-const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size = "lg" }) => {
+const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size = "lg", align = "center" }) => {
   const hasQuote = !!quote;
   const [showAnalytics, setShowAnalytics] = useState(false);
 
@@ -40,10 +40,15 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
 
   // Position: Centered above the avatar
   const bubblePosition = {
-      md: "-top-10 left-1/2 -translate-x-1/2",
-      lg: "-top-12 left-1/2 -translate-x-1/2",
-      xl: "-top-14 left-1/2 -translate-x-1/2",
-  }[size] || "-top-12 left-1/2 -translate-x-1/2";
+      md: "-top-10",
+      lg: "-top-12",
+      xl: "-top-14",
+  }[size] || "-top-12";
+
+  // Alignment classes
+  const alignmentClass = align === "left"
+      ? "left-0"
+      : "left-1/2 -translate-x-1/2";
 
   const handleQuoteClick = (e) => {
       e.stopPropagation();
@@ -68,7 +73,7 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       {/* The Quote Bubble */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom cursor-pointer w-max max-w-[200px] flex justify-center`}
+            className={`absolute ${bubblePosition} ${alignmentClass} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom cursor-pointer w-max max-w-[200px] flex justify-center`}
             onClick={handleQuoteClick}
         >
             {hasQuote ? (

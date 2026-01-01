@@ -80,6 +80,7 @@ const QuotesWidget = () => {
                     identity={currentIdentity}
                     quote={myQuote}
                     isMe={true}
+                    align="left"
                     onQuoteClick={() => myQuote ? setShowMyQuoteOptions(true) : setShowCreateModal(true)}
                     onAvatarClick={() => handleAvatarClick(currentIdentity)}
                 />

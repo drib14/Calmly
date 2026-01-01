@@ -6,6 +6,7 @@ import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User,
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
+import { useAuth } from '../context/AuthContext';
 import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import Avatar from './Avatar';
