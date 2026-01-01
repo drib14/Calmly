@@ -13,10 +13,13 @@ const {
   verifyJournalPassword,
   downloadUserData,
   getBlockedUsers,
+  blockUser,
   unblockUser,
   getMutedKeywords,
   addMutedKeyword,
-  removeMutedKeyword
+  removeMutedKeyword,
+  getMutedConversations,
+  unmuteConversation
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -34,10 +37,16 @@ router.get('/download-data', downloadUserData);
 
 // Blocking & Muting
 router.get('/blocked-users', getBlockedUsers);
+router.post('/blocked-users', blockUser);
 router.delete('/blocked-users/:id', unblockUser);
+
 router.get('/muted-keywords', getMutedKeywords);
 router.post('/muted-keywords', addMutedKeyword);
 router.delete('/muted-keywords/:keyword', removeMutedKeyword);
+
+// Muted Conversations (New)
+router.get('/muted-conversations', getMutedConversations);
+router.delete('/muted-conversations/:id', unmuteConversation);
 
 // Journal Lock Routes
 router.put('/journal-lock', toggleJournalLock);

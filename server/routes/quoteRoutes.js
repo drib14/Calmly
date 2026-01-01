@@ -15,8 +15,6 @@ router.get('/feed', protect, async (req, res) => {
             doc: { $first: "$$ROOT" }
         }},
         { $replaceRoot: { newRoot: "$doc" } },
-        // Ensure we explicitly include fields if aggregation excludes them by default (usually it includes all fields in $$ROOT)
-        // However, we need to ensure views array length is visible or passed.
     ]);
 
     // Populate identity details
@@ -30,7 +28,7 @@ router.get('/feed', protect, async (req, res) => {
 
 // Create a Quote
 router.post('/', protect, async (req, res) => {
-  const { content, mood, font, identityId } = req.body;
+  const { content, mood, font, identityId, music } = req.body;
 
   if (!identityId) return res.status(400).json({ message: 'Identity required' });
 
@@ -39,7 +37,7 @@ router.post('/', protect, async (req, res) => {
     const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
     if (!identity) return res.status(403).json({ message: 'Unauthorized identity' });
 
-    // Optional: Delete previous active quote for this identity
+    // Delete previous active quote for this identity
     const oldQuotes = await Quote.find({ identity: identityId });
     if (oldQuotes.length > 0) {
         const io = req.app.get('io');
@@ -50,12 +48,17 @@ router.post('/', protect, async (req, res) => {
         await Quote.deleteMany({ identity: identityId });
     }
 
+    // Set Expiry to 24 hours from now
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const quote = await Quote.create({
       user: req.user._id,
       identity: identityId,
       content,
       mood,
-      font
+      font,
+      music, // Save music object
+      expiresAt
     });
 
     res.status(201).json(quote);
@@ -74,9 +77,6 @@ router.post('/:id/view', protect, async (req, res) => {
         const alreadyViewed = quote.views.some(v => v.user.toString() === req.user._id.toString());
 
         if (!alreadyViewed && quote.user.toString() !== req.user._id.toString()) {
-             // We need an identity context if we want to attribute view to an identity,
-             // but 'views' often just track user account to avoid dupes across identities.
-             // For now we track User ID.
              quote.views.push({ user: req.user._id });
              await quote.save();
 

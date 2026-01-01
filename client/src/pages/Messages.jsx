@@ -10,7 +10,8 @@ import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import QuotesWidget from '../components/QuotesWidget';
-import QuoteAnalyticsModal from '../components/QuoteAnalyticsModal'; // Use for viewing quote details
+import QuoteAnalyticsModal from '../components/QuoteAnalyticsModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
 
 const moodStyles = {
@@ -45,6 +46,7 @@ const Messages = () => {
 
   // Conversation Options State
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, data: null });
 
   // Mobile View State ('list' or 'chat')
   const [view, setView] = useState('list');
@@ -182,42 +184,33 @@ const Messages = () => {
       }
   };
 
-  const handleDeleteConversation = async (e, partnerIdentityId) => {
+  // Helper to trigger confirmation
+  const requestConfirmation = (e, type, data) => {
       e.stopPropagation();
-      if (!confirm("Are you sure you want to delete this conversation?")) return;
-      try {
-          await axios.put('/messages/delete', { partnerIdentityId });
-          toast.success("Conversation deleted");
-          mutateInbox();
-          if (activeConversation?._id === partnerIdentityId) {
-              setActiveConversation(null);
-              setView('list');
-          }
-          setOpenMenuId(null);
-      } catch (err) {
-          toast.error("Failed to delete");
-      }
+      setConfirmModal({ isOpen: true, type, data });
   };
 
-  const handleBlock = async (e, partnerIdentityId) => {
-      e.stopPropagation();
-      if (!confirm("Block this user? They will not be able to message you.")) return;
+  const handleConfirmAction = async () => {
+      const { type, data } = confirmModal;
       try {
-           // Assuming a block endpoint exists or using settings
-           // For now, we will just use a generic settings update or if a block endpoint exists.
-           // Since I didn't verify a specific block endpoint in MessageRoutes, I will assume SettingsModal handles it usually,
-           // but here we want a quick action. I'll use the settings route if available or just mute for now if block isn't ready.
-           // Actually, `settingsController` has `/blocked-users`.
-           // I'll call a quick add to block list.
-           // We need to fetch current blocked list first usually, but let's try a direct add if API supports it.
-           // If not, I'll direct user to settings.
-           // "Add to blocked users" logic:
-           await axios.post('/settings/blocked-users', { identityId: partnerIdentityId });
-           toast.success("User blocked");
-           setOpenMenuId(null);
+          if (type === 'delete') {
+              await axios.put('/messages/delete', { partnerIdentityId: data });
+              toast.success("Conversation deleted");
+              mutateInbox();
+              if (activeConversation?._id === data) {
+                  setActiveConversation(null);
+                  setView('list');
+              }
+          } else if (type === 'block') {
+               // "Add to blocked users" logic:
+               await axios.post('/settings/blocked-users', { identityId: data });
+               toast.success("User blocked");
+          }
       } catch (err) {
-           // Fallback if that endpoint structure is different (it was get/delete usually)
-           toast.error("Please block user via Settings");
+          toast.error(type === 'block' ? "Please block user via Settings" : "Failed to delete");
+      } finally {
+          setConfirmModal({ isOpen: false, type: null, data: null });
+          setOpenMenuId(null);
       }
   };
 
@@ -377,11 +370,11 @@ const Messages = () => {
                                       {isMuted ? <Bell size={12}/> : <BellOff size={12}/>}
                                       {isMuted ? 'Unmute' : 'Mute'}
                                   </button>
-                                  <button onClick={(e) => handleBlock(e, other._id)} className="w-full text-left px-4 py-2 text-xs font-bold text-text hover:bg-background flex items-center gap-2">
+                                  <button onClick={(e) => requestConfirmation(e, 'block', other._id)} className="w-full text-left px-4 py-2 text-xs font-bold text-text hover:bg-background flex items-center gap-2">
                                       <Ban size={12}/> Block User
                                   </button>
                                   <div className="h-px bg-soft-border my-1"></div>
-                                  <button onClick={(e) => handleDeleteConversation(e, other._id)} className="w-full text-left px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2">
+                                  <button onClick={(e) => requestConfirmation(e, 'delete', other._id)} className="w-full text-left px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-2">
                                       <Trash2 size={12}/> Delete
                                   </button>
                               </div>
@@ -586,6 +579,19 @@ const Messages = () => {
       {viewQuote && (
           <QuoteAnalyticsModal quote={viewQuote} onClose={() => setViewQuote(null)} />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal({ isOpen: false, type: null, data: null })}
+          onConfirm={handleConfirmAction}
+          title={confirmModal.type === 'delete' ? "Delete Conversation?" : "Block User?"}
+          message={confirmModal.type === 'delete'
+              ? "Are you sure you want to delete this conversation? This cannot be undone."
+              : "They will not be able to message you. You can unblock them in Settings."}
+          confirmText={confirmModal.type === 'delete' ? "Delete" : "Block"}
+          isDanger={true}
+      />
     </div>
   );
 };

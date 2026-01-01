@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Avatar from './Avatar';
-import { Eye, Music, Play, Pause } from 'lucide-react';
+import { Eye, Music, Play, Pause, Plus } from 'lucide-react';
 import axios from 'axios';
 import QuoteAnalyticsModal from './QuoteAnalyticsModal';
 
