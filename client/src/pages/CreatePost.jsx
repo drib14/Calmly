@@ -3,21 +3,22 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Image, X, Globe, Lock, EyeOff } from 'lucide-react';
+import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SelectionCard from '../components/SelectionCard';
+import PillSelection from '../components/PillSelection';
 import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
 import FeedbackModal from '../components/FeedbackModal';
 
 const moods = [
-    { value: 'Melancholy', label: 'Melancholy' },
-    { value: 'Hopeful', label: 'Hopeful' },
-    { value: 'Angry', label: 'Angry' },
-    { value: 'Peaceful', label: 'Peaceful' },
-    { value: 'Anxious', label: 'Anxious' },
-    { value: 'Numb', label: 'Numb' },
-    { value: 'Grateful', label: 'Grateful' },
+    { value: 'Melancholy', label: 'Melancholy', icon: <CloudRain size={16} /> },
+    { value: 'Hopeful', label: 'Hopeful', icon: <Zap size={16} /> },
+    { value: 'Angry', label: 'Angry', icon: <Frown size={16} /> },
+    { value: 'Peaceful', label: 'Peaceful', icon: <Coffee size={16} /> },
+    { value: 'Anxious', label: 'Anxious', icon: <Meh size={16} /> },
+    { value: 'Numb', label: 'Numb', icon: <Lock size={16} /> }, // Using Lock as abstraction for numb/closed off
+    { value: 'Grateful', label: 'Grateful', icon: <Heart size={16} /> },
 ];
 
 const postTypes = [
@@ -53,10 +54,16 @@ const poemBackgrounds = [
 ];
 
 const fontOptions = [
-    { id: 'font-serif', label: 'Serif' },
-    { id: 'font-sans', label: 'Sans' },
-    { id: 'font-mono', label: 'Mono' },
-    { id: 'font-[cursive]', label: 'Handwriting' }, // Tailwind arbitrary value or custom class needed
+    { value: 'font-serif', label: 'Serif', fontClass: 'font-serif' },
+    { value: 'font-sans', label: 'Sans', fontClass: 'font-sans' },
+    { value: 'font-mono', label: 'Mono', fontClass: 'font-mono' },
+    { value: 'font-[cursive]', label: 'Handwriting', fontClass: 'font-[cursive]' },
+];
+
+const alignOptions = [
+    { value: 'text-left', label: 'Left', icon: <AlignLeft size={16} /> },
+    { value: 'text-center', label: 'Center', icon: <AlignCenter size={16} /> },
+    { value: 'text-right', label: 'Right', icon: <AlignRight size={16} /> },
 ];
 
 const CreatePost = () => {
@@ -375,15 +382,25 @@ const CreatePost = () => {
                             />
                         ))}
                     </div>
-                    <div className="flex space-x-2">
-                        <select onChange={e => setPoemStyle({...poemStyle, font: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
-                            {fontOptions.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-                        </select>
-                        <select onChange={e => setPoemStyle({...poemStyle, align: e.target.value})} className="text-xs border rounded p-1 bg-white/50 backdrop-blur-sm">
-                            <option value="text-left">Left</option>
-                            <option value="text-center">Center</option>
-                            <option value="text-right">Right</option>
-                        </select>
+                    <div className="flex flex-col space-y-2">
+                        {/* Font Selection */}
+                        <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm">
+                             <SelectionCard
+                                options={fontOptions}
+                                value={poemStyle.font}
+                                onChange={(val) => setPoemStyle({...poemStyle, font: val})}
+                                columns={2}
+                                layout="grid"
+                             />
+                        </div>
+                        {/* Align Selection */}
+                         <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm flex justify-center">
+                            <PillSelection
+                                options={alignOptions}
+                                value={poemStyle.align}
+                                onChange={(val) => setPoemStyle({...poemStyle, align: val})}
+                            />
+                        </div>
                     </div>
                 </div>
                 <input

@@ -2,7 +2,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 
 const SelectionCard = ({ options, value, onChange, columns = 2, layout = 'grid' }) => {
-  // options: array of { value, label, description, icon (optional), preview (optional class) }
+  // options: array of { value, label, description, icon (optional), preview (optional class), fontClass (optional) }
 
   // Map columns to static Tailwind classes to ensure they are not purged
   const gridCols = {
@@ -29,24 +29,34 @@ const SelectionCard = ({ options, value, onChange, columns = 2, layout = 'grid' 
             className={`
               relative flex flex-col items-start p-4 rounded-xl border transition-all text-left group
               ${isSelected
-                ? 'bg-surface border-slate-900 ring-1 ring-slate-900 shadow-sm'
-                : 'bg-background border-soft-border hover:border-slate-300 hover:bg-surface'
+                ? 'bg-surface border-text ring-1 ring-text shadow-sm'
+                : 'bg-background border-soft-border hover:border-text/50 hover:bg-surface'
               }
             `}
           >
             <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center space-x-2">
                 {option.icon && (
-                  <div className={`text-secondary ${isSelected ? 'text-slate-900' : ''}`}>
+                  <div className={`transition-colors ${isSelected ? 'text-text' : 'text-secondary'}`}>
                     {option.icon}
                   </div>
                 )}
-                <span className={`font-bold text-sm ${isSelected ? 'text-slate-900' : 'text-text'}`}>
-                  {option.label}
-                </span>
+                {/* Font sample support */}
+                {option.fontClass ? (
+                    <div className="flex items-baseline space-x-2">
+                        <span className={`text-lg ${option.fontClass} ${isSelected ? 'text-text' : 'text-text/80'}`}>Aa</span>
+                        <span className={`font-bold text-sm ${isSelected ? 'text-text' : 'text-secondary'}`}>
+                            {option.label}
+                        </span>
+                    </div>
+                ) : (
+                    <span className={`font-bold text-sm ${isSelected ? 'text-text' : 'text-text'}`}>
+                      {option.label}
+                    </span>
+                )}
               </div>
               {isSelected && (
-                <div className="bg-slate-900 text-white rounded-full p-0.5">
+                <div className="bg-text text-background rounded-full p-0.5">
                   <Check size={12} />
                 </div>
               )}
@@ -59,7 +69,7 @@ const SelectionCard = ({ options, value, onChange, columns = 2, layout = 'grid' 
             )}
 
             {option.preview && (
-               <div className={`mt-3 w-full h-8 rounded-md border border-black/5 ${option.preview}`}></div>
+               <div className={`mt-3 w-full h-8 rounded-md border border-soft-border ${option.preview}`}></div>
             )}
           </button>
         );
