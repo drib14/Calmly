@@ -6,10 +6,12 @@ import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, 
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
+import NoteBubble from '../components/NoteBubble';
 import ImageViewer from '../components/ImageViewer';
 import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
+import CreateQuoteModal from '../components/CreateQuoteModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
@@ -37,6 +39,9 @@ const Profile = () => {
   const [viewerImage, setViewerImage] = useState(null);
   const [viewerImages, setViewerImages] = useState([]); // For navigation
   const [viewerIndex, setViewerIndex] = useState(0);
+
+  // Quote State
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState('moments');
 
@@ -160,12 +165,23 @@ const Profile = () => {
           </div>
 
           <div className="px-6 pb-6 relative pt-20">
-              {/* Avatar */}
-              <div
-                className="absolute -top-16 left-6 w-32 h-32 rounded-full bg-surface flex items-center justify-center shadow-md overflow-hidden cursor-pointer hover:opacity-90 transition border border-soft-border"
-                onClick={(e) => { e.stopPropagation(); openViewer(identity.avatar, identity.avatarHistory); }}
-              >
-                  <Avatar identity={identity} size="xl" />
+              {/* Avatar with Note */}
+              <div className="absolute -top-16 left-6 w-32 h-32">
+                  <NoteBubble
+                    identity={identity}
+                    quote={quote}
+                    isMe={isOwner}
+                    size="xl"
+                    onClick={(e) => {
+                        if (isOwner && !quote) {
+                            e.stopPropagation();
+                            setShowQuoteModal(true);
+                        } else {
+                            e.stopPropagation();
+                            openViewer(identity.avatar, identity.avatarHistory);
+                        }
+                    }}
+                  />
               </div>
 
               {/* Close/Back Button */}
@@ -181,15 +197,6 @@ const Profile = () => {
                       <h1 className="text-2xl font-serif text-text font-bold">{identity.name}</h1>
                       <p className="text-secondary text-sm">{identity.handle}</p>
                   </div>
-
-                  {/* Active Quote Bubble */}
-                  {quote && (
-                      <div className="hidden md:block absolute left-[200px] top-0 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                          <div className="relative bg-surface border border-soft-border shadow-sm p-3 rounded-2xl rounded-bl-none max-w-[200px]">
-                              <p className={`text-xs font-medium italic ${quote.font}`}>{quote.content}</p>
-                          </div>
-                      </div>
-                  )}
 
                   {isOwner ? (
                       <button
@@ -301,6 +308,13 @@ const Profile = () => {
               </div>
           )}
       </div>
+
+      {/* Create Quote Modal */}
+      <CreateQuoteModal
+        isOpen={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        identityId={currentIdentity?._id}
+      />
 
       {/* Edit Profile Modal */}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)}>
