@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { ChevronRight, Check, X, Smartphone, Globe, ExternalLink, Download } from 'lucide-react';
+import { ChevronRight, Check, X, Smartphone, Globe, ExternalLink, Download, Sun, Moon } from 'lucide-react';
 import axios from 'axios';
 import PinInput from './PinInput';
 import SelectionCard from './SelectionCard';
@@ -336,8 +336,12 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                     if (setting.type === 'select') {
                         // Transform options to unified format for SelectionCard
                         const cardOptions = setting.options?.map(opt => {
+                            let icon = null;
+                            if (opt.icon === 'Sun') icon = <Sun size={20} />;
+                            if (opt.icon === 'Moon') icon = <Moon size={20} />;
+
                             if (typeof opt === 'object') {
-                                return { value: opt.value, label: opt.label, description: opt.description };
+                                return { value: opt.value, label: opt.label, description: opt.description, icon };
                             }
                             return { value: opt, label: opt }; // Simple string
                         });

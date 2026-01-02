@@ -188,7 +188,7 @@ const Settings = () => {
       title: "Appearance",
       description: "Customize fonts, themes, and accessibility.",
       items: [
-          { id: 'theme', label: "Theme", type: 'select', options: ['soft-light', 'dark', 'sage', 'ocean'], description: "Choose your preferred color theme." },
+          { id: 'theme', label: "Theme", type: 'select', options: [{value: 'soft-light', label: 'Light', icon: 'Sun'}, {value: 'dark', label: 'Dark', icon: 'Moon'}], description: "Choose your preferred color theme." },
           { id: 'fontFamily', label: "Font Family", type: 'select', options: ['font-serif', 'font-sans', 'font-mono'], description: "Select the font style for the application." },
           { id: 'highContrast', label: "High Contrast Mode", type: 'toggle', description: "Increase contrast for better readability." }
       ]
