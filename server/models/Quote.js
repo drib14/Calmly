@@ -38,7 +38,7 @@ const quoteSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 86400, // Auto-expire after 24 hours
+    // Removed TTL index to support archiving. Expiration handled by app logic.
   },
 });
 

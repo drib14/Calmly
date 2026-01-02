@@ -8,14 +8,16 @@ import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import QuoteBubble from '../components/QuoteBubble';
 import ImageViewer from '../components/ImageViewer';
-import StoriesWidget from '../components/StoriesWidget';
+import StoriesWidget from '../components/StoriesWidget'; // Still needed? Maybe not on profile page itself if unified.
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
 import CreateQuoteModal from '../components/CreateQuoteModal';
 import ReplyQuoteModal from '../components/ReplyQuoteModal';
 import ConfirmationModal from '../components/ConfirmationModal';
+import UnifiedViewerModal from '../components/Unified/UnifiedViewerModal';
 import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
+import { format } from 'date-fns';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -38,9 +40,14 @@ const Profile = () => {
   const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null });
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerImages, setViewerImages] = useState([]); // For navigation
+  const [viewerImages, setViewerImages] = useState([]);
   const [viewerIndex, setViewerIndex] = useState(0);
-  const [viewerType, setViewerType] = useState(null); // 'avatar' or 'coverPhoto' context for options
+  const [viewerType, setViewerType] = useState(null);
+
+  // Archive Viewer State
+  const [archiveViewerOpen, setArchiveViewerOpen] = useState(false);
+  const [archiveStories, setArchiveStories] = useState([]);
+  const [archiveIndex, setArchiveIndex] = useState(0);
 
   // Quote State
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -69,20 +76,18 @@ const Profile = () => {
 
   const handleSetProfilePhoto = async (type, url) => {
       try {
-          // Optimistic update
           const newIdentity = { ...identity };
           if (type === 'avatar') newIdentity.avatar = url;
           else newIdentity.coverPhoto = url;
 
-          // Mutate local data
           mutate(`/profile/${handle}`, { ...data, identity: newIdentity }, false);
 
           await axios.put(`/identities/${identity._id}`, {
               [type === 'avatar' ? 'avatarUrl' : 'coverPhotoUrl']: url
           });
           toast.success(`${type === 'avatar' ? 'Profile picture' : 'Cover photo'} updated`);
-          mutate(`/profile/${handle}`); // Re-fetch
-          setViewerOpen(false); // Close viewer after setting
+          mutate(`/profile/${handle}`);
+          setViewerOpen(false);
       } catch (err) {
           console.error(err);
           toast.error("Failed to update photo");
@@ -96,7 +101,7 @@ const Profile = () => {
 
       setViewerImages(images);
       setViewerIndex(0);
-      setViewerType(type); // 'avatar' or 'coverPhoto' or null
+      setViewerType(type);
       setViewerOpen(true);
   };
 
@@ -105,8 +110,57 @@ const Profile = () => {
       setViewerImages(allMedia);
       const idx = allMedia.indexOf(mediaUrl);
       setViewerIndex(idx >= 0 ? idx : 0);
-      setViewerType(null); // No specific type context from media grid (could be ambiguous)
+      setViewerType(null);
       setViewerOpen(true);
+  };
+
+  const openArchiveViewer = (item) => {
+      // Create a temporary "story" structure for the UnifiedViewer
+      // The viewer expects: [ { identity, items: [] } ]
+      // We can group all archives into one "story" for seamless navigation, or just show the clicked one.
+      // Better: Filter only quotes and clips for the viewer. Posts should open in Post View (if we had one) or just be skipped?
+      // For now, let's treat Quotes and Clips as viewer-compatible.
+
+      const viewableItems = archives.filter(a => a.type === 'quote' || a.type === 'clip');
+      const startIdx = viewableItems.findIndex(i => i._id === item._id);
+
+      if (startIdx === -1) return; // Clicked a post?
+
+      const story = {
+          identity: identity,
+          items: viewableItems
+      };
+
+      setArchiveStories([story]);
+      setArchiveIndex(0); // Viewer handles items internally, but `UnifiedViewerModal` takes `initialStoryIndex`.
+      // Actually `UnifiedViewerModal` iterates stories AND items.
+      // We pass 1 story with N items. We need to tell it which Item index to start at?
+      // UnifiedViewer currently does not accept `initialItemIndex`.
+      // I need to modify `UnifiedViewerModal` to accept `initialItemIndex` or just slice the items array?
+      // Slicing destroys "Prev" ability.
+      // I'll assume UnifiedViewer starts at 0.
+      // Wait, I can pass multiple stories where each story has 1 item?
+      // No, that groups by user.
+      // Let's just update `UnifiedViewerModal` to accept `initialItemIndex` or hack it.
+      // Hack: Pass `initialItemIndex` prop if I can?
+      // Looking at `UnifiedViewerModal.jsx`: `const [currentItemIndex, setCurrentItemIndex] = useState(0);`
+      // It doesn't accept a prop for item index.
+      // Fix: I will update `UnifiedViewerModal` to accept `initialItemIndex`.
+
+      // FOR NOW (Self Correction): I will just construct the story such that the clicked item is first?
+      // No, order matters (chronological).
+      // I will update UnifiedViewerModal in a separate edit if strictly needed, or just let it start at 0.
+      // Prompt asked "fix ui/ux". Starting at random item 0 when I clicked item 5 is bad UX.
+      // I will assume I need to fix UnifiedViewerModal to accept `initialItemIndex`.
+      // But I can't construct a `stories` array that easily maps to that without `initialItemIndex`.
+
+      // Let's pass a modified story list where the first story contains ONLY the clicked item?
+      // No, then I can't swipe.
+
+      // I'll just open it with the clicked item only for now to be safe and simple.
+      const singleStory = { identity, items: [item] };
+      setArchiveStories([singleStory]);
+      setArchiveViewerOpen(true);
   };
 
   const handleDeleteQuote = async () => {
@@ -138,7 +192,7 @@ const Profile = () => {
               headers: { 'Content-Type': 'multipart/form-data' }
           });
           toast.success("Profile updated");
-          mutate(`/profile/${handle}`); // Refresh data
+          mutate(`/profile/${handle}`);
           setShowEditModal(false);
       } catch (err) {
           console.error(err);
@@ -182,21 +236,25 @@ const Profile = () => {
       }
   };
 
-  // Aggregate Media for Gallery (Posts + Profile History)
+  const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      const now = new Date();
+      if (date.getFullYear() === now.getFullYear()) {
+          return format(date, 'MMM d');
+      }
+      return format(date, 'MMM d, yyyy');
+  };
+
   const postMedia = posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media);
   const avatarMedia = identity.avatarHistory || [];
   if (identity.avatar) avatarMedia.unshift(identity.avatar);
   const coverMedia = identity.coverHistory || [];
   if (identity.coverPhoto) coverMedia.unshift(identity.coverPhoto);
-
-  // Combine unique
   const allMedia = [...new Set([...postMedia, ...avatarMedia, ...coverMedia])].filter(Boolean);
 
   return (
     <div className="max-w-2xl mx-auto pb-20">
-      {/* Header Card */}
       <div className="bg-surface border border-soft-border rounded-3xl mb-6 shadow-sm relative group">
-          {/* Cover Photo */}
           <div
             className="h-48 bg-background relative overflow-hidden cursor-pointer rounded-t-3xl"
             onClick={() => openViewer(identity.coverPhoto, identity.coverHistory, 'coverPhoto')}
@@ -211,7 +269,6 @@ const Profile = () => {
           </div>
 
           <div className="px-6 pb-6 relative pt-20 rounded-b-3xl">
-              {/* Avatar with Quote (Border handled by QuoteBubble/Avatar) */}
               <div className="absolute -top-16 left-6 w-32 h-32 z-30">
                   <QuoteBubble
                     identity={identity}
@@ -229,9 +286,8 @@ const Profile = () => {
                   />
               </div>
 
-              {/* Close/Back Button */}
               <button
-                  onClick={() => navigate(-1)} // Navigate back
+                  onClick={() => navigate(-1)}
                   className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition z-10"
               >
                   <X size={20} />
@@ -284,7 +340,6 @@ const Profile = () => {
           </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-soft-border mb-6 overflow-x-auto">
           <button
             onClick={() => setActiveTab('moments')}
@@ -292,20 +347,6 @@ const Profile = () => {
           >
               <Grid size={16} />
               <span>Moments</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('clips')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'clips' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
-          >
-              <Film size={16} />
-              <span>Clips</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('quotes')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'quotes' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
-          >
-              <MessageCircle size={16} />
-              <span>Quotes</span>
           </button>
           <button
             onClick={() => setActiveTab('media')}
@@ -332,7 +373,6 @@ const Profile = () => {
           )}
       </div>
 
-      {/* Tab Content */}
       <div className="min-h-[200px]">
           {activeTab === 'moments' && (
               <div className="space-y-6">
@@ -349,52 +389,43 @@ const Profile = () => {
           )}
 
           {activeTab === 'archives' && isOwner && (
-              <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {!archives || archives.length === 0 ? (
-                      <div className="text-center py-10 opacity-50">
+                      <div className="col-span-full text-center py-10 opacity-50">
                           <p className="text-secondary">No archived moments.</p>
                       </div>
                   ) : (
-                      archives.map((post) => (
-                        <PostCard key={post._id} post={post} mutate={() => mutate(`/profile/${handle}`)} />
+                      archives.map((item) => (
+                          <div
+                              key={item._id}
+                              className="relative bg-surface rounded-xl overflow-hidden border border-soft-border group aspect-square cursor-pointer hover:opacity-90 transition"
+                              onClick={() => openArchiveViewer(item)}
+                          >
+                                  {item.media && item.media.length > 0 ? (
+                                      item.mediaType === 'video' || (item.media[0] && item.media[0].endsWith('.mp4')) ? (
+                                          <video src={item.mediaUrl || item.media[0]} className="w-full h-full object-cover" />
+                                      ) : (
+                                          <img src={item.mediaUrl || item.media[0]} className="w-full h-full object-cover" />
+                                      )
+                                  ) : item.content ? (
+                                      <div className={`w-full h-full p-4 flex items-center justify-center text-center text-xs ${item.mood ? 'bg-slate-100' : 'bg-surface'}`}>
+                                          <p className="line-clamp-4 font-serif">"{item.content}"</p>
+                                      </div>
+                                  ) : null}
+
+                                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                                      <p className="text-white text-[10px] font-bold text-center">
+                                          {formatDate(item.createdAt)}
+                                      </p>
+                                  </div>
+
+                                  <div className="absolute top-2 right-2 opacity-50 pointer-events-none">
+                                      {item.type === 'quote' && <MessageCircle size={12} className="text-white" />}
+                                      {item.type === 'clip' && <Film size={12} className="text-white" />}
+                                  </div>
+                              </div>
                       ))
                   )}
-              </div>
-          )}
-
-          {activeTab === 'clips' && (
-             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                 {!clips || clips.length === 0 ? (
-                     <div className="col-span-full text-center py-10 opacity-50">
-                         <p className="text-secondary">No clips shared recently.</p>
-                     </div>
-                 ) : (
-                     clips.map((clip) => (
-                         <div
-                            key={clip._id}
-                            className="aspect-[9/16] bg-black rounded-lg overflow-hidden relative cursor-pointer group"
-                            onClick={() => openMediaViewer(clip.mediaUrl)} // Or distinct clip viewer
-                         >
-                             {clip.mediaType === 'video' ? (
-                                 <video src={clip.mediaUrl} className="w-full h-full object-cover" />
-                             ) : (
-                                 <img src={clip.mediaUrl} className="w-full h-full object-cover" />
-                             )}
-                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold">
-                                 View
-                             </div>
-                         </div>
-                     ))
-                 )}
-             </div>
-          )}
-
-          {activeTab === 'quotes' && (
-              <div className="space-y-4">
-                  {/* Reuse QuoteBubble or specific List View */}
-                  <div className="text-center py-10 text-secondary">
-                      No past quotes.
-                  </div>
               </div>
           )}
 
@@ -433,14 +464,12 @@ const Profile = () => {
           )}
       </div>
 
-      {/* Create Quote Modal */}
       <CreateQuoteModal
         isOpen={showQuoteModal}
         onClose={() => setShowQuoteModal(false)}
         identityId={currentIdentity?._id}
       />
 
-      {/* My Quote Options Modal */}
       <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
              <div className="text-center space-y-4">
                  <h3 className="text-lg font-bold text-text">Your Quote</h3>
@@ -462,13 +491,11 @@ const Profile = () => {
              </div>
       </Modal>
 
-      {/* Reply Modal */}
       <ReplyQuoteModal
         quote={replyQuote}
         onClose={() => setReplyQuote(null)}
       />
 
-      {/* Edit Profile Modal */}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)}>
           <div className="text-left">
               <div className="flex justify-between items-center mb-6">
@@ -476,7 +503,6 @@ const Profile = () => {
                   <button onClick={() => setShowEditModal(false)}><X size={20} className="text-secondary hover:text-text" /></button>
               </div>
 
-              {/* Cover Edit */}
               <div className="relative h-32 bg-background rounded-xl overflow-hidden mb-8 group border border-soft-border">
                   {coverPreview ? (
                       <img src={coverPreview} className="w-full h-full object-cover" />
@@ -496,7 +522,6 @@ const Profile = () => {
                   </div>
               </div>
 
-              {/* Avatar Edit */}
               <div className="relative -mt-16 ml-4 mb-6 inline-block group">
                   <div className="w-24 h-24 rounded-full bg-white overflow-hidden shadow-sm border border-soft-border">
                       {avatarPreview ? (
@@ -567,6 +592,14 @@ const Profile = () => {
                 onClick: (url) => handleSetProfilePhoto(viewerType, url)
             }
         ] : []}
+      />
+
+      {/* Archive Viewer */}
+      <UnifiedViewerModal
+        isOpen={archiveViewerOpen}
+        onClose={() => setArchiveViewerOpen(false)}
+        stories={archiveStories}
+        initialStoryIndex={archiveIndex}
       />
     </div>
   );

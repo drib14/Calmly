@@ -7,7 +7,7 @@ const {
   getClipFeed,
   viewClip,
   deleteClip,
-  likeClip
+  getClipDetails
 } = require('../controllers/clipController');
 
 router.use(protect);
@@ -15,7 +15,7 @@ router.use(protect);
 router.post('/', upload.single('media'), createClip);
 router.get('/feed', getClipFeed);
 router.post('/:id/view', viewClip);
+router.get('/:id/details', getClipDetails);
 router.delete('/:id', deleteClip);
-// router.put('/:id/like', likeClip); // Future implementation
 
 module.exports = router;

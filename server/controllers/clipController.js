@@ -44,10 +44,6 @@ const createClip = async (req, res) => {
     // Populate identity for immediate return
     await clip.populate('identity', 'name handle avatar type');
 
-    // Emit socket event if needed (future)
-    const io = req.app.get('io');
-    // io.emit('new_clip', clip);
-
     res.status(201).json(clip);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -59,15 +55,10 @@ const createClip = async (req, res) => {
 // @access  Private
 const getClipFeed = async (req, res) => {
   try {
-    // Logic similar to posts/quotes feed. For now, fetch all non-expired clips or filter by blocked.
-    // In a real app, we filter by friends. Here we might just return all for the "community" feel
-    // respecting blocks.
-
     const user = await User.findById(req.user._id);
     const blockedUsers = user.settings?.blockedUsers || [];
-    const hiddenContent = user.settings?.hiddenContent || []; // if exists
 
-    // Find clips not from blocked identities
+    // Only show clips that expire in the future
     const clips = await Clip.find({
       identity: { $nin: blockedUsers },
       expiresAt: { $gt: new Date() }
@@ -75,15 +66,10 @@ const getClipFeed = async (req, res) => {
     .populate('identity', 'name handle avatar type')
     .sort({ createdAt: -1 });
 
-    // Enhance with "viewed" status
-    const identityIds = await Identity.find({ user: req.user._id }).distinct('_id'); // My identities
+    const identityIds = await Identity.find({ user: req.user._id }).distinct('_id');
 
     const enhancedClips = clips.map(clip => {
         const isMine = identityIds.some(id => id.toString() === clip.identity._id.toString());
-        // Check if ANY of my identities viewed it? Or just the current user context?
-        // Usually viewed by "User". But we store Viewers as Identities or Users?
-        // Schema says `viewers: [Identity]`.
-        // So we need to check if any of my identities are in the viewers list.
         const viewed = clip.viewers.some(v => identityIds.some(myId => myId.toString() === v.toString()));
         return {
             ...clip.toObject(),
@@ -104,15 +90,10 @@ const getClipFeed = async (req, res) => {
 const viewClip = async (req, res) => {
   try {
     const { id } = req.params;
-    const { identityId } = req.body; // Which identity is viewing? Defaults to first if not sent?
+    const { identityId } = req.body;
 
-    // If identityId not provided, maybe use default?
-    // Ideally frontend sends the current viewing identity.
-
-    // Determine viewer identity
     let viewerIdentityId = identityId;
     if (!viewerIdentityId) {
-        // Fallback to first identity of user
         const firstId = await Identity.findOne({ user: req.user._id });
         if (firstId) viewerIdentityId = firstId._id;
     }
@@ -122,7 +103,6 @@ const viewClip = async (req, res) => {
     const clip = await Clip.findById(id);
     if (!clip) return res.status(404).json({ message: 'Clip not found' });
 
-    // Add to viewers if not already present
     if (!clip.viewers.includes(viewerIdentityId)) {
       clip.viewers.push(viewerIdentityId);
       await clip.save();
@@ -132,6 +112,36 @@ const viewClip = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// @desc    Get Clip Details
+// @route   GET /api/clips/:id/details
+// @access  Private
+const getClipDetails = async (req, res) => {
+    try {
+        const clip = await Clip.findById(req.params.id)
+            .populate('viewers', 'name handle avatar type');
+
+        if (!clip) return res.status(404).json({ message: 'Clip not found' });
+        if (clip.user.toString() !== req.user._id.toString()) {
+             return res.status(403).json({ message: 'Only owner can view analytics' });
+        }
+
+        // Clip schema stores viewers as Identity IDs in 'viewers' array
+        // We map this to match Quote analytics format { views: [{ identity: ... }], reactions: [] }
+        // Clips don't have reactions in schema yet? Check schema.
+        // Clip schema: viewers: [Identity]
+        // No reactions array in Clip schema provided earlier.
+
+        const views = clip.viewers.map(v => ({ identity: v, timestamp: new Date() })); // Timestamp mock if not in schema
+
+        res.json({
+            views: views,
+            reactions: [] // Placeholder
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 // @desc    Delete clip
@@ -160,5 +170,6 @@ module.exports = {
   createClip,
   getClipFeed,
   viewClip,
+  getClipDetails,
   deleteClip
 };

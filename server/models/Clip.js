@@ -27,7 +27,7 @@ const clipSchema = mongoose.Schema({
   expiresAt: {
     type: Date,
     required: true,
-    index: { expires: 0 } // Auto-delete when expired
+    // Removed TTL index to support archiving. Expiration handled by app logic.
   }
 }, {
   timestamps: true

@@ -112,6 +112,7 @@ const Settings = () => {
       description: "Manage settings for stories and notes.",
       items: [
           { id: 'allowClipReplies', label: "Allow Replies to Clips", type: 'toggle', description: "Allow others to reply to your clips via message." },
+          { id: 'autoArchiveExpired', label: "Archive Expired Stories", type: 'toggle', description: "Automatically move expired Clips and Quotes to your private archive instead of deleting them." },
           { id: 'autoArchiveClips', label: "Auto-Archive Clips", type: 'toggle', description: "Save clips to your archive after they expire (24h)." }
       ]
     },

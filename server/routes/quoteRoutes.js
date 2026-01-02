@@ -4,11 +4,16 @@ const { protect } = require('../middleware/authMiddleware');
 const Quote = require('../models/Quote');
 const Identity = require('../models/Identity');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 // Get recent quotes (Feed widget)
 router.get('/feed', protect, async (req, res) => {
   try {
+    // Filter for quotes created in the last 24 hours
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
     const quotes = await Quote.aggregate([
+        { $match: { createdAt: { $gt: twentyFourHoursAgo } } },
         { $sort: { createdAt: -1 } },
         { $group: {
             _id: "$identity",
@@ -39,23 +44,54 @@ router.post('/', protect, async (req, res) => {
   if (!identityId) return res.status(400).json({ message: 'Identity required' });
 
   try {
-    // Verify identity ownership
     const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
     if (!identity) return res.status(403).json({ message: 'Unauthorized identity' });
 
-    // Delete previous active quote for this identity
-    const oldQuotes = await Quote.find({ identity: identityId });
-    if (oldQuotes.length > 0) {
-        const io = req.app.get('io');
-        // Emit expiry for each old quote
-        for (const oldQuote of oldQuotes) {
-            if (io) io.emit('quote_expired', oldQuote._id);
-        }
+    // Handle previous active quotes
+    // If autoArchiveExpired is enabled, we just leave them alone (they will disappear from feed due to timestamp)
+    // If disabled, we might want to hard delete them to keep DB clean?
+    // But logically, "Archive Expired" setting implies we KEEP them.
+    // If setting is OFF, should we delete them?
+    // User schema default is TRUE now.
+    // Let's check User settings.
+    const user = await User.findById(req.user._id);
+    const shouldArchive = user.settings?.autoArchiveExpired !== false; // Default true
+
+    if (!shouldArchive) {
+        // If user wants to delete old stuff, we delete previous quotes for this identity
+        // But maybe only "expired" ones?
+        // Actually, logic usually is: New Quote replaces Old Quote on the "Board".
+        // If we want to keep history (Archive), we just let the old one exist in DB.
+        // If we want to delete history, we delete it here.
         await Quote.deleteMany({ identity: identityId });
+    } else {
+        // If archiving, we might want to ensure only ONE "active" (recent) quote exists?
+        // The feed aggregation picks the latest. So multiple recent quotes logic:
+        // If I post again within 24h, do I have 2 stories?
+        // Usually Story = Stack.
+        // Current logic: `feed` aggregates by Identity and takes `$first` (latest).
+        // So effectively only the latest is shown on the widget cover.
+        // But the Viewer might want to show all "active" ones.
+        // My Viewer logic in `StoriesWidget` uses `quotes.forEach`.
+        // Wait, `quotes` comes from `/feed` which only returns ONE per identity.
+        // This means I can only have ONE quote at a time?
+        // The user request "unify... quote(not note) and clips"
+        // Clips support multiple. Quotes might be singular status?
+        // "Profile with quote bubble... the same way in viewer".
+        // If I post a new quote, does it add to the stack or replace?
+        // Usually "Notes" replace. "Stories" stack.
+        // Prompt says "Quote (not note)".
+        // I will assume for now it replaces on the feed (Aggregation), but we keep it in DB for Archive.
+        // So I won't delete here if archiving is on.
     }
 
-    // Set Expiry to 24 hours from now
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Emit expiry for old quotes to update clients?
+    // Actually, simply emitting 'quote_created' is better.
+    // But if we deleted, we should emit.
+    if (!shouldArchive) {
+         const io = req.app.get('io');
+         if (io) io.emit('quote_expired', identityId); // simplistic
+    }
 
     const quote = await Quote.create({
       user: req.user._id,
@@ -63,8 +99,8 @@ router.post('/', protect, async (req, res) => {
       content,
       mood,
       font,
-      music, // Save music object
-      expiresAt
+      music
+      // No expiresAt needed for DB TTL anymore
     });
 
     res.status(201).json(quote);
@@ -79,17 +115,15 @@ router.post('/:id/view', protect, async (req, res) => {
         const quote = await Quote.findById(req.params.id);
         if (!quote) return res.status(404).json({ message: 'Quote not found' });
 
-        // Check if already viewed by this user
         const alreadyViewed = quote.views.some(v => v.user.toString() === req.user._id.toString());
 
         if (!alreadyViewed && quote.user.toString() !== req.user._id.toString()) {
              quote.views.push({ user: req.user._id });
              await quote.save();
 
-             // Emit real-time update
              const io = req.app.get('io');
              if (io) {
-                 io.emit('quote_viewed', { quoteId: quote._id, viewerId: req.user._id }); // New event for specific viewer
+                 io.emit('quote_viewed', { quoteId: quote._id, viewerId: req.user._id });
                  io.emit('quote_updated', { quoteId: quote._id, views: quote.views.length });
              }
         }
@@ -117,7 +151,6 @@ router.post('/:id/react', protect, async (req, res) => {
         } else {
             quote.reactions.push({ user: req.user._id, identity: identity._id });
 
-            // Notification
             if (quote.identity.toString() !== identityId.toString()) {
                 const recipientIdentity = await Identity.findById(quote.identity);
                 if (recipientIdentity) {
@@ -129,7 +162,6 @@ router.post('/:id/react', protect, async (req, res) => {
                         quote: quote._id
                     });
 
-                    // Real-time Notification
                     const io = req.app.get('io');
                     if (io) {
                         io.to(recipientIdentity.user.toString()).emit('new_notification', notification);
@@ -140,7 +172,6 @@ router.post('/:id/react', protect, async (req, res) => {
 
         await quote.save();
 
-        // Emit real-time update
         const io = req.app.get('io');
         if (io) {
             io.emit('quote_updated', { quoteId: quote._id, reactions: quote.reactions.length });
@@ -165,7 +196,6 @@ router.get('/:id/details', protect, async (req, res) => {
              return res.status(403).json({ message: 'Only owner can view analytics' });
         }
 
-        // Update lastCheckedViews
         quote.lastCheckedViews = new Date();
         await quote.save();
 
@@ -190,7 +220,6 @@ router.delete('/:id', protect, async (req, res) => {
 
         await quote.deleteOne();
 
-        // Real-time Expiry/Deletion event
         const io = req.app.get('io');
         if (io) {
             io.emit('quote_expired', quote._id);

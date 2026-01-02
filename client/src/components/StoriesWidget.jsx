@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
-import { Plus } from 'lucide-react';
+import { Plus, Eye, MoreHorizontal, User, Film, FileText, Image as ImageIcon } from 'lucide-react';
 import Avatar from './Avatar';
 import Modal from './Modal';
 import CreateQuoteModal from './CreateQuoteModal';
 import CreateClipModal from './Clips/CreateClipModal';
-import QuoteViewerModal from './Quotes/QuoteViewerModal';
-import ClipViewerModal from './Clips/ClipViewerModal';
+import UnifiedViewerModal from './Unified/UnifiedViewerModal';
+import QuoteAnalyticsModal from './QuoteAnalyticsModal';
 import { useIdentity } from '../context/IdentityContext';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -28,204 +29,204 @@ const StoriesWidget = () => {
   const { data: quotes, isLoading: qLoading } = useSWR('/quotes/feed', fetcher, { refreshInterval: 30000 });
   const { data: clips, isLoading: cLoading } = useSWR('/clips/feed', fetcher, { refreshInterval: 30000 });
   const { currentIdentity } = useIdentity();
+  const navigate = useNavigate();
 
   const [showCreateModal, setShowCreateModal] = useState(false); // For Quotes
-  const [showClipCreate, setShowClipCreate] = useState(false); // For Clips (placeholder for now)
+  const [showClipCreate, setShowClipCreate] = useState(false);
 
-  const [quoteViewerOpen, setQuoteViewerOpen] = useState(false);
-  const [activeQuotes, setActiveQuotes] = useState([]);
-  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [activeStoryIndex, setActiveStoryIndex] = useState(0);
+  const [unifiedStories, setUnifiedStories] = useState([]);
 
-  const [clipViewerOpen, setClipViewerOpen] = useState(false);
-  const [activeClips, setActiveClips] = useState([]);
-  const [clipIndex, setClipIndex] = useState(0);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [analyticsItem, setAnalyticsItem] = useState(null);
+
+  // Profile Click Dropdown State
+  const [dropdownOpen, setDropdownOpen] = useState(null); // Identity ID
 
   // Merge Data Logic
-  // We need a list of "Slots" (Identities) that have either a Quote, a Clip, or both.
-  // Prioritize "My" slot.
-
   const myIdentityId = currentIdentity?._id;
 
-  const myQuote = quotes?.find(q => q.identity?._id === myIdentityId);
-  const myClips = clips?.filter(c => c.identity?._id === myIdentityId) || [];
+  const processStories = () => {
+      const map = new Map();
 
-  // Group others by Identity
-  const othersMap = new Map();
-
-  // Process Quotes
-  quotes?.forEach(q => {
-      if (q.identity._id === myIdentityId) return;
-      if (!othersMap.has(q.identity._id)) {
-          othersMap.set(q.identity._id, { identity: q.identity, quote: null, clips: [] });
-      }
-      othersMap.get(q.identity._id).quote = q;
-  });
-
-  // Process Clips
-  clips?.forEach(c => {
-      if (c.identity._id === myIdentityId) return;
-      if (!othersMap.has(c.identity._id)) {
-          othersMap.set(c.identity._id, { identity: c.identity, quote: null, clips: [] });
-      }
-      othersMap.get(c.identity._id).clips.push(c);
-  });
-
-  const othersList = Array.from(othersMap.values());
-
-  // Handlers
-  const handleCardClick = (item) => {
-      if (item.clips && item.clips.length > 0) {
-          // Open Clip Viewer
-          const allClipsFlat = [
-              ...(myClips.length > 0 ? myClips : []),
-              ...othersList.flatMap(i => i.clips)
-          ];
-
-          // Find start index for this user's first clip
-          const startIdx = allClipsFlat.findIndex(c => c.identity._id === item.identity._id);
-
-          setActiveClips(allClipsFlat);
-          setClipIndex(startIdx >= 0 ? startIdx : 0);
-          setClipViewerOpen(true);
-      } else {
-          // If no clips, maybe open profile or do nothing?
-          // If it's "My" card and no clips, maybe Create Clip?
-          if (item.identity._id === myIdentityId) {
-             if (item.quote) handleBubbleClick(item.quote);
-             else setShowClipCreate(true);
+      const getEntry = (identity) => {
+          if (!map.has(identity._id)) {
+              map.set(identity._id, { identity, items: [], lastUpdated: 0 });
           }
+          return map.get(identity._id);
+      };
+
+      quotes?.forEach(q => {
+          const entry = getEntry(q.identity);
+          entry.items.push({ ...q, type: 'quote' });
+          if (new Date(q.createdAt).getTime() > entry.lastUpdated) entry.lastUpdated = new Date(q.createdAt).getTime();
+      });
+
+      clips?.forEach(c => {
+          const entry = getEntry(c.identity);
+          entry.items.push({ ...c, type: 'clip' });
+          if (new Date(c.createdAt).getTime() > entry.lastUpdated) entry.lastUpdated = new Date(c.createdAt).getTime();
+      });
+
+      map.forEach(entry => {
+          entry.items.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      });
+
+      let stories = Array.from(map.values());
+      stories.sort((a, b) => b.lastUpdated - a.lastUpdated);
+
+      const myStoryIndex = stories.findIndex(s => s.identity._id === myIdentityId);
+      let myStory = null;
+      if (myStoryIndex !== -1) {
+          myStory = stories.splice(myStoryIndex, 1)[0];
       }
+
+      if (!myStory && currentIdentity) {
+          myStory = { identity: currentIdentity, items: [], lastUpdated: 0 };
+      }
+
+      return { myStory, others: stories };
   };
 
-  const handleBubbleClick = (quote) => {
-      if (!quote) return;
-      // Open Quote Viewer
-      const allQuotes = [
-          ...(myQuote ? [myQuote] : []),
-          ...othersList.filter(i => i.quote).map(i => i.quote)
-      ];
-      const idx = allQuotes.findIndex(q => q._id === quote._id);
-      setActiveQuotes(allQuotes);
-      setQuoteIndex(idx >= 0 ? idx : 0);
-      setQuoteViewerOpen(true);
+  const { myStory, others } = processStories();
+
+  const handleStoryClick = (story, isMe = false) => {
+      if (story.items.length === 0) {
+          if (isMe) setShowClipCreate(true);
+          return;
+      }
+
+      const fullList = [myStory, ...others].filter(s => s && s.items.length > 0);
+      const idx = fullList.findIndex(s => s.identity._id === story.identity._id);
+
+      setUnifiedStories(fullList);
+      setActiveStoryIndex(idx >= 0 ? idx : 0);
+      setViewerOpen(true);
   };
 
-  const handleMyCreate = () => {
-     // Ask user if they want to create Quote or Clip?
-     // For now, let's just open a combined menu or default to Clip since card click implies Clip?
-     // Or separate buttons?
-     // The "Plus" icon on the card usually implies "Add to Story" (Clip).
-     // The Bubble "Plus" implies "Add Note".
-     // Since this is the Card click handler:
-     setShowClipCreate(true);
+  const handleAnalyticsClick = (e, item) => {
+      e.stopPropagation();
+      setAnalyticsItem(item);
+      setAnalyticsOpen(true);
+  };
+
+  const toggleDropdown = (e, id) => {
+      e.stopPropagation();
+      setDropdownOpen(dropdownOpen === id ? null : id);
+  };
+
+  const handleViewProfile = (handle) => {
+      navigate(`/profile/${handle}`);
+      setDropdownOpen(null);
+  };
+
+  const renderCard = (story, isMe = false) => {
+      const hasContent = story.items.length > 0;
+      const lastItem = hasContent ? story.items[story.items.length - 1] : null;
+      const isQuote = lastItem?.type === 'quote';
+      const isClip = lastItem?.type === 'clip';
+
+      const borderClass = isClip ? 'border-[3px] border-fuchsia-500' : 'border border-soft-border';
+
+      return (
+          <div
+              key={story.identity._id}
+              className={`flex-shrink-0 w-28 h-44 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm transition-transform hover:scale-105 bg-surface ${borderClass}`}
+              onClick={() => handleStoryClick(story, isMe)}
+          >
+               <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+                   {isClip ? (
+                       lastItem.mediaType === 'video' ? (
+                           <video src={lastItem.mediaUrl} className="w-full h-full object-cover" muted />
+                       ) : (
+                           <img src={lastItem.mediaUrl} className="w-full h-full object-cover" />
+                       )
+                   ) : isQuote ? (
+                       <div className="w-full h-full flex flex-col items-center justify-center p-2 relative">
+                           <div className={`absolute inset-0 opacity-20 ${getMoodColor(lastItem.mood)}`}></div>
+                           <Avatar identity={story.identity} size="md" />
+                           <div className={`relative mt-2 p-1.5 rounded-xl text-[8px] text-center font-serif leading-tight text-white shadow-sm max-w-full ${getMoodColor(lastItem.mood)}`}>
+                               <span className="line-clamp-2">"{lastItem.content}"</span>
+                               <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${getMoodColor(lastItem.mood)}`}></div>
+                           </div>
+                       </div>
+                   ) : (
+                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                           <Plus size={32} />
+                           <span className="text-xs font-bold mt-2">Create</span>
+                       </div>
+                   )}
+               </div>
+
+               {/* Eye Icon for Analytics (My Story Only) - Bottom Left per request */}
+               {isMe && hasContent && (
+                   <div className="absolute bottom-10 left-2 z-30" onClick={(e) => handleAnalyticsClick(e, lastItem)}>
+                       <div className="flex items-center space-x-1 bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm hover:bg-black/70 transition">
+                           <Eye size={12} className="text-white" />
+                           <span className="text-[10px] font-bold text-white">{lastItem.views?.length || 0}</span>
+                       </div>
+                   </div>
+               )}
+
+               {/* Profile Avatar / Dropdown Trigger (Shifted to prevent overlap if needed, but request said eye bottom left. Avatar usually bottom left too. )
+                   Wait, request said: "display total view count real-time besides the eye icon" and "bottom left".
+                   But the Avatar is also at the bottom left.
+                   I will move the Avatar slightly or place the Eye above it?
+                   "add the eye icon in the bottom left when click it triggers a modal ... and display total view count"
+                   "unify the display... display the profile... the same way in viewer"
+                   The viewer has avatar top left.
+                   The Widget has avatar bottom left.
+                   If I put Eye Bottom Left, it conflicts with Avatar.
+                   I will place the Eye Icon *ABOVE* the Avatar in the bottom left corner.
+               */}
+
+               <div className="absolute bottom-3 left-3 z-20" onClick={(e) => toggleDropdown(e, story.identity._id)}>
+                   <div className={`p-[2px] rounded-full bg-surface ${hasContent && !story.items.every(i => i.viewed) ? 'border-2 border-fuchsia-500' : 'border border-slate-200'}`}>
+                       <Avatar identity={story.identity} size="sm" />
+                   </div>
+                   <AnimatePresence>
+                       {dropdownOpen === story.identity._id && (
+                           <motion.div
+                               initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                               animate={{ opacity: 1, scale: 1, y: 0 }}
+                               exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                               className="absolute bottom-10 left-0 w-32 bg-surface border border-soft-border shadow-xl rounded-xl overflow-hidden flex flex-col z-50"
+                               onClick={(e) => e.stopPropagation()}
+                           >
+                               <button
+                                   onClick={() => handleViewProfile(story.identity.handle)}
+                                   className="flex items-center space-x-2 px-3 py-2 text-xs font-bold text-text hover:bg-background text-left"
+                               >
+                                   <User size={12} /> <span>View Profile</span>
+                               </button>
+                               {hasContent && (
+                                   <button
+                                       onClick={() => { setDropdownOpen(null); handleStoryClick(story, isMe); }}
+                                       className="flex items-center space-x-2 px-3 py-2 text-xs font-bold text-text hover:bg-background text-left"
+                                   >
+                                       <Film size={12} /> <span>View Story</span>
+                                   </button>
+                               )}
+                           </motion.div>
+                       )}
+                   </AnimatePresence>
+               </div>
+
+               <div className="absolute bottom-3 left-12 right-2 z-10 pointer-events-none">
+                   <p className="text-white text-xs font-bold truncate drop-shadow-md">
+                       {isMe ? 'You' : story.identity.name}
+                   </p>
+               </div>
+          </div>
+      );
   };
 
   return (
-    <div className="mb-6">
-        <div className="flex space-x-3 overflow-x-auto pb-4 pt-4 px-6 custom-scrollbar">
-
-            {/* My Slot */}
-            <div className="flex-shrink-0 w-28 h-44 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm transition-transform hover:scale-105 border border-soft-border bg-surface">
-                 {/* Card Background (Clip or Default) */}
-                 <div
-                    className={`absolute inset-0 bg-slate-100 ${myClips.length > 0 ? '' : 'bg-gradient-to-br from-slate-100 to-slate-200'}`}
-                    onClick={() => myClips.length > 0 ? handleCardClick({ identity: currentIdentity, clips: myClips }) : handleMyCreate()}
-                 >
-                     {myClips.length > 0 ? (
-                         (myClips[0].mediaType === 'video' ? (
-                             <video src={myClips[0].mediaUrl} className="w-full h-full object-cover" />
-                         ) : (
-                             <img src={myClips[0].mediaUrl} className="w-full h-full object-cover" />
-                         ))
-                     ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                             <Plus size={32} />
-                             <span className="text-xs font-bold mt-2">Create</span>
-                        </div>
-                     )}
-                 </div>
-
-                 {/* Quote Bubble (Overlay) */}
-                 {myQuote ? (
-                     <div
-                        className="absolute top-2 left-2 right-2 bg-white/90 backdrop-blur-sm p-2 rounded-xl border border-slate-200 shadow-sm z-10 cursor-pointer"
-                        onClick={(e) => { e.stopPropagation(); handleBubbleClick(myQuote); }}
-                     >
-                         <p className="text-[10px] text-center font-serif leading-tight line-clamp-2 text-slate-800">
-                             "{myQuote.content}"
-                         </p>
-                     </div>
-                 ) : (
-                    // Explicit "Add Note" Button if no quote
-                     <div
-                        className="absolute top-2 left-2 p-1 bg-white/80 rounded-full shadow-sm cursor-pointer hover:bg-white z-20"
-                        onClick={(e) => { e.stopPropagation(); setShowCreateModal(true); }}
-                        title="Add Note"
-                     >
-                         <Plus size={14} className="text-slate-700" />
-                     </div>
-                 )}
-
-                 {/* Avatar (Bottom Left) with Ring */}
-                 <div className="absolute bottom-3 left-3 z-10">
-                     <div className={`p-[2px] rounded-full bg-surface ${myClips.some(c => !c.viewed) ? 'border-2 border-fuchsia-500' : 'border border-slate-200'}`}>
-                         <Avatar identity={currentIdentity} size="sm" />
-                     </div>
-                 </div>
-
-                 {/* Label */}
-                 <div className="absolute bottom-3 left-12 right-2 z-10">
-                     <p className="text-white text-xs font-bold truncate drop-shadow-md">You</p>
-                 </div>
-            </div>
-
-            {/* Other Slots */}
-            {othersList.map((item) => (
-                <div
-                    key={item.identity._id}
-                    className="flex-shrink-0 w-28 h-44 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm transition-transform hover:scale-105 border border-soft-border bg-surface"
-                >
-                     {/* Card Background */}
-                     <div
-                        className="absolute inset-0 bg-slate-100"
-                        onClick={() => handleCardClick(item)}
-                     >
-                         {item.clips.length > 0 ? (
-                             (item.clips[item.clips.length-1].mediaType === 'video' ? (
-                                 <video src={item.clips[item.clips.length-1].mediaUrl} className="w-full h-full object-cover" />
-                             ) : (
-                                 <img src={item.clips[item.clips.length-1].mediaUrl} className="w-full h-full object-cover" />
-                             ))
-                         ) : (
-                             <div className={`w-full h-full opacity-30 ${item.quote ? getMoodColor(item.quote.mood) : 'bg-slate-200'}`}></div>
-                         )}
-                     </div>
-
-                     {/* Quote Bubble */}
-                     {item.quote && (
-                        <div
-                            className="absolute top-2 left-2 right-2 bg-white/90 backdrop-blur-sm p-2 rounded-xl border border-slate-200 shadow-sm z-10 hover:bg-white transition-colors"
-                            onClick={(e) => { e.stopPropagation(); handleBubbleClick(item.quote); }}
-                        >
-                            <p className="text-[10px] text-center font-serif leading-tight line-clamp-2 text-slate-800">
-                                "{item.quote.content}"
-                            </p>
-                        </div>
-                     )}
-
-                     {/* Avatar with Ring */}
-                     <div className="absolute bottom-3 left-3 z-10 pointer-events-none">
-                         <div className={`p-[2px] rounded-full bg-surface ${item.clips.some(c => !c.viewed) ? 'border-2 border-fuchsia-500' : 'border border-slate-200'}`}>
-                             <Avatar identity={item.identity} size="sm" />
-                         </div>
-                     </div>
-
-                     <div className="absolute bottom-3 left-12 right-2 z-10 pointer-events-none">
-                         <p className="text-white text-xs font-bold truncate drop-shadow-md">{item.identity.name}</p>
-                     </div>
-                </div>
-            ))}
-
+    <div className="mb-6 relative z-10">
+        <div className="flex space-x-3 overflow-x-auto pb-4 pt-4 px-6 custom-scrollbar" onClick={() => setDropdownOpen(null)}>
+            {renderCard(myStory, true)}
+            {others.map(story => renderCard(story))}
         </div>
 
         <CreateQuoteModal
@@ -241,18 +242,17 @@ const StoriesWidget = () => {
             onCreated={() => mutate('/clips/feed')}
         />
 
-        <QuoteViewerModal
-            isOpen={quoteViewerOpen}
-            onClose={() => setQuoteViewerOpen(false)}
-            quotes={activeQuotes}
-            initialIndex={quoteIndex}
+        <UnifiedViewerModal
+            isOpen={viewerOpen}
+            onClose={() => setViewerOpen(false)}
+            stories={unifiedStories}
+            initialStoryIndex={activeStoryIndex}
         />
 
-        <ClipViewerModal
-            isOpen={clipViewerOpen}
-            onClose={() => setClipViewerOpen(false)}
-            clips={activeClips}
-            initialIndex={clipIndex}
+        <QuoteAnalyticsModal
+            isOpen={analyticsOpen}
+            onClose={() => setAnalyticsOpen(false)}
+            item={analyticsItem}
         />
     </div>
   );

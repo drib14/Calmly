@@ -6,6 +6,7 @@ const Identity = require('../models/Identity');
 const Post = require('../models/Post');
 const Quote = require('../models/Quote');
 const Clip = require('../models/Clip');
+const User = require('../models/User');
 
 // Get profile by handle
 router.get('/:handle', protect, async (req, res) => {
@@ -24,12 +25,11 @@ router.get('/:handle', protect, async (req, res) => {
         }
     }
 
-    // Helper to fetch posts with Aggregated Comment Count
+    // Helper to fetch posts
     const fetchWithComments = async (match) => {
         const posts = await Post.aggregate([
             { $match: match },
             { $sort: { createdAt: -1 } },
-            // Lookup Identity
             {
                 $lookup: {
                     from: 'identities',
@@ -39,7 +39,6 @@ router.get('/:handle', protect, async (req, res) => {
                 }
             },
             { $unwind: '$identity' },
-            // Lookup Comment Count
             {
                 $lookup: {
                     from: 'comments',
@@ -56,7 +55,6 @@ router.get('/:handle', protect, async (req, res) => {
             { $project: { comments: 0 } }
         ]);
 
-        // Populate Reposts manually after aggregation (Mongoose specific population on plain objects)
         await Post.populate(posts, [
             { path: 'reposts.identity', select: 'name type handle avatar' }
         ]);
@@ -64,54 +62,71 @@ router.get('/:handle', protect, async (req, res) => {
         return posts;
     };
 
-    // Determine visibility
     const isOwner = req.user && identity.user.toString() === req.user._id.toString();
     const visibilityMatch = isOwner ? {} : { visibility: 'public' };
 
-    // Get Authored Posts
-    const authoredPosts = await fetchWithComments({ identity: identity._id, ...visibilityMatch });
+    // Get Authored Posts (Public + Private if owner)
+    const allPosts = await fetchWithComments({ identity: identity._id, ...visibilityMatch });
+
+    // Separate for tabs
+    const publicPosts = allPosts.filter(p => p.visibility === 'public');
+    const privatePosts = allPosts.filter(p => p.visibility === 'private');
 
     // Get Reposted Posts
     const repostedPosts = await fetchWithComments({ 'reposts.identity': identity._id, visibility: 'public' });
 
-    // Get Active Quote
-    const activeQuote = await Quote.findOne({ identity: identity._id }).sort({ createdAt: -1 });
+    // Active Items (Feed logic: < 24 hours)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Get Active Clips
-    // Clips expire but we might want to show them if valid
-    const clips = await Clip.find({
+    const activeQuote = await Quote.findOne({
+        identity: identity._id,
+        createdAt: { $gt: twentyFourHoursAgo }
+    }).sort({ createdAt: -1 });
+
+    const activeClips = await Clip.find({
         identity: identity._id,
         expiresAt: { $gt: new Date() }
     }).sort({ createdAt: -1 });
 
-    // Get Archives (if owner)
-    let archivedPosts = [];
-    let expiredQuotes = [];
-
+    // Archives (Owner Only)
+    let archives = [];
     if (isOwner) {
-        // Archived Posts: Private posts + specific 'archived' status if we had it
-        archivedPosts = await fetchWithComments({ identity: identity._id, visibility: 'private' });
+        // 1. Private Posts
+        const archivedPosts = privatePosts.map(p => ({ ...p, type: 'post' }));
 
-        // Expired Quotes
-        // Assuming expired quotes are still in DB but filtered out by TTL or query.
-        // If MongoDB TTL removes them, we can't fetch them.
-        // User memory says "expires automatically after 24 hours via a backend TTL index".
-        // If TTL is set, they are gone. We cannot show them.
-        // Unless we change TTL behavior or store them elsewhere.
-        // I will assume for now we only fetch what's left or if user wants them kept, we'd need to change Schema to soft-delete/expire.
-        // User asked "put an archives tab... where it will be posted here all, the expired quote".
-        // If they are deleted, I can't. I'll check Quote schema.
-        // If I can't change Schema significantly now, I'll skip expired quotes fetching if they are truly deleted.
-        // But I will fetch 'archived' posts.
+        // 2. Expired Quotes (Older than 24h)
+        const expiredQuotes = await Quote.find({
+            identity: identity._id,
+            createdAt: { $lte: twentyFourHoursAgo }
+        }).sort({ createdAt: -1 }).lean();
+
+        // 3. Expired Clips
+        const expiredClips = await Clip.find({
+            identity: identity._id,
+            expiresAt: { $lte: new Date() }
+        }).sort({ createdAt: -1 }).lean();
+
+        // Populate details for consistency
+        // Note: Post aggregation already populated Identity. Quote/Clip queries need it or rely on `identity` object.
+        // We'll stick to basic fields.
+
+        archives = [
+            ...archivedPosts,
+            ...expiredQuotes.map(q => ({ ...q, type: 'quote' })),
+            ...expiredClips.map(c => ({ ...c, type: 'clip' }))
+        ];
+
+        // Sort all archives by createdAt descending
+        archives.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     res.json({
         identity,
         quote: activeQuote,
-        clips: clips || [],
-        posts: authoredPosts.filter(p => p.visibility !== 'private'), // Public only in main tab
+        clips: activeClips || [],
+        posts: publicPosts,
         reposts: repostedPosts,
-        archives: isOwner ? archivedPosts : []
+        archives: isOwner ? archives : []
     });
   } catch (error) {
     console.error("Profile Fetch Error:", error);

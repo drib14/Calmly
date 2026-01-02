@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Heart, MessageCircle, ChevronLeft, ChevronRight, Pause, Play, MoreVertical, Trash2, Volume2, VolumeX } from 'lucide-react';
+import { X, Heart, MessageCircle, ChevronLeft, ChevronRight, Pause, Play, MoreVertical, Trash2, Volume2, VolumeX, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from '../Avatar';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 import { useIdentity } from '../../context/IdentityContext';
+import QuoteAnalyticsModal from '../QuoteAnalyticsModal';
 
 const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 }) => {
     // Stories: Array of { identity, items: [ { type: 'quote'|'clip', ... } ] }
@@ -13,6 +15,7 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
     const [progress, setProgress] = useState(0);
     const [isPaused, setIsPaused] = useState(false);
     const [muted, setMuted] = useState(false);
+    const [showAnalytics, setShowAnalytics] = useState(false);
     const videoRef = useRef(null);
 
     const { currentIdentity } = useIdentity();
@@ -24,6 +27,7 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
             setCurrentItemIndex(0);
             setProgress(0);
             setIsPaused(false);
+            setShowAnalytics(false);
         }
     }, [isOpen, initialStoryIndex]);
 
@@ -33,17 +37,17 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
 
     // View Tracking
     useEffect(() => {
-        if (isOpen && activeItem) {
+        if (isOpen && activeItem && !isOwner) {
             const endpoint = activeItem.type === 'quote'
                 ? `/quotes/${activeItem._id}/view`
                 : `/clips/${activeItem._id}/view`;
             axios.post(endpoint, { identityId: currentIdentity._id }).catch(() => {});
         }
-    }, [activeItem, isOpen]);
+    }, [activeItem, isOpen, isOwner, currentIdentity]);
 
     // Timer Logic
     useEffect(() => {
-        if (!isOpen || !activeItem || isPaused) return;
+        if (!isOpen || !activeItem || isPaused || showAnalytics) return;
 
         let interval;
         if (activeItem.type === 'clip' && activeItem.mediaType === 'video') {
@@ -67,7 +71,7 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
             }, stepTime);
         }
         return () => clearInterval(interval);
-    }, [isOpen, activeItem, isPaused, currentStoryIndex, currentItemIndex]);
+    }, [isOpen, activeItem, isPaused, showAnalytics, currentStoryIndex, currentItemIndex]);
 
     const handleNext = () => {
         if (currentItemIndex < activeStory.items.length - 1) {
@@ -92,8 +96,7 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
         } else if (currentStoryIndex > 0) {
             // Previous Story
             setCurrentStoryIndex(prev => prev - 1);
-            // Go to last item of previous story? Or first? usually first.
-            setCurrentItemIndex(0);
+            setCurrentItemIndex(0); // Restart story
             setProgress(0);
         }
     };
@@ -106,17 +109,18 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
         }
     };
 
+    const handleAnalyticsOpen = (e) => {
+        e.stopPropagation();
+        setIsPaused(true);
+        setShowAnalytics(true);
+    };
+
     if (!isOpen || !activeStory || !activeItem) return null;
 
     // Render Content
     const renderContent = () => {
         if (activeItem.type === 'quote') {
-            // Quote Style
-            // Note: In Dark mode, we want readability.
-            // Using white cards for Quotes inside the Viewer (which is dark) is standard.
-            // But we need to ensure text contrast if mood colors are used.
-            // The `moodColors` defined here are light-background based.
-
+            // Quote Style - Ensure distinct and readable
             const moodColors = {
                 'Neutral': 'bg-white text-slate-900',
                 'Happy': 'bg-yellow-50 text-yellow-900',
@@ -129,6 +133,7 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
 
             return (
                 <div className={`w-full h-full flex flex-col items-center justify-center p-8 text-center ${style}`}>
+                    {/* Background Texture/Pattern could go here */}
                     <h2 className="text-2xl md:text-3xl font-serif font-medium leading-relaxed break-words max-w-full">
                         "{activeItem.content}"
                     </h2>
@@ -155,6 +160,8 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
             );
         }
     };
+
+    const totalViews = activeItem.views ? activeItem.views.length : 0;
 
     return (
         <AnimatePresence>
@@ -187,7 +194,7 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
                                 <div className="flex flex-col text-left">
                                     <span className="text-white font-bold text-sm drop-shadow-md">{activeStory.identity.name}</span>
                                     <span className="text-white/70 text-[10px] drop-shadow-md">
-                                        {new Date(activeItem.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        {formatDistanceToNow(new Date(activeItem.createdAt), { addSuffix: true })}
                                     </span>
                                 </div>
                             </div>
@@ -209,27 +216,41 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
                                 {renderContent()}
 
                                 {/* Tap Zones */}
-                                <div className="absolute inset-y-0 left-0 w-1/3 z-20" onClick={(e) => { e.stopPropagation(); handlePrev(); }}></div>
-                                <div className="absolute inset-y-0 right-0 w-1/3 z-20" onClick={(e) => { e.stopPropagation(); handleNext(); }}></div>
+                                <div className="absolute inset-y-0 left-0 w-1/3 z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); handlePrev(); }}></div>
+                                <div className="absolute inset-y-0 right-0 w-1/3 z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleNext(); }}></div>
                             </div>
 
-                            {/* Footer */}
-                            {!isOwner && (
-                                <div className="absolute bottom-0 left-0 right-0 p-4 z-30 bg-gradient-to-t from-black/80 to-transparent">
-                                    <div className="flex items-center space-x-3">
-                                        <input
-                                            type="text"
-                                            placeholder={`Reply to ${activeStory.identity.name}...`}
-                                            className="flex-1 bg-white/10 backdrop-blur-md rounded-full px-4 py-3 text-sm text-white placeholder-white/70 border border-white/20 focus:outline-none focus:bg-white/20 transition"
-                                            onFocus={() => setIsPaused(true)}
-                                            onBlur={() => setIsPaused(false)}
-                                        />
-                                        <button className="p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition">
-                                            <Heart size={24} />
-                                        </button>
-                                    </div>
+                            {/* Footer / Interaction */}
+                            <div className="absolute bottom-0 left-0 right-0 p-4 z-30 pointer-events-none">
+                                <div className="flex items-center justify-between pointer-events-auto">
+                                    {/* Analytics Trigger (Owner Only) */}
+                                    {isOwner && (
+                                        <div
+                                            className="flex items-center space-x-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full cursor-pointer hover:bg-black/60 transition"
+                                            onClick={handleAnalyticsOpen}
+                                        >
+                                            <Eye size={16} className="text-white" />
+                                            <span className="text-white text-xs font-bold">{totalViews}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Reply Input (Non-Owner) */}
+                                    {!isOwner && (
+                                        <div className="flex-1 flex items-center space-x-3">
+                                            <input
+                                                type="text"
+                                                placeholder={`Reply to ${activeStory.identity.name}...`}
+                                                className="flex-1 bg-black/20 backdrop-blur-md rounded-full px-4 py-3 text-sm text-white placeholder-white/70 border border-white/20 focus:outline-none focus:bg-black/40 transition"
+                                                onFocus={() => setIsPaused(true)}
+                                                onBlur={() => setIsPaused(false)}
+                                            />
+                                            <button className="p-2 bg-black/20 rounded-full text-white hover:bg-black/40 transition">
+                                                <Heart size={24} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* UP NEXT (Right Sidebar - Desktop Only) */}
@@ -262,6 +283,13 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
                             </div>
                         </div>
                     </motion.div>
+
+                    {/* Analytics Modal (Slide Up) */}
+                    <QuoteAnalyticsModal
+                        isOpen={showAnalytics}
+                        onClose={() => { setShowAnalytics(false); setIsPaused(false); }}
+                        item={activeItem}
+                    />
                 </div>
             )}
         </AnimatePresence>

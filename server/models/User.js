@@ -87,6 +87,7 @@ const userSchema = new mongoose.Schema({
 
     // Journal
     enableJournal: { type: Boolean, default: true },
+    autoArchiveExpired: { type: Boolean, default: true }, // Archive Quotes/Clips instead of delete
     journalLocked: { type: Boolean, default: false },
     journalPassword: { type: String, default: null }, // Hashed separately ideally, or re-use login
 
