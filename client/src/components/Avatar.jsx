@@ -27,7 +27,7 @@ const Avatar = ({ identity, size = "md" }) => {
       // Initials
       const initials = identity.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
       return (
-          <div className={`${sizeClasses[size]} rounded-full bg-slate-900 text-white flex items-center justify-center font-serif font-bold shadow-sm border border-transparent`}>
+          <div className={`${sizeClasses[size]} rounded-full bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-serif font-bold shadow-sm border border-transparent`}>
               {initials}
           </div>
       );
@@ -36,10 +36,10 @@ const Avatar = ({ identity, size = "md" }) => {
   // 2. Pseudonym: User Icon (Unified Color usually, or gray)
   if (identity.type === 'pseudonym') {
       if (identity.avatar) {
-          return <img src={identity.avatar} className={`${sizeClasses[size]} rounded-full object-cover shadow-sm border border-slate-100`} />;
+          return <img src={identity.avatar} className={`${sizeClasses[size]} rounded-full object-cover shadow-sm border border-soft-border`} />;
       }
       return (
-          <div className={`${sizeClasses[size]} rounded-full bg-slate-100 text-slate-500 flex items-center justify-center border border-slate-200 shadow-inner`}>
+          <div className={`${sizeClasses[size]} rounded-full bg-surface text-secondary flex items-center justify-center border border-soft-border shadow-inner`}>
               <User size={size === 'sm' ? 14 : size === 'lg' ? 24 : 20} />
           </div>
       );

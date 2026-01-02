@@ -216,8 +216,8 @@ const StoriesWidget = () => {
   };
 
   return (
-    <div className="mb-6 relative z-10">
-        <div className="flex space-x-3 overflow-x-auto pb-4 pt-4 px-6 custom-scrollbar" onClick={() => setDropdownOpen(null)}>
+    <div className="mb-8 relative z-10">
+        <div className="flex space-x-3 overflow-x-auto pb-4 pt-4 px-1 custom-scrollbar" onClick={() => setDropdownOpen(null)}>
             {/* Guard against null myStory explicitly, although renderCard handles it */}
             {myStory && renderCard(myStory, true)}
 
