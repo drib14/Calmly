@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
-import { Plus, Eye, MoreHorizontal, User, Film, FileText, Image as ImageIcon } from 'lucide-react';
+import { Plus, Eye, User, Film, X } from 'lucide-react';
 import Avatar from './Avatar';
-import Modal from './Modal';
 import CreateQuoteModal from './CreateQuoteModal';
 import CreateClipModal from './Clips/CreateClipModal';
 import UnifiedViewerModal from './Unified/UnifiedViewerModal';
-import QuoteAnalyticsModal from './QuoteAnalyticsModal';
 import { useIdentity } from '../context/IdentityContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -25,26 +24,130 @@ const getMoodColor = (mood) => {
     }
 };
 
+const AnalyticsDrawer = ({ isOpen, onClose, item }) => {
+    const [details, setDetails] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && item) {
+            setLoading(true);
+            const endpoint = item.type === 'quote'
+                ? `/quotes/${item._id}/details`
+                : `/clips/${item._id}/details`;
+
+            axios.get(endpoint)
+                .then(res => setDetails(res.data))
+                .catch(err => console.error(err))
+                .finally(() => setLoading(false));
+        } else {
+            setDetails(null);
+        }
+    }, [isOpen, item]);
+
+    // Calculate total views from the item passed (real-time count) + details if available
+    const totalViews = details ? details.views.length : (item?.views?.length || 0);
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    {/* Backdrop */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={onClose}
+                        className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
+                    />
+
+                    {/* Drawer */}
+                    <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl z-[70] max-h-[60vh] overflow-hidden flex flex-col shadow-2xl border-t border-soft-border md:max-w-md md:mx-auto"
+                    >
+                        {/* Handle Bar */}
+                        <div className="flex justify-center pt-3 pb-1" onClick={onClose}>
+                            <div className="w-12 h-1.5 bg-slate-300 rounded-full cursor-pointer"></div>
+                        </div>
+
+                        {/* Header */}
+                        <div className="px-6 py-4 flex justify-between items-center border-b border-soft-border">
+                            <div>
+                                <h3 className="text-lg font-serif font-bold text-text">Audience</h3>
+                                <div className="flex items-center space-x-2 text-secondary text-sm">
+                                    <Eye size={14} />
+                                    <span>{totalViews} Total Views</span>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-background rounded-full transition">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                            {loading ? (
+                                <div className="text-center py-8 text-secondary">Loading insights...</div>
+                            ) : details && details.views && details.views.length > 0 ? (
+                                <div className="space-y-3">
+                                    {details.views.map((view, i) => (
+                                        <div key={i} className="flex items-center justify-between p-2 hover:bg-background rounded-xl transition">
+                                            <div className="flex items-center space-x-3">
+                                                {/* Use placeholder avatar logic since View usually only has User ID unless populated deeply */}
+                                                {/* Backend populates 'views.user' with username. Profile image might be missing if not populated. */}
+                                                {/* We'll use a generic avatar or initials if avatar missing */}
+                                                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                                                    {view.user?.username ? view.user.username[0].toUpperCase() : <User size={16}/>}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-text">{view.user?.username || 'Unknown User'}</p>
+                                                    <p className="text-xs text-secondary">{view.viewedAt ? formatDistanceToNow(new Date(view.viewedAt), { addSuffix: true }) : 'Recently'}</p>
+                                                </div>
+                                            </div>
+                                            {/* Blue Badge for New Viewer logic would go here if we tracked 'new' specifically per session */}
+                                            {/* For now, we assume all in this list are viewers */}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                                        <Eye size={32} />
+                                    </div>
+                                    <p className="text-secondary font-medium">No views yet.</p>
+                                    <p className="text-xs text-slate-400">Share your story to reach more people.</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    );
+};
+
 const StoriesWidget = () => {
   const { data: quotes, isLoading: qLoading } = useSWR('/quotes/feed', fetcher, { refreshInterval: 30000 });
   const { data: clips, isLoading: cLoading } = useSWR('/clips/feed', fetcher, { refreshInterval: 30000 });
   const { currentIdentity } = useIdentity();
   const navigate = useNavigate();
 
-  const [showCreateModal, setShowCreateModal] = useState(false); // For Quotes
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showClipCreate, setShowClipCreate] = useState(false);
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [activeStoryIndex, setActiveStoryIndex] = useState(0);
   const [unifiedStories, setUnifiedStories] = useState([]);
 
-  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [analyticsItem, setAnalyticsItem] = useState(null);
 
   // Profile Click Dropdown State
-  const [dropdownOpen, setDropdownOpen] = useState(null); // Identity ID
+  const [dropdownOpen, setDropdownOpen] = useState(null);
 
-  // Merge Data Logic
   const myIdentityId = currentIdentity?._id;
 
   const processStories = () => {
@@ -82,7 +185,6 @@ const StoriesWidget = () => {
           myStory = stories.splice(myStoryIndex, 1)[0];
       }
 
-      // If no story for me, create placeholder. Ensure currentIdentity exists.
       if (!myStory && currentIdentity) {
           myStory = { identity: currentIdentity, items: [], lastUpdated: 0 };
       }
@@ -109,7 +211,7 @@ const StoriesWidget = () => {
   const handleAnalyticsClick = (e, item) => {
       e.stopPropagation();
       setAnalyticsItem(item);
-      setAnalyticsOpen(true);
+      setDrawerOpen(true);
   };
 
   const toggleDropdown = (e, id) => {
@@ -123,7 +225,6 @@ const StoriesWidget = () => {
   };
 
   const renderCard = (story, isMe = false) => {
-      // Fix: Guard against null story to prevent crash
       if (!story) return null;
 
       const hasContent = story.items && story.items.length > 0;
@@ -131,7 +232,9 @@ const StoriesWidget = () => {
       const isQuote = lastItem?.type === 'quote';
       const isClip = lastItem?.type === 'clip';
 
-      const borderClass = isClip ? 'border-[3px] border-fuchsia-500' : 'border border-soft-border';
+      const borderClass = hasContent
+        ? (!story.items.every(i => i.viewed) ? 'border-[3px] border-fuchsia-500' : 'border border-slate-300')
+        : 'border border-soft-border';
 
       return (
           <div
@@ -148,10 +251,16 @@ const StoriesWidget = () => {
                        )
                    ) : isQuote ? (
                        <div className="w-full h-full flex flex-col items-center justify-center p-2 relative bg-surface">
-                           {/* Blurred Mood Background */}
-                           <div className={`absolute inset-0 opacity-20 ${getMoodColor(lastItem.mood)}`}></div>
-                           <Avatar identity={story.identity} size="md" />
-                           <div className={`relative mt-2 p-1.5 rounded-xl text-[8px] text-center font-serif leading-tight text-white shadow-sm max-w-full ${getMoodColor(lastItem.mood)}`}>
+                           {/* Avatar + Quote Bubble Overlay Logic */}
+                            <div className={`absolute inset-0 opacity-10 ${getMoodColor(lastItem.mood)}`}></div>
+
+                            {/* Avatar Centered */}
+                            <div className="mb-2">
+                                <Avatar identity={story.identity} size="md" />
+                            </div>
+
+                            {/* Mini Quote Bubble */}
+                           <div className={`relative p-2 rounded-xl text-[9px] text-center font-serif leading-tight text-white shadow-sm w-full ${getMoodColor(lastItem.mood)} border border-white/20`}>
                                <span className="line-clamp-2">"{lastItem.content}"</span>
                                <div className={`absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 rotate-45 ${getMoodColor(lastItem.mood)}`}></div>
                            </div>
@@ -165,17 +274,18 @@ const StoriesWidget = () => {
                    )}
                </div>
 
-               {/* Eye Icon for Analytics (My Story Only) - Bottom Left - No Count Text */}
+               {/* Eye Icon + Count for Analytics (My Story Only) */}
                {isMe && hasContent && (
-                   <div className="absolute bottom-10 left-2 z-30" onClick={(e) => handleAnalyticsClick(e, lastItem)}>
-                       <div className="flex items-center justify-center bg-black/50 p-1.5 rounded-full backdrop-blur-sm hover:bg-black/70 transition">
-                           <Eye size={12} className="text-white" />
+                   <div className="absolute bottom-11 left-2 z-30" onClick={(e) => handleAnalyticsClick(e, lastItem)}>
+                       <div className="flex items-center space-x-1 bg-black/60 px-2 py-1 rounded-full backdrop-blur-sm hover:bg-black/80 transition cursor-pointer border border-white/10">
+                           <Eye size={10} className="text-white" />
+                           <span className="text-[10px] font-bold text-white">{lastItem.views?.length || 0}</span>
                        </div>
                    </div>
                )}
 
                <div className="absolute bottom-3 left-3 z-20" onClick={(e) => toggleDropdown(e, story.identity._id)}>
-                   <div className={`p-[2px] rounded-full bg-surface ${hasContent && !story.items.every(i => i.viewed) ? 'border-2 border-fuchsia-500' : 'border border-soft-border'}`}>
+                   <div className={`p-[2px] rounded-full bg-surface shadow-sm ${hasContent && !story.items.every(i => i.viewed) ? 'border-2 border-fuchsia-500' : 'border border-soft-border'}`}>
                        <Avatar identity={story.identity} size="sm" />
                    </div>
                    <AnimatePresence>
@@ -207,7 +317,7 @@ const StoriesWidget = () => {
                </div>
 
                <div className="absolute bottom-3 left-12 right-2 z-10 pointer-events-none">
-                   <p className="text-white text-xs font-bold truncate drop-shadow-md">
+                   <p className="text-white text-xs font-bold truncate drop-shadow-md filter shadow-black">
                        {isMe ? 'You' : story.identity.name}
                    </p>
                </div>
@@ -218,7 +328,7 @@ const StoriesWidget = () => {
   return (
     <div className="mb-8 relative z-10">
         <div className="flex space-x-3 overflow-x-auto pb-4 pt-4 px-1 custom-scrollbar" onClick={() => setDropdownOpen(null)}>
-            {/* Guard against null myStory explicitly, although renderCard handles it */}
+            {/* Guard against null myStory explicitly */}
             {myStory && renderCard(myStory, true)}
 
             {others.map(story => renderCard(story))}
@@ -244,9 +354,9 @@ const StoriesWidget = () => {
             initialStoryIndex={activeStoryIndex}
         />
 
-        <QuoteAnalyticsModal
-            isOpen={analyticsOpen}
-            onClose={() => setAnalyticsOpen(false)}
+        <AnalyticsDrawer
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
             item={analyticsItem}
         />
     </div>

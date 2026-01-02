@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Archive, Film } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Archive, Film, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
@@ -55,6 +55,9 @@ const Profile = () => {
   const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
   const [deletingQuote, setDeletingQuote] = useState(false);
 
+  // New: Active Clip/Quote State for profile header dropdown
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
   const [activeTab, setActiveTab] = useState('moments');
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
@@ -63,6 +66,33 @@ const Profile = () => {
   const { identity, posts, reposts, quote, clips, archives } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
+
+  const hasActiveClip = clips && clips.length > 0;
+
+  const handleProfileImageClick = (e) => {
+      e.stopPropagation();
+      if (hasActiveClip) {
+          setShowProfileDropdown(!showProfileDropdown);
+      } else {
+          openViewer(identity.avatar, identity.avatarHistory, 'avatar');
+      }
+  };
+
+  const openStoryViewer = () => {
+       // Construct a story object for the UnifiedViewer
+       const story = {
+           identity: identity,
+           items: clips.map(c => ({...c, type: 'clip'})).concat(quote ? [{...quote, type: 'quote'}] : [])
+           // Usually stories are sorted by date.
+       };
+       // Sort items
+       story.items.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+       setArchiveStories([story]);
+       setArchiveIndex(0);
+       setArchiveViewerOpen(true);
+       setShowProfileDropdown(false);
+  };
 
   const openEditModal = () => {
       setEditName(identity.name);
@@ -115,29 +145,10 @@ const Profile = () => {
   };
 
   const openArchiveViewer = (item) => {
-      const viewableItems = archives.filter(a => a.type === 'quote' || a.type === 'clip');
-      const startIdx = viewableItems.findIndex(i => i._id === item._id);
-
-      if (startIdx === -1) return; // Clicked a post?
-
-      const story = {
-          identity: identity,
-          items: viewableItems // Let user swipe through archives
-      };
-
+      // Archive viewer logic
+      const story = { identity, items: [item] };
       setArchiveStories([story]);
-
-      // Ideally we want to jump to `startIdx` but UnifiedViewer starts at 0.
-      // For now, we slice the array to start at the clicked item to ensure it opens.
-      // But this loses "previous" items in the swipe context.
-      // Better UX: Pass `startIdx` if UnifiedViewer supported it.
-      // Since I updated UnifiedViewer logic previously to be more robust but not explicitly to take `initialItemIndex` prop in the component definition (it takes `initialStoryIndex`),
-      // I will wrap the single item for now to guarantee correctness as per my last verified logic.
-
-      const singleStory = { identity, items: [item] };
-      setArchiveStories([singleStory]);
       setArchiveIndex(0);
-
       setArchiveViewerOpen(true);
   };
 
@@ -231,7 +242,7 @@ const Profile = () => {
   const allMedia = [...new Set([...postMedia, ...avatarMedia, ...coverMedia])].filter(Boolean);
 
   return (
-    <div className="max-w-2xl mx-auto pb-20">
+    <div className="max-w-2xl mx-auto pb-20" onClick={() => setShowProfileDropdown(false)}>
       <div className="bg-surface border border-soft-border rounded-3xl mb-6 shadow-sm relative group">
           <div
             className="h-48 bg-background relative overflow-hidden cursor-pointer rounded-t-3xl"
@@ -247,22 +258,87 @@ const Profile = () => {
           </div>
 
           <div className="px-6 pb-6 relative pt-20 rounded-b-3xl">
-              <div className="absolute -top-16 left-6 w-32 h-32 z-30">
-                  <QuoteBubble
-                    identity={identity}
-                    quote={quote}
-                    isMe={isOwner}
-                    size="xl"
-                    onQuoteClick={() => {
-                        if (isOwner) {
-                            setShowMyQuoteOptions(true);
-                        } else if (quote) {
-                            setReplyQuote(quote);
-                        }
-                    }}
-                    onAvatarClick={() => openViewer(identity.avatar, identity.avatarHistory, 'avatar')}
-                  />
-              </div>
+              {/* Quote Bubble - Active Quote */}
+              {quote && (
+                  <div className="absolute -top-16 left-6 w-32 h-32 z-30">
+                      <QuoteBubble
+                        identity={identity}
+                        quote={quote}
+                        isMe={isOwner}
+                        size="xl"
+                        onQuoteClick={() => {
+                            if (isOwner) {
+                                setShowMyQuoteOptions(true);
+                            } else if (quote) {
+                                setReplyQuote(quote);
+                            }
+                        }}
+                        onAvatarClick={handleProfileImageClick}
+                        avatarClass={hasActiveClip ? 'border-[3px] border-fuchsia-500' : ''}
+                      />
+
+                      {/* Profile Dropdown */}
+                      <AnimatePresence>
+                          {showProfileDropdown && (
+                             <motion.div
+                                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                 className="absolute top-full mt-2 left-0 w-40 bg-surface border border-soft-border shadow-xl rounded-xl overflow-hidden flex flex-col z-50"
+                                 onClick={(e) => e.stopPropagation()}
+                             >
+                                 <button
+                                     onClick={() => { openViewer(identity.avatar, identity.avatarHistory, 'avatar'); setShowProfileDropdown(false); }}
+                                     className="flex items-center space-x-2 px-4 py-3 text-xs font-bold text-text hover:bg-background text-left transition-colors"
+                                 >
+                                     <User size={14} /> <span>View Profile Photo</span>
+                                 </button>
+                                 <button
+                                     onClick={openStoryViewer}
+                                     className="flex items-center space-x-2 px-4 py-3 text-xs font-bold text-text hover:bg-background text-left transition-colors"
+                                 >
+                                     <Film size={14} /> <span>View Story</span>
+                                 </button>
+                             </motion.div>
+                          )}
+                      </AnimatePresence>
+                  </div>
+              )}
+
+              {/* If NO quote, we show just Avatar with potential Clip border */}
+              {!quote && (
+                 <div className="absolute -top-12 left-6 z-30 relative">
+                     <div onClick={handleProfileImageClick} className={`rounded-full p-[2px] bg-surface cursor-pointer inline-block ${hasActiveClip ? 'border-[3px] border-fuchsia-500' : 'border border-soft-border'}`}>
+                         <Avatar identity={identity} size="xl" />
+                     </div>
+
+                      {/* Profile Dropdown (Duplicate logic for no-quote state) */}
+                      <AnimatePresence>
+                          {showProfileDropdown && (
+                             <motion.div
+                                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                                 exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                 className="absolute top-full mt-2 left-0 w-40 bg-surface border border-soft-border shadow-xl rounded-xl overflow-hidden flex flex-col z-50"
+                                 onClick={(e) => e.stopPropagation()}
+                             >
+                                 <button
+                                     onClick={() => { openViewer(identity.avatar, identity.avatarHistory, 'avatar'); setShowProfileDropdown(false); }}
+                                     className="flex items-center space-x-2 px-4 py-3 text-xs font-bold text-text hover:bg-background text-left transition-colors"
+                                 >
+                                     <User size={14} /> <span>View Profile Photo</span>
+                                 </button>
+                                 <button
+                                     onClick={openStoryViewer}
+                                     className="flex items-center space-x-2 px-4 py-3 text-xs font-bold text-text hover:bg-background text-left transition-colors"
+                                 >
+                                     <Film size={14} /> <span>View Story</span>
+                                 </button>
+                             </motion.div>
+                          )}
+                      </AnimatePresence>
+                 </div>
+              )}
 
               <button
                   onClick={() => navigate(-1)}
@@ -380,12 +456,8 @@ const Profile = () => {
                               onClick={() => openArchiveViewer(item)}
                           >
                                   {/* Logic for Thumbnail Display */}
-                                  {/* Check if item has 'media' array (Post) OR 'mediaUrl' (Clip) */}
-                                  {/* Note: Profile controller populates posts. Clips come raw from their schema which has mediaUrl. */}
                                   { (item.media && item.media.length > 0) || item.mediaUrl ? (
 
-                                      // Render Media
-                                      // Determine source and type
                                       (item.mediaUrl || item.media[0]).match(/\.(mp4|webm)|video/i) || item.mediaType === 'video' ? (
                                           <video src={item.mediaUrl || item.media[0]} className="w-full h-full object-cover" />
                                       ) : (
