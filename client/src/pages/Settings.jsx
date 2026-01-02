@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, Settings as SettingsIcon, Shield, User, Lock, Edit3, MessageCircle, Bell, AlertTriangle, Book, Eye, Database, Info, ChevronLeft, Layout, LogOut, Trash2 } from 'lucide-react';
+import { ChevronRight, Settings as SettingsIcon, Shield, User, Lock, Edit3, MessageCircle, Bell, AlertTriangle, Book, Eye, Database, Info, ChevronLeft, Layout, LogOut, Trash2, Film } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -103,6 +103,16 @@ const Settings = () => {
           { id: 'autoContentWarning', label: "Auto Content Warning", type: 'toggle', description: "Automatically flag your posts if they contain sensitive keywords." },
           { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle', description: "Save your work in progress to your local device automatically." },
           { id: 'autoDeleteTimer', label: "Auto-Delete Posts", type: 'select', options: [{ value: 0, label: 'Off' }, { value: 24, label: '24 Hours' }, { value: 168, label: '1 Week' }], description: "Automatically delete your posts after a set time." }
+      ]
+    },
+    {
+      id: 3.5,
+      icon: Film,
+      title: "Clips & Quotes",
+      description: "Manage settings for stories and notes.",
+      items: [
+          { id: 'allowClipReplies', label: "Allow Replies to Clips", type: 'toggle', description: "Allow others to reply to your clips via message." },
+          { id: 'autoArchiveClips', label: "Auto-Archive Clips", type: 'toggle', description: "Save clips to your archive after they expire (24h)." }
       ]
     },
     {

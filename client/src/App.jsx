@@ -22,6 +22,7 @@ import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import PostView from './pages/PostView';
 import SavedPosts from './pages/SavedPosts';
+import NotFound from './pages/NotFound'; // New
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -105,6 +106,9 @@ function App() {
                     <SavedPosts />
                   </ProtectedRoute>
                 } />
+
+                {/* Catch All 404 */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
           </SocketProvider>

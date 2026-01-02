@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Archive } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Archive, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import QuoteBubble from '../components/QuoteBubble';
 import ImageViewer from '../components/ImageViewer';
-import QuotesWidget from '../components/QuotesWidget';
+import StoriesWidget from '../components/StoriesWidget';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
 import CreateQuoteModal from '../components/CreateQuoteModal';
@@ -53,7 +53,7 @@ const Profile = () => {
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
-  const { identity, posts, reposts, quote, archives } = data;
+  const { identity, posts, reposts, quote, clips, archives } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
@@ -285,17 +285,31 @@ const Profile = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-soft-border mb-6">
+      <div className="flex border-b border-soft-border mb-6 overflow-x-auto">
           <button
             onClick={() => setActiveTab('moments')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Grid size={16} />
               <span>Moments</span>
           </button>
           <button
+            onClick={() => setActiveTab('clips')}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'clips' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+          >
+              <Film size={16} />
+              <span>Clips</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('quotes')}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'quotes' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+          >
+              <MessageCircle size={16} />
+              <span>Quotes</span>
+          </button>
+          <button
             onClick={() => setActiveTab('media')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <ImageIcon size={16} />
               <span>Media</span>
@@ -345,6 +359,42 @@ const Profile = () => {
                         <PostCard key={post._id} post={post} mutate={() => mutate(`/profile/${handle}`)} />
                       ))
                   )}
+              </div>
+          )}
+
+          {activeTab === 'clips' && (
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                 {!clips || clips.length === 0 ? (
+                     <div className="col-span-full text-center py-10 opacity-50">
+                         <p className="text-secondary">No clips shared recently.</p>
+                     </div>
+                 ) : (
+                     clips.map((clip) => (
+                         <div
+                            key={clip._id}
+                            className="aspect-[9/16] bg-black rounded-lg overflow-hidden relative cursor-pointer group"
+                            onClick={() => openMediaViewer(clip.mediaUrl)} // Or distinct clip viewer
+                         >
+                             {clip.mediaType === 'video' ? (
+                                 <video src={clip.mediaUrl} className="w-full h-full object-cover" />
+                             ) : (
+                                 <img src={clip.mediaUrl} className="w-full h-full object-cover" />
+                             )}
+                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-bold">
+                                 View
+                             </div>
+                         </div>
+                     ))
+                 )}
+             </div>
+          )}
+
+          {activeTab === 'quotes' && (
+              <div className="space-y-4">
+                  {/* Reuse QuoteBubble or specific List View */}
+                  <div className="text-center py-10 text-secondary">
+                      No past quotes.
+                  </div>
               </div>
           )}
 

@@ -16,8 +16,7 @@ export const SocketProvider = ({ children }) => {
     // Only connect if user is authenticated
     if (user) {
         // In Vite, use import.meta.env, but fallback to localhost if not set
-        // The backend server URL usually matches what's in api.js or proxy
-        const socketUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+        const socketUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5080';
 
         const token = localStorage.getItem('accessToken');
         const newSocket = io(socketUrl, {
@@ -25,11 +24,17 @@ export const SocketProvider = ({ children }) => {
             transports: ['websocket', 'polling'],
             auth: {
                 token: token
-            }
+            },
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
         });
 
         newSocket.on('connect', () => {
             console.log('Socket connected');
+        });
+
+        newSocket.on('connect_error', (err) => {
+            console.error('Socket connection error:', err);
         });
 
         setSocket(newSocket);

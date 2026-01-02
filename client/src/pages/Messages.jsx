@@ -9,7 +9,7 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
-import QuotesWidget from '../components/QuotesWidget';
+import StoriesWidget from '../components/StoriesWidget';
 import QuoteAnalyticsModal from '../components/QuoteAnalyticsModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
@@ -322,7 +322,7 @@ const Messages = () => {
                {/* Quotes in Message Page (Horizontal Profiles) */}
                <div className="mb-2 -mx-2">
                    <div className="scale-90 origin-top-left w-[110%]">
-                       <QuotesWidget />
+                       <StoriesWidget />
                    </div>
                </div>
 

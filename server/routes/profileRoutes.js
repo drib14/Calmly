@@ -5,6 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 const Identity = require('../models/Identity');
 const Post = require('../models/Post');
 const Quote = require('../models/Quote');
+const Clip = require('../models/Clip');
 
 // Get profile by handle
 router.get('/:handle', protect, async (req, res) => {
@@ -76,6 +77,13 @@ router.get('/:handle', protect, async (req, res) => {
     // Get Active Quote
     const activeQuote = await Quote.findOne({ identity: identity._id }).sort({ createdAt: -1 });
 
+    // Get Active Clips
+    // Clips expire but we might want to show them if valid
+    const clips = await Clip.find({
+        identity: identity._id,
+        expiresAt: { $gt: new Date() }
+    }).sort({ createdAt: -1 });
+
     // Get Archives (if owner)
     let archivedPosts = [];
     let expiredQuotes = [];
@@ -100,6 +108,7 @@ router.get('/:handle', protect, async (req, res) => {
     res.json({
         identity,
         quote: activeQuote,
+        clips: clips || [],
         posts: authoredPosts.filter(p => p.visibility !== 'private'), // Public only in main tab
         reposts: repostedPosts,
         archives: isOwner ? archivedPosts : []

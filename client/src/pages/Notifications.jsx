@@ -5,10 +5,12 @@ import { Heart, MessageCircle, Repeat, Trash2, Quote, User } from 'lucide-react'
 import Avatar from '../components/Avatar';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const Notifications = () => {
     const [notifications, setNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [confirmClear, setConfirmClear] = useState(false);
     const navigate = useNavigate();
     const socket = useSocket();
 
@@ -34,14 +36,13 @@ const Notifications = () => {
     };
 
     const clearAll = async () => {
-        if (window.confirm("Clear all notifications?")) {
-            try {
-                await axios.delete('/notifications');
-                setNotifications([]);
-            } catch (err) {
-                console.error(err);
-            }
+        try {
+            await axios.delete('/notifications');
+            setNotifications([]);
+        } catch (err) {
+            console.error(err);
         }
+        setConfirmClear(false);
     }
 
     useEffect(() => {
@@ -84,11 +85,20 @@ const Notifications = () => {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-serif font-bold text-text">Notifications</h1>
                 {notifications && notifications.length > 0 && (
-                    <button onClick={clearAll} className="text-xs font-bold text-secondary hover:text-red-500 flex items-center space-x-1">
+                    <button onClick={() => setConfirmClear(true)} className="text-xs font-bold text-secondary hover:text-red-500 flex items-center space-x-1">
                         <Trash2 size={14} /> <span>Clear All</span>
                     </button>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={confirmClear}
+                onClose={() => setConfirmClear(false)}
+                onConfirm={clearAll}
+                title="Clear Notifications"
+                message="Are you sure you want to delete all notifications? This cannot be undone."
+                confirmText="Clear All"
+            />
 
             <div className="space-y-2">
                 {notifications?.length === 0 ? (

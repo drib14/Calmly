@@ -46,6 +46,7 @@ app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/quotes', require('./routes/quoteRoutes'));
+app.use('/api/clips', require('./routes/clipRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Calmly API is running...');
@@ -58,10 +59,14 @@ io.use((socket, next) => {
         return next(new Error('Authentication error'));
     }
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Use ACCESS_TOKEN_SECRET if JWT_SECRET is not consistent, but env has JWT_SECRET now.
+        // Fallback to ACCESS_TOKEN_SECRET just in case, as authController uses it.
+        const secret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET;
+        const decoded = jwt.verify(token, secret);
         socket.user = decoded; // Attach user to socket
         next();
     } catch (err) {
+        console.error("Socket Auth Error:", err.message);
         next(new Error('Authentication error'));
     }
 });

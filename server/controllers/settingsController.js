@@ -61,10 +61,10 @@ const updateEmail = async (req, res) => {
     }
 
     user.email = email;
-    user.isVerified = false; // Require re-verification
-    // Logic to send new verification email would go here
+    // user.isVerified = false; // Require re-verification (Disabled per request)
+    // Send email notification about change?
     await user.save();
-    res.json({ message: 'Email updated. Please verify your new email address.' });
+    res.json({ message: 'Email updated successfully.' });
   } else {
     res.status(404).json({ message: 'User not found' });
   }
