@@ -73,6 +73,11 @@ const CreatePost = () => {
   const navigate = useNavigate();
 
   const [type, setType] = useState('confession');
+
+  // Filter identities for Plain posts (Real & Anonymous only)
+  const visibleIdentities = type === 'plain'
+    ? identities.filter(id => id.type === 'real' || id.type === 'anonymous')
+    : identities;
   const [mood, setMood] = useState('Neutral');
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
@@ -112,6 +117,13 @@ const CreatePost = () => {
           }
       }
   }, [settings]);
+
+  // Force private visibility for Plain posts
+  useEffect(() => {
+      if (type === 'plain') {
+          setVisibility('private');
+      }
+  }, [type]);
 
   // Save Draft
   useEffect(() => {
@@ -194,7 +206,7 @@ const CreatePost = () => {
             formData.append('type', type);
             formData.append('mood', mood);
             formData.append('content', content);
-            formData.append('visibility', visibility);
+            formData.append('visibility', type === 'plain' ? 'private' : visibility); // Plain posts are private by default
             if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
 
             if (type === 'letter') formData.append('letterFields', JSON.stringify(letterFields));
@@ -262,7 +274,7 @@ const CreatePost = () => {
       <div className="mb-6 p-4 bg-background rounded-2xl border border-soft-border">
           <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Posting As</label>
           <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
-              {identities.map(id => (
+              {visibleIdentities.map(id => (
                   <div key={id._id} className="relative group">
                       <button
                         onClick={() => selectIdentity(id._id)}
@@ -422,15 +434,35 @@ const CreatePost = () => {
                 />
             </div>
         ) : type === 'plain' ? (
-             <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
-                <div className="flex space-x-4 mb-4 justify-between items-center">
+             <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${poemStyle.backgroundColor} ${paperStyles.find(s => s.class === poemStyle.backgroundColor)?.class || ''}`}>
+
+                 {/* Texture Overlay if matched from paperStyles */}
+                 {paperStyles.find(s => s.class === poemStyle.backgroundColor)?.texture && (
+                      <div
+                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat z-0"
+                        style={{ backgroundImage: `url(${paperStyles.find(s => s.class === poemStyle.backgroundColor).texture})` }}
+                      ></div>
+                 )}
+
+                <div className="flex space-x-4 mb-4 justify-between items-center relative z-10">
                      <div className="flex space-x-2 flex-wrap gap-y-2">
+                        {/* Colors */}
                         {poemBackgrounds.map(bg => (
                             <button
                                 key={bg.id}
                                 type="button"
                                 onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
                                 className={`w-6 h-6 rounded-full border border-black/10 ${bg.preview} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                            />
+                        ))}
+                        {/* Wallpapers (from paperStyles) */}
+                        {paperStyles.map(s => (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => setPoemStyle({...poemStyle, backgroundColor: s.class})} // Reusing s.class as backgroundColor identifier
+                                className={`w-6 h-6 rounded-full border border-slate-300 ${s.class.split(' ')[0]} ${poemStyle.backgroundColor === s.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                                title={s.label}
                             />
                         ))}
                     </div>
@@ -448,7 +480,7 @@ const CreatePost = () => {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={6}
-                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} placeholder-current/40`}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none relative z-10 ${poemStyle.font} placeholder-current/40`}
                     placeholder="Share something..."
                 />
             </div>
@@ -484,9 +516,14 @@ const CreatePost = () => {
                  <div className="flex items-center space-x-2">
                     <button
                         type="button"
-                        onClick={() => setVisibility(v => v === 'public' ? 'unlisted' : v === 'unlisted' ? 'private' : 'public')}
-                        className="flex items-center space-x-1 text-sm font-medium text-secondary hover:text-text px-3 py-1.5 rounded-full hover:bg-background transition"
-                        title="Click to cycle visibility"
+                        onClick={() => {
+                            if (type !== 'plain') {
+                                setVisibility(v => v === 'public' ? 'unlisted' : v === 'unlisted' ? 'private' : 'public');
+                            }
+                        }}
+                        className={`flex items-center space-x-1 text-sm font-medium px-3 py-1.5 rounded-full transition ${type === 'plain' ? 'opacity-50 cursor-not-allowed text-secondary' : 'text-secondary hover:text-text hover:bg-background'}`}
+                        title={type === 'plain' ? 'Plain posts are always private' : 'Click to cycle visibility'}
+                        disabled={type === 'plain'}
                     >
                         {visibility === 'public' && <Globe size={16} />}
                         {visibility === 'unlisted' && <EyeOff size={16} />}

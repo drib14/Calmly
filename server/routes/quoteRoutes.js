@@ -20,7 +20,13 @@ router.get('/feed', protect, async (req, res) => {
     // Populate identity details
     await Quote.populate(quotes, { path: 'identity', select: 'name handle avatar type' });
 
-    res.json(quotes);
+    // Mark 'viewed' status for current user
+    const quotesWithStatus = quotes.map(q => ({
+        ...q,
+        viewed: q.views && q.views.some(v => v.user.toString() === req.user._id.toString())
+    }));
+
+    res.json(quotesWithStatus);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -83,6 +89,7 @@ router.post('/:id/view', protect, async (req, res) => {
              // Emit real-time update
              const io = req.app.get('io');
              if (io) {
+                 io.emit('quote_viewed', { quoteId: quote._id, viewerId: req.user._id }); // New event for specific viewer
                  io.emit('quote_updated', { quoteId: quote._id, views: quote.views.length });
              }
         }

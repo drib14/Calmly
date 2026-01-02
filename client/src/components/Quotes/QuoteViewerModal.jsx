@@ -24,8 +24,20 @@ const QuoteViewerModal = ({ isOpen, onClose, quotes, initialIndex = 0 }) => {
             setCurrentIndex(initialIndex);
             setProgress(0);
             setIsPaused(false);
+
+            // Mark as viewed immediately when opened or index changed
+            if (quotes && quotes[initialIndex]) {
+                 axios.post(`/quotes/${quotes[initialIndex]._id}/view`).catch(console.error);
+            }
         }
-    }, [isOpen, initialIndex]);
+    }, [isOpen, initialIndex, quotes]); // Added quotes to dep array for safety
+
+    // Effect to mark viewed when index changes (next/prev)
+    useEffect(() => {
+        if (isOpen && currentQuote) {
+             axios.post(`/quotes/${currentQuote._id}/view`).catch(console.error);
+        }
+    }, [currentIndex, isOpen, currentQuote]);
 
     useEffect(() => {
         if (!isOpen || !currentQuote || isPaused) return;

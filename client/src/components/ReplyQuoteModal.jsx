@@ -65,7 +65,7 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
             </div>
 
             <textarea
-                className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none"
+                className="w-full bg-background text-text border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none placeholder:text-secondary"
                 rows="3"
                 placeholder={`Reply to ${quote.identity.name}...`}
                 value={replyText}

@@ -431,17 +431,20 @@ const PostCard = ({ post, mutate }) => {
                     <div className="font-serif text-lg font-bold text-right italic">{post.letterFields?.footer}</div>
                   </div>
               </div>
-          ) : post.type === 'poetry' ? (
+          ) : (post.type === 'poetry' || post.type === 'plain') ? (
               <div
                 className={clsx(
-                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden",
+                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden relative",
                     post.style?.backgroundColor,
-                    post.style?.align,
-                    post.style?.font
+                    post.style?.align || 'text-left',
+                    post.style?.font || 'font-sans'
                 )}
               >
-                  {post.title && <h3 className="text-2xl font-bold mb-6 opacity-80">{post.title}</h3>}
-                  <div className="whitespace-pre-wrap leading-loose text-lg opacity-90">{post.content}</div>
+                  {/* Texture if it exists in style (or check paperStyles match) */}
+                  {/* We need to infer texture from class or store it. For now, we assume simple classes. */}
+
+                  {post.title && <h3 className="text-2xl font-bold mb-6 opacity-80 relative z-10">{post.title}</h3>}
+                  <div className="whitespace-pre-wrap leading-loose text-lg opacity-90 relative z-10">{post.content}</div>
               </div>
           ) : (
               <>
