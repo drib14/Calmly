@@ -35,11 +35,11 @@ const EditPostModal = ({ isOpen, onClose, post, onUpdate }) => {
                 onChange={(e) => setContent(e.target.value)}
             />
             <div className="flex justify-end space-x-2">
-                <button onClick={onClose} className="px-4 py-2 bg-background border border-soft-border rounded-xl text-sm font-medium text-text">Cancel</button>
+                <button onClick={onClose} className="px-4 py-2 bg-background border border-soft-border rounded-xl text-sm font-medium text-text hover:bg-surface transition">Cancel</button>
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
+                    className="px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-sm font-medium hover:opacity-90 disabled:opacity-50 transition"
                 >
                     {saving ? 'Saving...' : 'Save'}
                 </button>

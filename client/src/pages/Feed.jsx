@@ -25,7 +25,7 @@ const Feed = () => {
         {/* Stories Widget */}
         <StoriesWidget />
 
-        <div className="flex justify-between items-center mb-6 sticky top-0 bg-background/80 backdrop-blur-md z-30 py-4 transition-colors duration-300">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-background/95 backdrop-blur-xl z-30 py-4 border-b border-soft-border transition-colors duration-300">
             <h1 className="text-2xl font-serif font-bold text-text">Moments</h1>
 
             <div className="flex space-x-2">
