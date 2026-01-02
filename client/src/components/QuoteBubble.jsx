@@ -57,7 +57,7 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
           audioRef.current.pause();
           setIsPlaying(false);
       } else {
-          // Pause other audios if any (global event or simple assumption)
+          // Pause other audios
           document.querySelectorAll('audio').forEach(el => el !== audioRef.current && el.pause());
 
           audioRef.current.play();
@@ -69,14 +69,13 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       setIsPlaying(false);
   };
 
-  // Position: Centered above the avatar, offset adjusted for new design
+  // Adjusted Position: Bring closer to avatar
   const bubblePosition = {
-      md: "-top-14",
-      lg: "-top-16",
-      xl: "-top-20",
-  }[size] || "-top-16";
+      md: "-top-12", // Was -14
+      lg: "-top-14", // Was -16
+      xl: "-top-16", // Was -20
+  }[size] || "-top-14";
 
-  // Alignment classes
   const alignmentClass = align === "left"
       ? "left-0"
       : "left-1/2 -translate-x-1/2";
@@ -91,7 +90,6 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       if (onAvatarClick) onAvatarClick();
   };
 
-  // Base classes for the "Quote" style: White bubble, rounded-2xl, border
   const baseClasses = "bg-white text-slate-800 rounded-2xl px-3 py-2 border";
   const moodStyle = hasQuote ? (moodStyles[quote.mood] || moodStyles['Neutral']) : 'border-gray-200';
 
@@ -109,7 +107,7 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
 
                     {/* Content */}
                     <div className="flex flex-col space-y-1">
-                         {/* Music Player if present */}
+                         {/* Music Player */}
                          {quote.music && (
                              <div className="flex items-center space-x-2 bg-gray-50 rounded-full px-2 py-1 mb-1 border border-gray-100 max-w-full overflow-hidden">
                                  <button
@@ -131,7 +129,7 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
                         </div>
                     </div>
 
-                    {/* View Count (Owner Only) - Floating outside or tiny inside */}
+                    {/* View Count */}
                     {hasQuote && isMe && (
                         <div
                             onClick={(e) => {
@@ -147,14 +145,14 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
                         </div>
                     )}
 
-                    {/* Tail: Rounded Thought Bubble Style with circles */}
+                    {/* Tail: Thought Bubble Circles */}
                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-[-2px]">
                         <div className={`w-2 h-2 rounded-full bg-white border border-gray-200 ${moodStyle.split(' ')[0]}`}></div>
                         <div className={`w-1 h-1 rounded-full bg-white border border-gray-200 ${moodStyle.split(' ')[0]}`}></div>
                      </div>
                 </div>
             ) : (
-                /* Empty State (Add Quote) */
+                /* Empty State */
                 <div className="relative bg-white/90 backdrop-blur-sm rounded-full shadow-sm border border-gray-200 px-3 py-1.5 whitespace-nowrap hover:bg-white transition-colors">
                     <div className="text-[10px] font-bold text-gray-500 flex items-center space-x-1">
                         <Plus size={10} />
