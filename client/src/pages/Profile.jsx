@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
@@ -53,7 +53,7 @@ const Profile = () => {
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
-  const { identity, posts, reposts, quote } = data;
+  const { identity, posts, reposts, quote, archives } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
@@ -307,6 +307,15 @@ const Profile = () => {
               <Repeat size={16} />
               <span>Reposts</span>
           </button>
+          {isOwner && (
+            <button
+                onClick={() => setActiveTab('archives')}
+                className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'archives' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            >
+                <Archive size={16} />
+                <span>Archives</span>
+            </button>
+          )}
       </div>
 
       {/* Tab Content */}
@@ -319,6 +328,20 @@ const Profile = () => {
                       </div>
                   ) : (
                       posts.map((post) => (
+                        <PostCard key={post._id} post={post} mutate={() => mutate(`/profile/${handle}`)} />
+                      ))
+                  )}
+              </div>
+          )}
+
+          {activeTab === 'archives' && isOwner && (
+              <div className="space-y-6">
+                  {!archives || archives.length === 0 ? (
+                      <div className="text-center py-10 opacity-50">
+                          <p className="text-secondary">No archived moments.</p>
+                      </div>
+                  ) : (
+                      archives.map((post) => (
                         <PostCard key={post._id} post={post} mutate={() => mutate(`/profile/${handle}`)} />
                       ))
                   )}

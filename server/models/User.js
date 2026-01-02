@@ -83,6 +83,7 @@ const userSchema = new mongoose.Schema({
     mutedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Identity' }],
     mutedKeywords: [String],
     savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+    hiddenPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
 
     // Journal
     enableJournal: { type: Boolean, default: true },

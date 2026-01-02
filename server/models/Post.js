@@ -8,7 +8,7 @@ const postSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['confession', 'poetry', 'letter', 'mood'],
+    enum: ['confession', 'poetry', 'letter', 'mood', 'plain'],
     required: true,
   },
   title: {
@@ -23,13 +23,13 @@ const postSchema = new mongoose.Schema({
       paperType: { type: String, default: 'classic' }
   },
   style: {
-      backgroundColor: String, // For poetry
-      font: String, // For poetry
+      backgroundColor: String, // For poetry, plain
+      font: String, // For poetry, plain
       align: String, // For poetry
   },
   mood: {
     type: String,
-    required: true, // e.g., "Melancholy", "Hopeful"
+    // Mood is now optional for 'plain' posts
   },
   tags: [String],
   visibility: {

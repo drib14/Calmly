@@ -11,7 +11,7 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
-import ImageViewer from './ImageViewer';
+import GlobalPostViewer from './GlobalPostViewer';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
@@ -31,9 +31,8 @@ const PostCard = ({ post, mutate }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
 
-  // Image Viewer
+  // Global Viewer
   const [viewerOpen, setViewerOpen] = useState(false);
-  const [viewerImage, setViewerImage] = useState(null);
 
   // Comment Input State
   const [newComment, setNewComment] = useState('');
@@ -177,19 +176,21 @@ const PostCard = ({ post, mutate }) => {
   };
 
   const handleHide = async () => {
-      if (isOwner) {
-          // Owner hide = set visibility to private
-          try {
-              await axios.put(`/posts/${post._id}`, { visibility: 'private' });
-              toast.success("Post set to private");
-              mutate();
-          } catch (err) {
-              console.error(err);
-              toast.error("Failed to hide post");
-          }
-      } else {
-          // Visitor hide = local toggle
-          setIsHidden(true);
+      try {
+        if (isOwner) {
+            // Owner hide = set visibility to private (Archive)
+            await axios.put(`/posts/${post._id}/archive`);
+            toast.success("Post archived");
+            mutate();
+        } else {
+            // Visitor hide = persist hide
+            await axios.post(`/posts/${post._id}/hide`);
+            setIsHidden(true);
+            toast.success("Post hidden");
+        }
+      } catch (err) {
+          console.error(err);
+          toast.error("Failed to hide post");
       }
       setShowOptions(false);
   };
@@ -254,8 +255,7 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
-  const openViewer = (src) => {
-      setViewerImage(src);
+  const openViewer = () => {
       setViewerOpen(true);
   };
 
@@ -459,7 +459,7 @@ const PostCard = ({ post, mutate }) => {
                                       <img
                                         src={file.url}
                                         className="w-full h-auto max-h-[600px] object-cover cursor-pointer hover:opacity-95 transition"
-                                        onClick={() => openViewer(file.url)}
+                                        onClick={() => openViewer()}
                                       />
                                   )}
                               </div>
@@ -585,7 +585,7 @@ const PostCard = ({ post, mutate }) => {
                                                             <img
                                                                 src={c.media[0].url}
                                                                 className="w-full h-full object-cover cursor-pointer"
-                                                                onClick={() => openViewer(c.media[0].url)}
+                                                                onClick={() => openViewer()}
                                                             />
                                                         )}
                                                     </div>
@@ -713,10 +713,10 @@ const PostCard = ({ post, mutate }) => {
           post={post}
       />
 
-      <ImageViewer
+      <GlobalPostViewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
-        imageSrc={viewerImage}
+        post={post}
       />
 
       <EditPostModal

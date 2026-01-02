@@ -26,6 +26,7 @@ const postTypes = [
     { value: 'poetry', label: 'Poetry', description: 'Express yourself in verse.' },
     { value: 'letter', label: 'Letter', description: 'Write a letter to someone.' },
     { value: 'mood', label: 'Mood Drop', description: 'Just a vibe.' },
+    { value: 'plain', label: 'Plain', description: 'Simple post.' },
 ];
 
 // Expanded Styles for Letters (Textures)
@@ -315,15 +316,17 @@ const CreatePost = () => {
                     columns={2}
                 />
             </div>
-            <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Mood</label>
-                <SelectionCard
-                    options={moods}
-                    value={mood}
-                    onChange={setMood}
-                    columns={4}
-                />
-            </div>
+            {type !== 'plain' && (
+                <div>
+                    <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Mood</label>
+                    <SelectionCard
+                        options={moods}
+                        value={mood}
+                        onChange={setMood}
+                        columns={4}
+                    />
+                </div>
+            )}
         </div>
 
         {type === 'letter' ? (
@@ -416,6 +419,37 @@ const CreatePost = () => {
                     rows={10}
                     className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} ${poemStyle.align} placeholder-current/40`}
                     placeholder="Verses go here..."
+                />
+            </div>
+        ) : type === 'plain' ? (
+             <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
+                <div className="flex space-x-4 mb-4 justify-between items-center">
+                     <div className="flex space-x-2 flex-wrap gap-y-2">
+                        {poemBackgrounds.map(bg => (
+                            <button
+                                key={bg.id}
+                                type="button"
+                                onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
+                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.preview} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                            />
+                        ))}
+                    </div>
+                     <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm">
+                             <SelectionCard
+                                options={fontOptions}
+                                value={poemStyle.font}
+                                onChange={(val) => setPoemStyle({...poemStyle, font: val})}
+                                columns={2}
+                                layout="grid"
+                             />
+                    </div>
+                </div>
+                 <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={6}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} placeholder-current/40`}
+                    placeholder="Share something..."
                 />
             </div>
         ) : (
