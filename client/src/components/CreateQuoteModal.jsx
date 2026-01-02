@@ -7,12 +7,12 @@ import PillSelection from './PillSelection';
 import { toast } from 'react-hot-toast';
 
 const moodColors = {
-    'Neutral': 'bg-slate-900 text-white border-slate-900',
-    'Happy': 'bg-yellow-400 text-yellow-900 border-yellow-400',
-    'Sad': 'bg-blue-500 text-white border-blue-500',
-    'Angry': 'bg-red-500 text-white border-red-500',
-    'Hopeful': 'bg-green-500 text-white border-green-500',
-    'Anxious': 'bg-purple-500 text-white border-purple-500',
+    'Neutral': 'bg-white border-gray-200 shadow-sm text-slate-800',
+    'Happy': 'bg-white border-yellow-300 shadow-yellow-100 text-slate-800',
+    'Sad': 'bg-white border-blue-200 shadow-blue-50 text-slate-800',
+    'Angry': 'bg-white border-red-200 shadow-red-50 text-slate-800',
+    'Hopeful': 'bg-white border-green-200 shadow-green-50 text-slate-800',
+    'Anxious': 'bg-white border-purple-200 shadow-purple-50 text-slate-800',
 };
 
 const fontOptions = [
@@ -23,7 +23,7 @@ const fontOptions = [
     { value: 'font-[system-ui]', label: 'System', fontClass: 'font-[system-ui]' },
 ];
 
-const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
+const CreateQuoteModal = ({ isOpen, onClose, identityId, onCreated }) => {
   const { mutate } = useSWRConfig();
   const [content, setContent] = useState('');
   const [mood, setMood] = useState('Neutral');
@@ -38,15 +38,12 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
               content,
               mood,
               font,
-              identityId
+              identityId,
+              // music: null // Explicitly no music
           });
           toast.success("Quote posted");
           mutate('/quotes/feed');
-          // We can't easily guess the handle here without props, but mutating /quotes/feed is usually enough for the widget.
-          // For profile page, we might need to invalidate specific keys or let SWR revalidate on focus.
-          // Or we can pass an onSuccess callback.
-          mutate(key => typeof key === 'string' && key.startsWith('/profile/'), undefined, { revalidate: true });
-
+          if (onCreated) onCreated();
           onClose();
           setContent('');
           setMood('Neutral');
@@ -68,7 +65,10 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
             <div className="flex justify-center py-4">
                 <div className={`relative p-4 rounded-2xl w-48 text-center text-sm shadow-sm border transition-all ${moodColors[mood]} ${font}`}>
                     {content || "Your thought here..."}
-                    <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-b border-r bg-inherit ${moodColors[mood]?.split(' ')[2] || 'border-slate-200'}`}></div>
+                    <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-[-1px]`}>
+                         <div className={`w-2 h-2 rounded-full bg-white border border-gray-200 ${moodColors[mood]?.split(' ')[2]}`}></div>
+                         <div className={`w-1 h-1 rounded-full bg-white border border-gray-200 ${moodColors[mood]?.split(' ')[2]}`}></div>
+                    </div>
                 </div>
             </div>
 
@@ -81,7 +81,6 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                 />
-                {/* Character Counter */}
                 <div className="absolute bottom-2 right-3 text-xs text-secondary font-medium">
                     {content.length}/60
                 </div>
