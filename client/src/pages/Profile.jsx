@@ -211,7 +211,7 @@ const Profile = () => {
           </div>
 
           <div className="px-6 pb-6 relative pt-20 rounded-b-3xl">
-              {/* Avatar with Quote */}
+              {/* Avatar with Quote (Border handled by QuoteBubble/Avatar) */}
               <div className="absolute -top-16 left-6 w-32 h-32 z-30">
                   <QuoteBubble
                     identity={identity}

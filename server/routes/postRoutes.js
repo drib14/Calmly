@@ -147,6 +147,40 @@ router.get('/feed', async (req, res) => {
   if (mood && mood.trim() !== '') match.mood = mood;
   if (type && type.trim() !== '') match.type = type;
 
+  // Manually handle Optional Authentication to filter hidden/blocked posts
+  let user = null;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      try {
+          const token = req.headers.authorization.split(' ')[1];
+          const jwt = require('jsonwebtoken');
+          const User = require('../models/User'); // Ensure Model is loaded
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          user = await User.findById(decoded.id).select('settings');
+      } catch (err) {
+          // Invalid token, treat as guest
+          // console.warn("Feed Auth Check Failed:", err.message);
+      }
+  }
+
+  // Apply User-Specific Filters
+  if (user && user.settings) {
+      // Exclude hidden posts
+      if (user.settings.hiddenPosts && user.settings.hiddenPosts.length > 0) {
+          match._id = { $nin: user.settings.hiddenPosts };
+      }
+
+      // Exclude posts from blocked users (This is harder in simple match before lookup,
+      // but we can filter by identity ID if we knew them.
+      // Blocked users list contains Identity IDs.
+      // Post model has 'identity' field which is Identity ID.
+      // So we can filter directly!)
+      if (user.settings.blockedUsers && user.settings.blockedUsers.length > 0) {
+          if (!match.identity) match.identity = {};
+          // Ensure we don't overwrite if match.identity already has constraints (unlikely for feed root)
+          match.identity = { ...match.identity, $nin: user.settings.blockedUsers };
+      }
+  }
+
   try {
     // Use Aggregation to fetch posts and populate accurately
     const posts = await Post.aggregate([

@@ -7,11 +7,11 @@ import QuoteAnalyticsModal from './QuoteAnalyticsModal';
 // Mood effects (subtle borders/glows for white bubble)
 const moodStyles = {
     'Neutral': 'border-gray-200 shadow-sm',
-    'Happy': 'border-yellow-300 shadow-yellow-100 ring-1 ring-yellow-200',
-    'Sad': 'border-blue-200 shadow-blue-50 ring-1 ring-blue-100',
-    'Angry': 'border-red-200 shadow-red-50 ring-1 ring-red-100',
-    'Hopeful': 'border-green-200 shadow-green-50 ring-1 ring-green-100',
-    'Anxious': 'border-purple-200 shadow-purple-50 ring-1 ring-purple-100',
+      'Happy': 'border-yellow-400 shadow-yellow-100 ring-1 ring-yellow-200',
+      'Sad': 'border-blue-500 shadow-blue-50 ring-1 ring-blue-100',
+      'Angry': 'border-red-500 shadow-red-50 ring-1 ring-red-100',
+      'Hopeful': 'border-green-500 shadow-green-50 ring-1 ring-green-100',
+      'Anxious': 'border-purple-500 shadow-purple-50 ring-1 ring-purple-100',
 };
 
 const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size = "lg", align = "center" }) => {
@@ -165,7 +165,10 @@ const QuoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size 
       )}
 
       {/* Avatar */}
-      <div onClick={handleAvatarClick} className="cursor-pointer">
+      <div onClick={handleAvatarClick} className="cursor-pointer p-[2px] rounded-full relative">
+          {hasQuote && (
+              <div className={`absolute inset-0 rounded-full border-2 ${moodStyle.split(' ')[0].replace('bg-', 'border-').replace('text-', 'border-').replace('border-', 'border-')}`}></div>
+          )}
           <Avatar identity={identity} size={size} />
       </div>
 

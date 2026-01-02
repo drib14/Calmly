@@ -11,6 +11,7 @@ const GlobalPostViewer = ({ isOpen, onClose, post, onNext, onPrev }) => {
     const { user } = useAuth();
     const { currentIdentity } = useIdentity();
     const [commentText, setCommentText] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     if (!isOpen || !post) return null;
 
@@ -30,6 +31,30 @@ const GlobalPostViewer = ({ isOpen, onClose, post, onNext, onPrev }) => {
             onClose();
         } catch (e) {
             toast.error("Failed");
+        }
+    };
+
+    const handlePostComment = async () => {
+        if (!commentText.trim()) return;
+        if (!currentIdentity) return toast.error("Select an identity first");
+
+        setSubmitting(true);
+        try {
+            const formData = new FormData();
+            formData.append('content', commentText);
+            formData.append('identityId', currentIdentity._id);
+
+            await axios.post(`/comments/${post._id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            toast.success("Comment added");
+            setCommentText('');
+            // Optimistically update or re-fetch? Ideally we'd use mutate or state lift.
+            // For now just clear input.
+        } catch(e) {
+            toast.error("Failed to post comment");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -103,8 +128,15 @@ const GlobalPostViewer = ({ isOpen, onClose, post, onNext, onPrev }) => {
                                         placeholder="Add a comment..."
                                         value={commentText}
                                         onChange={e => setCommentText(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handlePostComment()}
                                     />
-                                    <button className="text-slate-900 font-bold text-sm px-2">Post</button>
+                                    <button
+                                        onClick={handlePostComment}
+                                        disabled={submitting}
+                                        className="text-slate-900 font-bold text-sm px-2 disabled:opacity-50"
+                                    >
+                                        Post
+                                    </button>
                                 </div>
                             </div>
                         </div>

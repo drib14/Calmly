@@ -118,12 +118,12 @@ const CreatePost = () => {
       }
   }, [settings]);
 
-  // Force private visibility for Plain posts
-  useEffect(() => {
-      if (type === 'plain') {
-          setVisibility('private');
-      }
-  }, [type]);
+  // Force private visibility for Plain posts - DISABLED based on user request ("make the plain post can be post public")
+  // useEffect(() => {
+  //     if (type === 'plain') {
+  //         setVisibility('private');
+  //     }
+  // }, [type]);
 
   // Save Draft
   useEffect(() => {
@@ -206,7 +206,7 @@ const CreatePost = () => {
             formData.append('type', type);
             formData.append('mood', mood);
             formData.append('content', content);
-            formData.append('visibility', type === 'plain' ? 'private' : visibility); // Plain posts are private by default
+            formData.append('visibility', visibility);
             if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
 
             if (type === 'letter') formData.append('letterFields', JSON.stringify(letterFields));
@@ -342,7 +342,7 @@ const CreatePost = () => {
         </div>
 
         {type === 'letter' ? (
-            <div className={`space-y-4 p-6 rounded-lg border shadow-sm transition-colors relative overflow-hidden ${paperStyles.find(s => s.id === letterFields.paperType)?.class}`}>
+            <div className={`space-y-4 p-6 rounded-lg border shadow-sm transition-colors relative overflow-hidden break-words ${paperStyles.find(s => s.id === letterFields.paperType)?.class}`}>
                 {/* Texture overlay */}
                 {paperStyles.find(s => s.id === letterFields.paperType)?.texture && (
                      <div
@@ -385,7 +385,7 @@ const CreatePost = () => {
                 />
             </div>
         ) : type === 'poetry' ? (
-            <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
+            <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm overflow-hidden break-words ${poemStyle.backgroundColor}`}>
                 <div className="flex space-x-4 mb-4 justify-between items-center">
                     <div className="flex space-x-2 flex-wrap gap-y-2">
                         {poemBackgrounds.map(bg => (
@@ -516,14 +516,9 @@ const CreatePost = () => {
                  <div className="flex items-center space-x-2">
                     <button
                         type="button"
-                        onClick={() => {
-                            if (type !== 'plain') {
-                                setVisibility(v => v === 'public' ? 'unlisted' : v === 'unlisted' ? 'private' : 'public');
-                            }
-                        }}
-                        className={`flex items-center space-x-1 text-sm font-medium px-3 py-1.5 rounded-full transition ${type === 'plain' ? 'opacity-50 cursor-not-allowed text-secondary' : 'text-secondary hover:text-text hover:bg-background'}`}
-                        title={type === 'plain' ? 'Plain posts are always private' : 'Click to cycle visibility'}
-                        disabled={type === 'plain'}
+                        onClick={() => setVisibility(v => v === 'public' ? 'unlisted' : v === 'unlisted' ? 'private' : 'public')}
+                        className="flex items-center space-x-1 text-sm font-medium text-secondary hover:text-text px-3 py-1.5 rounded-full hover:bg-background transition"
+                        title="Click to cycle visibility"
                     >
                         {visibility === 'public' && <Globe size={16} />}
                         {visibility === 'unlisted' && <EyeOff size={16} />}
