@@ -4,6 +4,7 @@ import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { POST_BACKGROUNDS } from '../components/Theme/themeConfig';
 import Avatar from '../components/Avatar';
 import SelectionCard from '../components/SelectionCard';
 import PillSelection from '../components/PillSelection';
@@ -434,35 +435,21 @@ const CreatePost = () => {
                 />
             </div>
         ) : type === 'plain' ? (
-             <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${poemStyle.backgroundColor} ${paperStyles.find(s => s.class === poemStyle.backgroundColor)?.class || ''}`}>
-
-                 {/* Texture Overlay if matched from paperStyles */}
-                 {paperStyles.find(s => s.class === poemStyle.backgroundColor)?.texture && (
-                      <div
-                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat z-0"
-                        style={{ backgroundImage: `url(${paperStyles.find(s => s.class === poemStyle.backgroundColor).texture})` }}
-                      ></div>
-                 )}
-
+             <div
+                className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${poemStyle.backgroundColor}`}
+                style={POST_BACKGROUNDS.find(bg => bg.class === poemStyle.backgroundColor)?.style} // Apply style (bg image)
+             >
                 <div className="flex space-x-4 mb-4 justify-between items-center relative z-10">
                      <div className="flex space-x-2 flex-wrap gap-y-2">
-                        {/* Colors */}
-                        {poemBackgrounds.map(bg => (
+                        {/* Post Backgrounds from ThemeConfig */}
+                        {POST_BACKGROUNDS.map(bg => (
                             <button
                                 key={bg.id}
                                 type="button"
                                 onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
-                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.preview} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
-                            />
-                        ))}
-                        {/* Wallpapers (from paperStyles) */}
-                        {paperStyles.map(s => (
-                            <button
-                                key={s.id}
-                                type="button"
-                                onClick={() => setPoemStyle({...poemStyle, backgroundColor: s.class})} // Reusing s.class as backgroundColor identifier
-                                className={`w-6 h-6 rounded-full border border-slate-300 ${s.class.split(' ')[0]} ${poemStyle.backgroundColor === s.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
-                                title={s.label}
+                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.class} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                                title={bg.label}
+                                style={bg.style} // Preview the style
                             />
                         ))}
                     </div>

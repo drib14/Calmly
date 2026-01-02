@@ -119,6 +119,10 @@ const deleteAccount = async (req, res) => {
     const Comment = require('../models/Comment');
     const Message = require('../models/Message');
     const Journal = require('../models/Journal');
+    const Quote = require('../models/Quote');
+    const Clip = require('../models/Clip');
+    const Notification = require('../models/Notification');
+    const Report = require('../models/Report');
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -138,7 +142,15 @@ const deleteAccount = async (req, res) => {
         // Delete Comments by User's Identities
         Comment.deleteMany({ identity: { $in: identityIds } }),
         // Delete Messages sent by or received by User's Identities
-        Message.deleteMany({ $or: [{ sender: { $in: identityIds } }, { recipient: { $in: identityIds } }] })
+        Message.deleteMany({ $or: [{ sender: { $in: identityIds } }, { recipient: { $in: identityIds } }] }),
+        // Delete Quotes
+        Quote.deleteMany({ identity: { $in: identityIds } }),
+        // Delete Clips
+        Clip.deleteMany({ identity: { $in: identityIds } }),
+        // Delete Notifications (sent by or for user)
+        Notification.deleteMany({ $or: [{ sender: { $in: identityIds } }, { recipient: { $in: identityIds } }, { user: user._id }] }),
+        // Delete Reports
+        Report.deleteMany({ reporter: user._id })
     ]);
 
     // Finally, delete the user

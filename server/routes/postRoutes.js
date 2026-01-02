@@ -208,7 +208,7 @@ router.get('/feed', async (req, res) => {
             }
         },
         // Only keep posts where user exists
-        { $unwind: '$identity.user' }, // Flatten user array
+        { $unwind: { path: '$identity.user', preserveNullAndEmptyArrays: false } }, // Flatten user array
 
         // Lookup Comment Count (Robust fix for "0 count")
         {
