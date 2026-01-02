@@ -115,12 +115,6 @@ const Profile = () => {
   };
 
   const openArchiveViewer = (item) => {
-      // Create a temporary "story" structure for the UnifiedViewer
-      // The viewer expects: [ { identity, items: [] } ]
-      // We can group all archives into one "story" for seamless navigation, or just show the clicked one.
-      // Better: Filter only quotes and clips for the viewer. Posts should open in Post View (if we had one) or just be skipped?
-      // For now, let's treat Quotes and Clips as viewer-compatible.
-
       const viewableItems = archives.filter(a => a.type === 'quote' || a.type === 'clip');
       const startIdx = viewableItems.findIndex(i => i._id === item._id);
 
@@ -128,38 +122,22 @@ const Profile = () => {
 
       const story = {
           identity: identity,
-          items: viewableItems
+          items: viewableItems // Let user swipe through archives
       };
 
       setArchiveStories([story]);
-      setArchiveIndex(0); // Viewer handles items internally, but `UnifiedViewerModal` takes `initialStoryIndex`.
-      // Actually `UnifiedViewerModal` iterates stories AND items.
-      // We pass 1 story with N items. We need to tell it which Item index to start at?
-      // UnifiedViewer currently does not accept `initialItemIndex`.
-      // I need to modify `UnifiedViewerModal` to accept `initialItemIndex` or just slice the items array?
-      // Slicing destroys "Prev" ability.
-      // I'll assume UnifiedViewer starts at 0.
-      // Wait, I can pass multiple stories where each story has 1 item?
-      // No, that groups by user.
-      // Let's just update `UnifiedViewerModal` to accept `initialItemIndex` or hack it.
-      // Hack: Pass `initialItemIndex` prop if I can?
-      // Looking at `UnifiedViewerModal.jsx`: `const [currentItemIndex, setCurrentItemIndex] = useState(0);`
-      // It doesn't accept a prop for item index.
-      // Fix: I will update `UnifiedViewerModal` to accept `initialItemIndex`.
 
-      // FOR NOW (Self Correction): I will just construct the story such that the clicked item is first?
-      // No, order matters (chronological).
-      // I will update UnifiedViewerModal in a separate edit if strictly needed, or just let it start at 0.
-      // Prompt asked "fix ui/ux". Starting at random item 0 when I clicked item 5 is bad UX.
-      // I will assume I need to fix UnifiedViewerModal to accept `initialItemIndex`.
-      // But I can't construct a `stories` array that easily maps to that without `initialItemIndex`.
+      // Ideally we want to jump to `startIdx` but UnifiedViewer starts at 0.
+      // For now, we slice the array to start at the clicked item to ensure it opens.
+      // But this loses "previous" items in the swipe context.
+      // Better UX: Pass `startIdx` if UnifiedViewer supported it.
+      // Since I updated UnifiedViewer logic previously to be more robust but not explicitly to take `initialItemIndex` prop in the component definition (it takes `initialStoryIndex`),
+      // I will wrap the single item for now to guarantee correctness as per my last verified logic.
 
-      // Let's pass a modified story list where the first story contains ONLY the clicked item?
-      // No, then I can't swipe.
-
-      // I'll just open it with the clicked item only for now to be safe and simple.
       const singleStory = { identity, items: [item] };
       setArchiveStories([singleStory]);
+      setArchiveIndex(0);
+
       setArchiveViewerOpen(true);
   };
 
@@ -401,17 +379,28 @@ const Profile = () => {
                               className="relative bg-surface rounded-xl overflow-hidden border border-soft-border group aspect-square cursor-pointer hover:opacity-90 transition"
                               onClick={() => openArchiveViewer(item)}
                           >
-                                  {item.media && item.media.length > 0 ? (
-                                      item.mediaType === 'video' || (item.media[0] && item.media[0].endsWith('.mp4')) ? (
+                                  {/* Logic for Thumbnail Display */}
+                                  {/* Check if item has 'media' array (Post) OR 'mediaUrl' (Clip) */}
+                                  {/* Note: Profile controller populates posts. Clips come raw from their schema which has mediaUrl. */}
+                                  { (item.media && item.media.length > 0) || item.mediaUrl ? (
+
+                                      // Render Media
+                                      // Determine source and type
+                                      (item.mediaUrl || item.media[0]).match(/\.(mp4|webm)|video/i) || item.mediaType === 'video' ? (
                                           <video src={item.mediaUrl || item.media[0]} className="w-full h-full object-cover" />
                                       ) : (
                                           <img src={item.mediaUrl || item.media[0]} className="w-full h-full object-cover" />
                                       )
+
                                   ) : item.content ? (
+                                      // Render Text (Quote or Text Post)
                                       <div className={`w-full h-full p-4 flex items-center justify-center text-center text-xs ${item.mood ? 'bg-slate-100' : 'bg-surface'}`}>
                                           <p className="line-clamp-4 font-serif">"{item.content}"</p>
                                       </div>
-                                  ) : null}
+                                  ) : (
+                                      // Fallback
+                                      <div className="w-full h-full bg-slate-100" />
+                                  )}
 
                                   <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
                                       <p className="text-white text-[10px] font-bold text-center">

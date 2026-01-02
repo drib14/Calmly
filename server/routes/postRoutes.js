@@ -52,26 +52,6 @@ router.put('/:id', protect, async (req, res) => {
     }
 });
 
-// Get Saved Posts
-router.get('/saved', protect, async (req, res) => {
-    try {
-        const user = req.user;
-        const posts = await Post.find({
-            _id: { $in: user.savedPosts }
-        })
-        .populate('identity')
-        .populate({
-            path: 'identity',
-            populate: { path: 'user' }
-        })
-        .populate('reposts.identity', 'name type handle avatar');
-
-        res.json(posts);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
-
 // Get Single Post
 router.get('/:id', protect, async (req, res) => {
     try {
@@ -169,25 +149,17 @@ router.get('/feed', async (req, res) => {
           match._id = { $nin: user.settings.hiddenPosts };
       }
 
-      // Exclude posts from blocked users (This is harder in simple match before lookup,
-      // but we can filter by identity ID if we knew them.
-      // Blocked users list contains Identity IDs.
-      // Post model has 'identity' field which is Identity ID.
-      // So we can filter directly!)
       if (user.settings.blockedUsers && user.settings.blockedUsers.length > 0) {
           if (!match.identity) match.identity = {};
-          // Ensure we don't overwrite if match.identity already has constraints (unlikely for feed root)
           match.identity = { ...match.identity, $nin: user.settings.blockedUsers };
       }
   }
 
   try {
-    // Use Aggregation to fetch posts and populate accurately
     const posts = await Post.aggregate([
         { $match: match },
         { $sort: { createdAt: -1 } },
         { $limit: 20 },
-        // Lookup Identity
         {
             $lookup: {
                 from: 'identities',
@@ -196,9 +168,7 @@ router.get('/feed', async (req, res) => {
                 as: 'identity'
             }
         },
-        // Only keep posts where identity exists
         { $unwind: '$identity' },
-        // Lookup User for Settings (for interaction permissions)
         {
             $lookup: {
                 from: 'users',
@@ -207,10 +177,7 @@ router.get('/feed', async (req, res) => {
                 as: 'identity.user'
             }
         },
-        // Only keep posts where user exists
-        { $unwind: { path: '$identity.user', preserveNullAndEmptyArrays: false } }, // Flatten user array
-
-        // Lookup Comment Count (Robust fix for "0 count")
+        { $unwind: { path: '$identity.user', preserveNullAndEmptyArrays: false } },
         {
             $lookup: {
                 from: 'comments',
@@ -221,15 +188,10 @@ router.get('/feed', async (req, res) => {
         },
         {
             $addFields: {
-                // Ensure aggregated count is used if stored count is missing or outdated
-                // But we should prioritize efficiency.
-                // Since user complained about "0", we force calculate it here for the feed.
                 commentCount: { $size: '$comments' }
             }
         },
-        // Remove the heavy 'comments' array after counting
         { $project: { comments: 0 } },
-        // Project only necessary user fields to protect privacy
         {
             $project: {
                 'identity.user.password': 0,
@@ -239,7 +201,6 @@ router.get('/feed', async (req, res) => {
         }
     ]);
 
-    // Populate the aggregation result
     await Post.populate(posts, [
         { path: 'reposts.identity', select: 'name type handle avatar' }
     ]);
@@ -268,7 +229,6 @@ router.put('/:id/like', protect, async (req, res) => {
         } else {
             post.likes.push({ user: req.user._id, identity: identity._id });
 
-            // Notification
             if (post.identity.toString() !== identityId.toString()) {
                 const recipientIdentity = await Identity.findById(post.identity);
                 if (recipientIdentity) {
@@ -280,7 +240,6 @@ router.put('/:id/like', protect, async (req, res) => {
                         post: post._id
                     });
 
-                    // Real-time Notification
                     const io = req.app.get('io');
                     if (io) {
                         io.to(recipientIdentity.user.toString()).emit('new_notification', notification);
@@ -312,7 +271,6 @@ router.put('/:id/repost', protect, async (req, res) => {
         } else {
             post.reposts.push({ user: req.user._id, identity: identity._id });
 
-            // Notification
             if (post.identity.toString() !== identityId.toString()) {
                 const recipientIdentity = await Identity.findById(post.identity);
                 if (recipientIdentity) {
@@ -324,7 +282,6 @@ router.put('/:id/repost', protect, async (req, res) => {
                         post: post._id
                     });
 
-                    // Real-time Notification
                     const io = req.app.get('io');
                     if (io) {
                         io.to(recipientIdentity.user.toString()).emit('new_notification', notification);

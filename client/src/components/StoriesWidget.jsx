@@ -82,6 +82,7 @@ const StoriesWidget = () => {
           myStory = stories.splice(myStoryIndex, 1)[0];
       }
 
+      // If no story for me, create placeholder. Ensure currentIdentity exists.
       if (!myStory && currentIdentity) {
           myStory = { identity: currentIdentity, items: [], lastUpdated: 0 };
       }
@@ -122,7 +123,10 @@ const StoriesWidget = () => {
   };
 
   const renderCard = (story, isMe = false) => {
-      const hasContent = story.items.length > 0;
+      // Fix: Guard against null story to prevent crash
+      if (!story) return null;
+
+      const hasContent = story.items && story.items.length > 0;
       const lastItem = hasContent ? story.items[story.items.length - 1] : null;
       const isQuote = lastItem?.type === 'quote';
       const isClip = lastItem?.type === 'clip';
@@ -135,7 +139,7 @@ const StoriesWidget = () => {
               className={`flex-shrink-0 w-28 h-44 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm transition-transform hover:scale-105 bg-surface ${borderClass}`}
               onClick={() => handleStoryClick(story, isMe)}
           >
-               <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
+               <div className="absolute inset-0 bg-surface flex items-center justify-center">
                    {isClip ? (
                        lastItem.mediaType === 'video' ? (
                            <video src={lastItem.mediaUrl} className="w-full h-full object-cover" muted />
@@ -143,7 +147,8 @@ const StoriesWidget = () => {
                            <img src={lastItem.mediaUrl} className="w-full h-full object-cover" />
                        )
                    ) : isQuote ? (
-                       <div className="w-full h-full flex flex-col items-center justify-center p-2 relative">
+                       <div className="w-full h-full flex flex-col items-center justify-center p-2 relative bg-surface">
+                           {/* Blurred Mood Background */}
                            <div className={`absolute inset-0 opacity-20 ${getMoodColor(lastItem.mood)}`}></div>
                            <Avatar identity={story.identity} size="md" />
                            <div className={`relative mt-2 p-1.5 rounded-xl text-[8px] text-center font-serif leading-tight text-white shadow-sm max-w-full ${getMoodColor(lastItem.mood)}`}>
@@ -152,37 +157,25 @@ const StoriesWidget = () => {
                            </div>
                        </div>
                    ) : (
-                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                       // Empty State (For "Me") - Create
+                       <div className="w-full h-full flex flex-col items-center justify-center text-secondary bg-surface">
                            <Plus size={32} />
-                           <span className="text-xs font-bold mt-2">Create</span>
+                           <span className="text-xs font-bold mt-2 text-text">Create</span>
                        </div>
                    )}
                </div>
 
-               {/* Eye Icon for Analytics (My Story Only) - Bottom Left per request */}
+               {/* Eye Icon for Analytics (My Story Only) - Bottom Left - No Count Text */}
                {isMe && hasContent && (
                    <div className="absolute bottom-10 left-2 z-30" onClick={(e) => handleAnalyticsClick(e, lastItem)}>
-                       <div className="flex items-center space-x-1 bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm hover:bg-black/70 transition">
+                       <div className="flex items-center justify-center bg-black/50 p-1.5 rounded-full backdrop-blur-sm hover:bg-black/70 transition">
                            <Eye size={12} className="text-white" />
-                           <span className="text-[10px] font-bold text-white">{lastItem.views?.length || 0}</span>
                        </div>
                    </div>
                )}
 
-               {/* Profile Avatar / Dropdown Trigger (Shifted to prevent overlap if needed, but request said eye bottom left. Avatar usually bottom left too. )
-                   Wait, request said: "display total view count real-time besides the eye icon" and "bottom left".
-                   But the Avatar is also at the bottom left.
-                   I will move the Avatar slightly or place the Eye above it?
-                   "add the eye icon in the bottom left when click it triggers a modal ... and display total view count"
-                   "unify the display... display the profile... the same way in viewer"
-                   The viewer has avatar top left.
-                   The Widget has avatar bottom left.
-                   If I put Eye Bottom Left, it conflicts with Avatar.
-                   I will place the Eye Icon *ABOVE* the Avatar in the bottom left corner.
-               */}
-
                <div className="absolute bottom-3 left-3 z-20" onClick={(e) => toggleDropdown(e, story.identity._id)}>
-                   <div className={`p-[2px] rounded-full bg-surface ${hasContent && !story.items.every(i => i.viewed) ? 'border-2 border-fuchsia-500' : 'border border-slate-200'}`}>
+                   <div className={`p-[2px] rounded-full bg-surface ${hasContent && !story.items.every(i => i.viewed) ? 'border-2 border-fuchsia-500' : 'border border-soft-border'}`}>
                        <Avatar identity={story.identity} size="sm" />
                    </div>
                    <AnimatePresence>
@@ -196,14 +189,14 @@ const StoriesWidget = () => {
                            >
                                <button
                                    onClick={() => handleViewProfile(story.identity.handle)}
-                                   className="flex items-center space-x-2 px-3 py-2 text-xs font-bold text-text hover:bg-background text-left"
+                                   className="flex items-center space-x-2 px-3 py-2 text-xs font-bold text-text hover:bg-background text-left transition-colors"
                                >
                                    <User size={12} /> <span>View Profile</span>
                                </button>
                                {hasContent && (
                                    <button
                                        onClick={() => { setDropdownOpen(null); handleStoryClick(story, isMe); }}
-                                       className="flex items-center space-x-2 px-3 py-2 text-xs font-bold text-text hover:bg-background text-left"
+                                       className="flex items-center space-x-2 px-3 py-2 text-xs font-bold text-text hover:bg-background text-left transition-colors"
                                    >
                                        <Film size={12} /> <span>View Story</span>
                                    </button>
@@ -225,7 +218,9 @@ const StoriesWidget = () => {
   return (
     <div className="mb-6 relative z-10">
         <div className="flex space-x-3 overflow-x-auto pb-4 pt-4 px-6 custom-scrollbar" onClick={() => setDropdownOpen(null)}>
-            {renderCard(myStory, true)}
+            {/* Guard against null myStory explicitly, although renderCard handles it */}
+            {myStory && renderCard(myStory, true)}
+
             {others.map(story => renderCard(story))}
         </div>
 

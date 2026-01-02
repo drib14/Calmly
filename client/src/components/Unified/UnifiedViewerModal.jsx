@@ -215,9 +215,17 @@ const UnifiedViewerModal = ({ isOpen, onClose, stories, initialStoryIndex = 0 })
                             <div className="flex-1 relative" onClick={() => setIsPaused(!isPaused)}>
                                 {renderContent()}
 
-                                {/* Tap Zones */}
-                                <div className="absolute inset-y-0 left-0 w-1/3 z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); handlePrev(); }}></div>
-                                <div className="absolute inset-y-0 right-0 w-1/3 z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleNext(); }}></div>
+                                {/* Navigation Arrows (Chevrons) - Visible */}
+                                <div className="absolute inset-y-0 left-0 w-20 z-20 flex items-center justify-start pl-2 cursor-pointer group" onClick={(e) => { e.stopPropagation(); handlePrev(); }}>
+                                    <div className="p-2 rounded-full bg-black/20 text-white/50 group-hover:bg-black/40 group-hover:text-white transition opacity-0 group-hover:opacity-100">
+                                        <ChevronLeft size={32} />
+                                    </div>
+                                </div>
+                                <div className="absolute inset-y-0 right-0 w-20 z-20 flex items-center justify-end pr-2 cursor-pointer group" onClick={(e) => { e.stopPropagation(); handleNext(); }}>
+                                    <div className="p-2 rounded-full bg-black/20 text-white/50 group-hover:bg-black/40 group-hover:text-white transition opacity-0 group-hover:opacity-100">
+                                        <ChevronRight size={32} />
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Footer / Interaction */}
