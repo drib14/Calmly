@@ -24,6 +24,10 @@ const clipSchema = mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Identity'
   }],
+  likes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Identity'
+  }],
   expiresAt: {
     type: Date,
     required: true,

@@ -173,16 +173,24 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
       }
   };
 
-  const handleDownloadData = () => {
-      const data = { message: "User Data Export", timestamp: new Date() };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'calmly_user_data.json';
-      a.click();
-      toast.success("Data export started");
-      onClose();
+  const handleDownloadData = async () => {
+      setLoading(true);
+      try {
+          const res = await axios.get('/settings/download-data');
+          const data = res.data;
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'calmly_user_data.json';
+          a.click();
+          toast.success("Data export started");
+          onClose();
+      } catch (err) {
+          toast.error("Failed to download data");
+      } finally {
+          setLoading(false);
+      }
   };
 
   if (!setting) return null;
