@@ -17,15 +17,24 @@ const getSettings = async (req, res) => {
 // @route   PUT /api/settings
 // @access  Private
 const updateSettings = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    const user = await User.findById(req.user._id);
 
-  if (user) {
-    // Merge new settings with existing ones
-    user.settings = { ...user.settings, ...req.body };
-    await user.save();
-    res.json({ message: 'Settings updated', settings: user.settings });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+    if (user) {
+      // Merge new settings with existing ones safely
+      // Iterate keys to update only valid fields
+      Object.keys(req.body).forEach(key => {
+          user.settings[key] = req.body[key];
+      });
+
+      await user.save();
+      res.json({ message: 'Settings updated', settings: user.settings });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error("Update Settings Error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
