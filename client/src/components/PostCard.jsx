@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, Share2, Link as LinkIcon, ExternalLink, Edit2, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -16,7 +16,7 @@ import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
 import EditPostModal from './EditPostModal';
-import { Share2, Link as LinkIcon, ExternalLink, Edit2, ShieldAlert, EyeOff } from 'lucide-react';
+// EyeOff was removed from here because it is now imported in the main lucide-react import above
 
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
