@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, Edit3, Ban, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -158,6 +158,29 @@ const PostCard = ({ post, mutate }) => {
           toast.error("Failed to post comment");
       } finally {
           setSubmittingComment(false);
+      }
+  };
+
+  const handleHidePost = async () => {
+      try {
+          await axios.post('/settings/hide-post', { postId: post._id });
+          toast.success("Post hidden");
+          if (mutate) mutate(); // Refresh feed
+      } catch (err) {
+          toast.error("Failed to hide post");
+      }
+      setShowOptions(false);
+  };
+
+  const handleBlockUser = async () => {
+      if (!currentIdentity) return toast.error("Login to block users");
+      try {
+          await axios.post('/settings/block-user', { userId: post.identity.user._id || post.identity.user });
+          toast.success("User blocked");
+          setShowOptions(false);
+          if (mutate) mutate();
+      } catch (err) {
+          toast.error("Failed to block user");
       }
   };
 
@@ -317,14 +340,28 @@ const PostCard = ({ post, mutate }) => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
-                        {isOwner && (
-                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
-                                <Trash2 size={14} /> <span>Delete Post</span>
-                            </button>
+                        {isOwner ? (
+                            <>
+                                <button onClick={() => { toast('Edit feature coming soon!'); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <Edit3 size={14} /> <span>Edit Post</span>
+                                </button>
+                                <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                                    <Trash2 size={14} /> <span>Delete Post</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={handleHidePost} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <EyeOff size={14} /> <span>Hide Post</span>
+                                </button>
+                                <button onClick={handleBlockUser} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <Ban size={14} /> <span>Block User</span>
+                                </button>
+                                <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
+                                    <Flag size={14} /> <span>Report Content</span>
+                                </button>
+                            </>
                         )}
-                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
-                            <Flag size={14} /> <span>Report Content</span>
-                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -13,7 +13,8 @@ const {
   verifyJournalPassword,
   downloadUserData,
   blockUser,
-  reportUser
+  reportUser,
+  hidePost
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -32,6 +33,7 @@ router.get('/download-data', downloadUserData);
 // Block/Report User (via Settings/List logic)
 router.post('/block-user', blockUser);
 router.post('/report-user', reportUser);
+router.post('/hide-post', hidePost);
 
 // Journal Lock Routes
 router.put('/journal-lock', toggleJournalLock);

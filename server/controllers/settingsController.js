@@ -251,6 +251,21 @@ const reportUser = async (req, res) => {
     }
 };
 
+// Hide Post
+const hidePost = async (req, res) => {
+    const { postId } = req.body;
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user.settings.hiddenPosts.includes(postId)) {
+            user.settings.hiddenPosts.push(postId);
+            await user.save();
+        }
+        res.json({ message: 'Post hidden' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Download User Data
 const downloadUserData = async (req, res) => {
   try {
@@ -304,5 +319,6 @@ module.exports = {
   verifyJournalPassword,
   downloadUserData,
   blockUser,
-  reportUser
+  reportUser,
+  hidePost
 };

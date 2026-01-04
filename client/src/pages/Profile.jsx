@@ -8,6 +8,7 @@ import { formatDistanceToNow, addHours } from 'date-fns';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import NoteBubble from '../components/NoteBubble';
+import QuoteBubbleShape from '../components/QuoteBubbleShape';
 import ImageViewer from '../components/ImageViewer';
 import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
@@ -443,8 +444,7 @@ const Profile = () => {
                      <div className="flex justify-center">
                          {/* Cloud Preview in Modal */}
                          <div className={`relative w-48 h-32 flex items-center justify-center`}>
-                             <svg
-                                viewBox="0 0 120 100"
+                             <QuoteBubbleShape
                                 className={`absolute inset-0 w-full h-full drop-shadow-sm transition-colors duration-300 ${
                                     (quote.mood === 'Neutral' ? 'fill-slate-100 stroke-slate-200' :
                                     quote.mood === 'Happy' ? 'fill-yellow-100 stroke-yellow-200' :
@@ -453,14 +453,9 @@ const Profile = () => {
                                     quote.mood === 'Hopeful' ? 'fill-green-100 stroke-green-200' :
                                     quote.mood === 'Anxious' ? 'fill-purple-100 stroke-purple-200' : 'fill-white stroke-slate-200')
                                 }`}
-                                preserveAspectRatio="none"
                                 style={{ strokeWidth: '2px' }}
-                            >
-                                <path d="M30,75 Q10,75 10,55 Q10,35 30,30 Q40,10 60,10 Q80,10 90,30 Q110,35 110,55 Q110,75 90,75 Q80,75 75,75 L30,75 Z" />
-                                <circle cx="25" cy="85" r="5" />
-                                <circle cx="15" cy="95" r="3" />
-                            </svg>
-                             <div className={`relative z-10 px-6 pb-2 text-[11px] text-center leading-tight line-clamp-3 w-full ${
+                            />
+                             <div className={`relative z-10 px-6 pb-4 text-[11px] text-center leading-tight line-clamp-3 w-full ${
                                  quote.mood === 'Neutral' ? 'text-slate-900' :
                                  quote.mood === 'Happy' ? 'text-yellow-900' :
                                  quote.mood === 'Sad' ? 'text-blue-900' :

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from './Avatar';
+import QuoteBubbleShape from './QuoteBubbleShape';
 
 const moodColors = {
     'Neutral': 'fill-slate-100 text-slate-900 stroke-slate-200',
@@ -61,30 +62,12 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
             className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer w-32 h-24 flex items-center justify-center`}
             onClick={handleQuoteClick}
         >
-            <svg
-                viewBox="0 0 120 100"
+            <QuoteBubbleShape
                 className={`absolute inset-0 w-full h-full drop-shadow-sm ${fillClass} ${strokeClass} transition-colors duration-300`}
-                preserveAspectRatio="none"
-            >
-                {/* Cloud Shape */}
-                <path
-                    strokeWidth="2"
-                    d="M30,75
-                       Q10,75 10,55
-                       Q10,35 30,30
-                       Q40,10 60,10
-                       Q80,10 90,30
-                       Q110,35 110,55
-                       Q110,75 90,75
-                       Q80,75 75,75
-                       L30,75 Z"
-                />
-                {/* Trailing Circles */}
-                <circle cx="25" cy="85" r="5" strokeWidth="2" />
-                <circle cx="15" cy="95" r="3" strokeWidth="2" />
-            </svg>
+                style={{ strokeWidth: '2px' }}
+            />
 
-            <div className={`relative z-10 px-4 pb-2 text-[10px] text-center leading-tight line-clamp-3 max-w-[80%] ${textClass} ${hasQuote && quote.font ? quote.font : ''}`}>
+            <div className={`relative z-10 px-4 pb-4 text-[10px] text-center leading-tight line-clamp-3 max-w-[85%] ${textClass} ${hasQuote && quote.font ? quote.font : ''}`}>
                 {hasQuote ? quote.content : <span className="opacity-70">{placeholder}</span>}
             </div>
         </div>

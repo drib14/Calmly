@@ -4,6 +4,7 @@ import { useSWRConfig } from 'swr';
 import Modal from './Modal';
 import SelectionCard from './SelectionCard';
 import PillSelection from './PillSelection';
+import QuoteBubbleShape from './QuoteBubbleShape';
 import { toast } from 'react-hot-toast';
 
 const moodColors = {
@@ -81,21 +82,15 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
             </div>
 
             <div className="flex justify-center py-4">
-                {/* Note Cloud Preview */}
+                {/* Note Bubble Preview */}
                 <div className={`relative w-48 h-32 flex items-center justify-center`}>
-                     <svg
-                        viewBox="0 0 120 100"
+                     <QuoteBubbleShape
                         className={`absolute inset-0 w-full h-full drop-shadow-sm transition-colors duration-300 ${
                             moodColors[mood].replace('bg-', 'fill-').replace('border-', 'stroke-')
                         }`}
-                        preserveAspectRatio="none"
                         style={{ strokeWidth: '2px' }}
-                    >
-                        <path d="M30,75 Q10,75 10,55 Q10,35 30,30 Q40,10 60,10 Q80,10 90,30 Q110,35 110,55 Q110,75 90,75 Q80,75 75,75 L30,75 Z" />
-                        <circle cx="25" cy="85" r="5" />
-                        <circle cx="15" cy="95" r="3" />
-                    </svg>
-                    <div className={`relative z-10 px-6 pb-2 text-[11px] text-center leading-tight line-clamp-3 w-full ${moodColors[mood].split(' ')[1]} ${font}`}>
+                    />
+                    <div className={`relative z-10 px-6 pb-4 text-[11px] text-center leading-tight line-clamp-3 w-full ${moodColors[mood].split(' ')[1]} ${font}`}>
                         {content || placeholder}
                     </div>
                 </div>
