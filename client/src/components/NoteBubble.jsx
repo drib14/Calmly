@@ -59,7 +59,7 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
       {/* The Note Cloud Bubble */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer w-32 h-24 flex items-center justify-center`}
+            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer w-28 h-20 flex items-center justify-center`}
             onClick={handleQuoteClick}
         >
             <QuoteBubbleShape

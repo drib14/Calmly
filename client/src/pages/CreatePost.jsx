@@ -263,7 +263,7 @@ const CreatePost = () => {
           <label className="block text-xs font-bold uppercase tracking-wide text-secondary mb-3">Posting As</label>
           <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
               {identities.map(id => (
-                  <div key={id._id} className="relative group">
+                  <div key={id._id} className="relative group flex-shrink-0">
                       <button
                         onClick={() => selectIdentity(id._id)}
                         className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}

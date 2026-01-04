@@ -256,12 +256,18 @@ const hidePost = async (req, res) => {
     const { postId } = req.body;
     try {
         const user = await User.findById(req.user._id);
+        // Ensure array exists
+        if (!user.settings.hiddenPosts) {
+            user.settings.hiddenPosts = [];
+        }
+
         if (!user.settings.hiddenPosts.includes(postId)) {
             user.settings.hiddenPosts.push(postId);
             await user.save();
         }
         res.json({ message: 'Post hidden' });
     } catch (error) {
+        console.error("Hide Post Error:", error);
         res.status(500).json({ message: error.message });
     }
 };

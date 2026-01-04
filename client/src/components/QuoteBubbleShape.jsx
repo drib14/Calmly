@@ -16,9 +16,9 @@ const QuoteBubbleShape = ({ className, style, moodColorClass }) => {
             {/* Rounded Rectangle */}
             <rect x="5" y="5" width="110" height="75" rx="15" ry="15" strokeWidth="2" />
 
-            {/* Trailing Circles (Tail) - Right Side */}
-            <circle cx="95" cy="85" r="6" strokeWidth="2" />
-            <circle cx="105" cy="95" r="4" strokeWidth="2" />
+            {/* Trailing Circles (Tail) - Left Side (Pointing to Avatar) */}
+            <circle cx="25" cy="85" r="6" strokeWidth="2" />
+            <circle cx="15" cy="95" r="4" strokeWidth="2" />
         </svg>
     );
 };

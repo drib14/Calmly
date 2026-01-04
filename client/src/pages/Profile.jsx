@@ -56,13 +56,6 @@ const Profile = () => {
 
   const [activeTab, setActiveTab] = useState('moments');
 
-  if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
-  if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
-
-  const { identity, posts, quote } = data;
-  const isOwner = identities?.some(i => i._id === identity._id);
-  const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
-
   useEffect(() => {
       const handleClickOutside = (event) => {
           if (optionsRef.current && !optionsRef.current.contains(event.target)) {
@@ -72,6 +65,13 @@ const Profile = () => {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
+  if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
+
+  const { identity, posts, quote } = data;
+  const isOwner = identities?.some(i => i._id === identity._id);
+  const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
   const openEditModal = () => {
       setEditName(identity.name);
