@@ -11,7 +11,9 @@ const {
   getSessions,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  hidePost,
+  blockUser
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -30,5 +32,9 @@ router.get('/download-data', downloadUserData);
 // Journal Lock Routes
 router.put('/journal-lock', toggleJournalLock);
 router.post('/journal-verify', verifyJournalPassword);
+
+// Moderation
+router.post('/hide-post', hidePost);
+router.post('/block-user', blockUser);
 
 module.exports = router;

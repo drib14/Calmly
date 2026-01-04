@@ -261,6 +261,46 @@ const downloadUserData = async (req, res) => {
   }
 };
 
+// @desc    Hide a post
+// @route   POST /api/settings/hide-post
+// @access  Private
+const hidePost = async (req, res) => {
+  const { postId } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+      if (!user.settings.hiddenPosts.includes(postId)) {
+          user.settings.hiddenPosts.push(postId);
+          await user.save();
+      }
+      res.json({ message: 'Post hidden', hiddenPosts: user.settings.hiddenPosts });
+  } else {
+      res.status(404).json({ message: 'User not found' });
+  }
+};
+
+// @desc    Block a user
+// @route   POST /api/settings/block-user
+// @access  Private
+const blockUser = async (req, res) => {
+  const { userId } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+      if (userId && userId.toString() !== user._id.toString()) {
+          if (!user.settings.blockedUsers.includes(userId)) {
+              user.settings.blockedUsers.push(userId);
+              await user.save();
+          }
+          res.json({ message: 'User blocked', blockedUsers: user.settings.blockedUsers });
+      } else {
+          res.status(400).json({ message: 'Invalid user ID' });
+      }
+  } else {
+      res.status(404).json({ message: 'User not found' });
+  }
+};
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -271,5 +311,7 @@ module.exports = {
   deleteAccount,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  hidePost,
+  blockUser
 };

@@ -84,8 +84,9 @@ const userSchema = new mongoose.Schema({
     quietHoursEnd: String,   // "08:00"
 
     // Moderation
-    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Identity' }],
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     mutedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Identity' }],
+    hiddenPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
     mutedKeywords: [String],
 
     // Journal

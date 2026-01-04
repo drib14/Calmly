@@ -44,6 +44,7 @@ const PostCard = ({ post, mutate }) => {
   const [showAnonError, setShowAnonError] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -181,7 +182,6 @@ const PostCard = ({ post, mutate }) => {
   };
 
   const handleBlockUser = async () => {
-      if (!window.confirm(`Block ${post.identity.name}?`)) return; // TODO: Use ConfirmationModal if possible, but for quick action in menu...
       try {
           await axios.post('/settings/block-user', { userId: post.identity.user?._id || post.identity.user });
           toast.success(`Blocked ${post.identity.name}`);
@@ -190,6 +190,7 @@ const PostCard = ({ post, mutate }) => {
           console.error(err);
           toast.error("Failed to block user");
       }
+      setShowBlockModal(false);
       setShowOptions(false);
   };
 
@@ -329,7 +330,7 @@ const PostCard = ({ post, mutate }) => {
                                 <button onClick={handleHidePost} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
                                     <EyeOff size={14} /> <span>Hide Post</span>
                                 </button>
-                                <button onClick={handleBlockUser} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                                <button onClick={() => { setShowBlockModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
                                     <ShieldAlert size={14} /> <span>Block User</span>
                                 </button>
                                 <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
@@ -625,6 +626,18 @@ const PostCard = ({ post, mutate }) => {
           message="This action cannot be undone. Are you sure you want to let this go?"
           confirmText={deleting ? 'Deleting...' : 'Delete'}
           isDanger={true}
+      />
+
+      {/* Block Modal */}
+      <ConfirmationModal
+          isOpen={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          onConfirm={handleBlockUser}
+          title={`Block ${post.identity.name}?`}
+          message="They will no longer be able to interact with you. This action is reversible in settings."
+          confirmText="Block"
+          isDanger={true}
+          icon={ShieldAlert}
       />
 
       {/* Report Modal */}
