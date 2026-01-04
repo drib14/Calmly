@@ -83,11 +83,20 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  console.log("Logging in user:", email);
 
   try {
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
+    if (!user) {
+        console.log("User not found for login:", email);
+        return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    console.log("Password match:", isMatch);
+
+    if (isMatch) {
       // Removed isVerified check
 
       const accessToken = generateAccessToken(user._id);
