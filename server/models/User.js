@@ -49,6 +49,11 @@ const userSchema = new mongoose.Schema({
     scheduledPosting: { type: Boolean, default: false },
     autoDeleteTimer: { type: Number, default: 0 }, // 0 = disabled, hours
 
+    // Quotes
+    quoteReplyAudience: { type: String, enum: ['everyone', 'followers', 'none'], default: 'everyone' },
+    quoteDuration: { type: Number, default: 24 }, // Hours
+    archiveQuotes: { type: Boolean, default: true },
+
     // Interaction Controls
     enableReactions: { type: Boolean, default: true },
     enableComments: { type: Boolean, default: true },

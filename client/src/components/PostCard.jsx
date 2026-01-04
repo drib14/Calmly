@@ -15,7 +15,8 @@ import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
-import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import EditPostModal from './EditPostModal';
+import { Share2, Link as LinkIcon, ExternalLink, Edit2, ShieldAlert, EyeOff } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
@@ -24,6 +25,7 @@ const PostCard = ({ post, mutate }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -166,6 +168,31 @@ const PostCard = ({ post, mutate }) => {
       setShowDeleteModal(false);
   };
 
+  const handleHidePost = async () => {
+      try {
+          await axios.post('/settings/hide-post', { postId: post._id });
+          toast.success("Post hidden");
+          mutate(); // Optimistically remove or refetch
+      } catch (err) {
+          console.error(err);
+          toast.error("Failed to hide post");
+      }
+      setShowOptions(false);
+  };
+
+  const handleBlockUser = async () => {
+      if (!window.confirm(`Block ${post.identity.name}?`)) return; // TODO: Use ConfirmationModal if possible, but for quick action in menu...
+      try {
+          await axios.post('/settings/block-user', { userId: post.identity.user?._id || post.identity.user });
+          toast.success(`Blocked ${post.identity.name}`);
+          mutate();
+      } catch (err) {
+          console.error(err);
+          toast.error("Failed to block user");
+      }
+      setShowOptions(false);
+  };
+
   const handleReport = async () => {
       setReporting(true);
       try {
@@ -288,14 +315,28 @@ const PostCard = ({ post, mutate }) => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
-                        {isOwner && (
-                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
-                                <Trash2 size={14} /> <span>Delete Post</span>
-                            </button>
+                        {isOwner ? (
+                            <>
+                                <button onClick={() => { setShowEditModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <Edit2 size={14} /> <span>Edit Post</span>
+                                </button>
+                                <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                                    <Trash2 size={14} /> <span>Delete Post</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={handleHidePost} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg">
+                                    <EyeOff size={14} /> <span>Hide Post</span>
+                                </button>
+                                <button onClick={handleBlockUser} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                                    <ShieldAlert size={14} /> <span>Block User</span>
+                                </button>
+                                <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
+                                    <Flag size={14} /> <span>Report Content</span>
+                                </button>
+                            </>
                         )}
-                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
-                            <Flag size={14} /> <span>Report Content</span>
-                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -617,6 +658,13 @@ const PostCard = ({ post, mutate }) => {
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
           post={post}
+      />
+
+      <EditPostModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          post={post}
+          mutate={mutate}
       />
 
       <ImageViewer

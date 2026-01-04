@@ -12,6 +12,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,6 +29,7 @@ const Register = () => {
     const res = await register(email, password, realName);
     if (res.success) {
       setMessage(res.message);
+      setTimeout(() => navigate('/login'), 1500);
     } else {
       setError(res.message);
     }

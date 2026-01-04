@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, Download, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0, altText = "Image", actions = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -88,14 +89,29 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
                 </div>
             )}
 
-            <a
-              href={currentImage}
-              download
+            <button
+              onClick={async () => {
+                  try {
+                      const response = await fetch(currentImage);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `calmly-image-${Date.now()}.jpg`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                      toast.success("Image downloaded");
+                  } catch (err) {
+                      toast.error("Failed to download");
+                  }
+              }}
               className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"
               title="Download"
             >
               <Download size={20} />
-            </a>
+            </button>
             <button
               onClick={onClose}
               className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"

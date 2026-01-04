@@ -167,39 +167,49 @@ const Messages = () => {
   };
 
   const renderSharedPost = (post, isMe) => {
-      if (!post) return <div className="text-xs text-red-400 italic">Post deleted or unavailable</div>;
+      if (!post) return <div className="text-xs text-red-400 italic bg-surface p-2 rounded-lg border border-red-200">Post deleted or unavailable</div>;
 
       return (
           <div
-                onClick={() => {
-                    // Navigate to feed but use state to potentially scroll to post?
-                    // Or since we don't have a dedicated post page, we'll try to find it in feed.
-                    // Actually, let's assume there is a way to view a single post, or we just go to feed.
-                    // User requested "redirect to that post".
-                    // I will verify if I can create a simple Post View or if Feed supports #hash.
-                    // For now, I will use a hash which is a standard web pattern.
-                    navigate(`/feed#post-${post._id}`);
-                    // Trigger a custom event or check location hash in Feed to scroll?
-                    // Given the constraints, I'll stick to the hash approach.
-                }}
-            className={clsx(
-                "rounded-xl overflow-hidden cursor-pointer border mb-1 transition-colors w-full max-w-sm",
-                isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-background border-soft-border hover:bg-background/80"
-            )}
+                onClick={() => navigate(`/feed#post-${post._id}`)}
+                className={clsx(
+                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-full max-w-sm group shadow-sm hover:shadow-md",
+                    isMe ? "bg-surface border-soft-border" : "bg-surface border-soft-border" // Always use surface for shared card to look distinct
+                )}
           >
-              {post.media && post.media.length > 0 && post.media[0].type === 'image' && (
-                  <img src={post.media[0].url} className="w-full h-32 object-cover" />
-              )}
-              <div className="p-3">
-                  <div className="flex items-center space-x-2 mb-1">
-                      {post.identity && <Avatar identity={post.identity} size="xs" />}
-                      <span className={clsx("text-xs font-bold truncate", isMe ? "text-white" : "text-text")}>
-                          {post.identity?.name || 'Unknown'}
-                      </span>
+              {/* Image Preview (Hero) */}
+              {post.media && post.media.length > 0 && post.media[0].type === 'image' ? (
+                  <div className="w-full h-40 overflow-hidden relative">
+                      <img src={post.media[0].url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
+                      <span className="absolute bottom-2 right-2 text-[10px] text-white bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-sm">Shared Post</span>
                   </div>
-                  <p className={clsx("text-xs line-clamp-2", isMe ? "text-white/80" : "text-secondary")}>
-                      {post.content || (post.media?.length ? 'Shared media' : 'Shared content')}
-                  </p>
+              ) : (
+                  <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+              )}
+
+              <div className="p-4">
+                  {/* Author Header */}
+                  <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                          {post.identity && <Avatar identity={post.identity} size="xs" />}
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-text">{post.identity?.name || 'Unknown'}</span>
+                            <span className="text-[9px] text-secondary uppercase tracking-wider">{post.type}</span>
+                          </div>
+                      </div>
+                      <ChevronLeft size={14} className="text-secondary rotate-180" />
+                  </div>
+
+                  {/* Content Preview */}
+                  {post.content && (
+                      <p className="text-xs text-secondary line-clamp-3 font-serif leading-relaxed italic border-l-2 border-accent/20 pl-2">
+                          "{post.content}"
+                      </p>
+                  )}
+                  {!post.content && post.media?.length > 0 && (
+                      <p className="text-xs text-secondary italic">Attached media</p>
+                  )}
               </div>
           </div>
       );

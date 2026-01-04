@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, Settings as SettingsIcon, Shield, User, Lock, Edit3, MessageCircle, Bell, AlertTriangle, Book, Eye, Database, Info, ChevronLeft, Layout, LogOut, Trash2 } from 'lucide-react';
+import { ChevronRight, Settings as SettingsIcon, Shield, User, Lock, Edit3, MessageCircle, Bell, AlertTriangle, Book, Eye, Database, Info, ChevronLeft, Layout, LogOut, Trash2, MessageSquare } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -102,6 +102,17 @@ const Settings = () => {
           { id: 'defaultMood', label: "Default Mood", type: 'select', options: ['Neutral', 'Happy', 'Sad', 'Anxious', 'Hopeful'], description: "The mood selected by default." },
           { id: 'autoContentWarning', label: "Auto Content Warning", type: 'toggle', description: "Automatically flag your posts if they contain sensitive keywords." },
           { id: 'enableDrafts', label: "Enable Drafts Auto-Save", type: 'toggle', description: "Save your work in progress to your local device automatically." }
+      ]
+    },
+    {
+      id: 13, // Unique ID
+      icon: MessageSquare,
+      title: "Quotes & Moments",
+      description: "Manage your ephemeral thoughts and quotes.",
+      items: [
+          { id: 'quoteReplyAudience', label: "Who Can Reply to Quotes", type: 'select', options: ['everyone', 'followers', 'none'], description: "Control who can send replies to your quotes." },
+          { id: 'quoteDuration', label: "Default Quote Duration", type: 'select', options: [{value: 24, label: '24 Hours'}, {value: 48, label: '48 Hours'}, {value: 12, label: '12 Hours'}], description: "How long your quotes stay visible." },
+          { id: 'archiveQuotes', label: "Auto-Archive Quotes", type: 'toggle', description: "Save expired quotes to your private archive instead of deleting them." }
       ]
     },
     {

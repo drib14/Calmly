@@ -14,12 +14,16 @@ const moodColors = {
 const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size = "lg" }) => {
   const hasQuote = !!quote;
 
-  // Position: Top-Right of Avatar (approx 1 o'clock)
-  const bubblePosition = {
-      md: "-top-8 -right-4",
-      lg: "-top-10 -right-6",
-      xl: "-top-12 -right-8",
-  }[size] || "-top-10 -right-6";
+  // Position: Right of Avatar
+  // "right" means we push it to the right side.
+  // The parent is `relative inline-block`.
+  // If we want it strictly on the right side: `left-full top-0 ml-2`.
+
+  const bubbleContainerClass = {
+      md: "left-[50px] -top-2",
+      lg: "left-[70px] -top-2",
+      xl: "left-[90px] -top-2",
+  }[size] || "left-[70px] -top-2";
 
   const handleQuoteClick = (e) => {
       e.stopPropagation();
@@ -31,14 +35,10 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
       if (onAvatarClick) onAvatarClick();
   };
 
-  // Get tail color from mood class (bg-...)
-  // We need to extract the color class to apply to the tail
-  // moodColors value format: 'bg-color text-color border-color'
   const bubbleClasses = hasQuote
     ? (moodColors[quote.mood] || moodColors['Neutral'])
     : 'bg-surface border-soft-border text-secondary';
 
-  // Extract bg class for tail
   const bgClass = bubbleClasses.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
   const borderClass = bubbleClasses.split(' ').find(c => c.startsWith('border-')) || 'border-slate-200';
 
@@ -47,42 +47,43 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
       {/* The Note Bubble */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer`}
+            className={`absolute ${bubbleContainerClass} z-20 transition-transform duration-200 hover:-translate-y-1 origin-left cursor-pointer w-[120px]`}
             onClick={handleQuoteClick}
         >
             {hasQuote ? (
                 <div className={`
-                    relative px-3 py-2 rounded-2xl shadow-sm border text-[11px] leading-tight max-w-[100px] text-center
+                    relative px-3 py-2 rounded-xl shadow-sm border text-[11px] leading-tight text-left
                     ${bubbleClasses} ${quote.font || ''}
                     line-clamp-3 animate-in fade-in zoom-in duration-300
                 `}>
                     {quote.content}
 
-                    {/* Tail: Bottom-Left pointing to avatar */}
-                    {/* Creating a small tail using pseudo-element style div */}
+                    {/* Tail: Pointing Left (to the avatar) */}
+                    {/* Positioned on the left edge, centered vertically */}
                     <div className={`
-                        absolute -bottom-1.5 left-2 w-3 h-3
+                        absolute top-1/2 -left-1.5 w-3 h-3
                         ${bgClass}
-                        border-b border-r ${borderClass}
-                        rotate-45 transform
+                        border-l border-b ${borderClass}
+                        rotate-45 transform -translate-y-1/2
                     `}></div>
                 </div>
             ) : (
                 /* Empty State (Add Note) */
                 <div className={`
-                    relative px-3 py-2 rounded-2xl shadow-sm border text-[10px] whitespace-nowrap
+                    relative px-3 py-2 rounded-xl shadow-sm border text-[10px] whitespace-nowrap
                     ${bubbleClasses}
                 `}>
                     <span className="opacity-70">Share a thought...</span>
                     <div className="absolute -top-2 -right-2 bg-accent text-white rounded-full p-0.5 border-2 border-surface shadow-sm">
                         <Plus size={10} />
                     </div>
-                    {/* Tail */}
-                    <div className={`
-                        absolute -bottom-1.5 left-2 w-3 h-3
+
+                     {/* Tail: Pointing Left */}
+                     <div className={`
+                        absolute top-1/2 -left-1.5 w-3 h-3
                         ${bgClass}
-                        border-b border-r ${borderClass}
-                        rotate-45 transform
+                        border-l border-b ${borderClass}
+                        rotate-45 transform -translate-y-1/2
                     `}></div>
                 </div>
             )}
@@ -90,7 +91,7 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
       )}
 
       {/* Avatar */}
-      <div onClick={handleAvatarClick} className="cursor-pointer">
+      <div onClick={handleAvatarClick} className="cursor-pointer relative z-30">
           <Avatar identity={identity} size={size} />
       </div>
     </div>
