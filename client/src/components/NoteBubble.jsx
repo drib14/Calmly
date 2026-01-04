@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Avatar from './Avatar';
-import QuoteBubbleShape from './QuoteBubbleShape';
 
 const moodColors = {
-    'Neutral': 'fill-slate-100 text-slate-900 stroke-slate-200',
-    'Happy': 'fill-yellow-100 text-yellow-900 stroke-yellow-200',
-    'Sad': 'fill-blue-100 text-blue-900 stroke-blue-200',
-    'Angry': 'fill-red-100 text-red-900 stroke-red-200',
-    'Hopeful': 'fill-green-100 text-green-900 stroke-green-200',
-    'Anxious': 'fill-purple-100 text-purple-900 stroke-purple-200',
+    'Neutral': 'bg-slate-100 text-slate-900 border-slate-200',
+    'Happy': 'bg-yellow-100 text-yellow-900 border-yellow-200',
+    'Sad': 'bg-blue-100 text-blue-900 border-blue-200',
+    'Angry': 'bg-red-100 text-red-900 border-red-200',
+    'Hopeful': 'bg-green-100 text-green-900 border-green-200',
+    'Anxious': 'bg-purple-100 text-purple-900 border-purple-200',
 };
 
 const placeholders = [
@@ -29,11 +28,12 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
   }, []);
 
   // Position: Top-Right of Avatar
+  // Adjust position closer to avatar for CSS bubble
   const bubblePosition = {
-      md: "-top-12 -right-10",
-      lg: "-top-14 -right-12",
-      xl: "-top-16 -right-14",
-  }[size] || "-top-14 -right-12";
+      md: "-top-10 -right-8",
+      lg: "-top-12 -right-10",
+      xl: "-top-14 -right-12",
+  }[size] || "-top-12 -right-10";
 
   const handleQuoteClick = (e) => {
       e.stopPropagation();
@@ -45,30 +45,36 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
       if (onAvatarClick) onAvatarClick();
   };
 
-  const colorClass = hasQuote
+  const bubbleClass = hasQuote
     ? (moodColors[quote.mood] || moodColors['Neutral'])
-    : 'fill-surface stroke-soft-border text-secondary';
+    : 'bg-surface border-soft-border text-secondary';
 
-  // Extract classes
-  const fillClass = colorClass.split(' ').find(c => c.startsWith('fill-')) || 'fill-white';
-  const strokeClass = colorClass.split(' ').find(c => c.startsWith('stroke-')) || 'stroke-slate-200';
-  const textClass = colorClass.split(' ').find(c => c.startsWith('text-')) || 'text-slate-900';
+  // Extract tail colors
+  const bgClass = bubbleClass.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
+  const borderClass = bubbleClass.split(' ').find(c => c.startsWith('border-')) || 'border-slate-200';
 
   return (
     <div className="relative inline-block group">
-      {/* The Note Cloud Bubble */}
+      {/* The Note Bubble (CSS Rectangular) */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer w-28 h-20 flex items-center justify-center`}
+            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer`}
             onClick={handleQuoteClick}
         >
-            <QuoteBubbleShape
-                className={`absolute inset-0 w-full h-full drop-shadow-sm ${fillClass} ${strokeClass} transition-colors duration-300`}
-                style={{ strokeWidth: '2px' }}
-            />
-
-            <div className={`relative z-10 px-4 pb-4 text-[10px] text-center leading-tight line-clamp-3 max-w-[85%] ${textClass} ${hasQuote && quote.font ? quote.font : ''}`}>
+            <div className={`
+                relative px-3 py-2 rounded-2xl shadow-sm border text-[10px] leading-tight text-center
+                min-w-[80px] max-w-[120px] w-fit
+                ${bubbleClass} ${hasQuote && quote.font ? quote.font : ''}
+            `}>
                 {hasQuote ? quote.content : <span className="opacity-70">{placeholder}</span>}
+
+                {/* Tail - Bottom Left */}
+                <div className={`
+                    absolute -bottom-1.5 left-3 w-3 h-3
+                    ${bgClass}
+                    border-b border-r ${borderClass}
+                    rotate-45 transform
+                `}></div>
             </div>
         </div>
       )}

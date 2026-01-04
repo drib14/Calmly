@@ -112,14 +112,19 @@ const getSessions = async (req, res) => {
 // @route   POST /api/settings/logout-all
 // @access  Private
 const logoutAllDevices = async (req, res) => {
-  const user = await User.findById(req.user._id);
-  if (user) {
-    user.refreshToken = []; // Clear all refresh tokens
-    user.sessions = []; // Clear session history if tracked
-    await user.save();
-    res.json({ message: 'Logged out from all devices' });
-  } else {
-    res.status(404).json({ message: 'User not found' });
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.refreshToken = []; // Clear all refresh tokens
+      user.sessions = []; // Clear session history if tracked
+      await user.save();
+      res.json({ message: 'Logged out from all devices' });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error("Logout All Devices Error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -265,11 +270,20 @@ const hidePost = async (req, res) => {
     const { postId } = req.body;
     try {
         const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Ensure settings object exists (safety)
+        if (!user.settings) {
+            user.settings = {};
+        }
+
         // Ensure array exists
         if (!user.settings.hiddenPosts) {
             user.settings.hiddenPosts = [];
         }
 
+        // Mongoose subdocument array methods
+        // Check if includes
         if (!user.settings.hiddenPosts.includes(postId)) {
             user.settings.hiddenPosts.push(postId);
             await user.save();
