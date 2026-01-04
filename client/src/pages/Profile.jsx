@@ -361,19 +361,39 @@ const Profile = () => {
 
       {/* My Quote Options Modal */}
       <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
-             <div className="text-center space-y-4">
-                 <h3 className="text-lg font-bold text-text">Your Quote</h3>
-                 <div className="grid grid-cols-2 gap-3 pt-4">
+             <div className="text-center space-y-6">
+                 <div>
+                    <h3 className="text-lg font-bold text-text mb-1">Your Quote</h3>
+                    <p className="text-xs text-secondary">Visible for 24 hours</p>
+                 </div>
+
+                 {quote && (
+                     <div className="flex justify-center">
+                         <div className={`p-4 rounded-2xl max-w-[200px] text-center text-sm shadow-sm border ${
+                             quote.mood === 'Neutral' ? 'bg-slate-100 text-slate-900 border-slate-200' :
+                             quote.mood === 'Happy' ? 'bg-yellow-100 text-yellow-900 border-yellow-200' :
+                             quote.mood === 'Sad' ? 'bg-blue-100 text-blue-900 border-blue-200' :
+                             quote.mood === 'Angry' ? 'bg-red-100 text-red-900 border-red-200' :
+                             quote.mood === 'Hopeful' ? 'bg-green-100 text-green-900 border-green-200' :
+                             quote.mood === 'Anxious' ? 'bg-purple-100 text-purple-900 border-purple-200' :
+                             'bg-slate-100 text-slate-900 border-slate-200'
+                         } ${quote.font || ''}`}>
+                             {quote.content}
+                         </div>
+                     </div>
+                 )}
+
+                 <div className="grid grid-cols-2 gap-3">
                      <button
                         onClick={() => { setShowMyQuoteOptions(false); setShowQuoteModal(true); }}
-                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
+                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text text-sm transition"
                      >
-                         New quote
+                         Replace
                      </button>
                      <button
                         onClick={handleDeleteQuote}
                         disabled={deletingQuote}
-                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50"
+                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50 text-sm transition"
                      >
                          {deletingQuote ? 'Deleting...' : 'Delete'}
                      </button>

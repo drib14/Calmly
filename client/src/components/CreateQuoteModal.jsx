@@ -61,7 +61,7 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
     <Modal isOpen={isOpen} onClose={onClose}>
         <div className="space-y-6">
             <div className="text-center">
-                <h3 className="text-lg font-bold font-serif">New Note</h3>
+                <h3 className="text-lg font-bold font-serif text-text">New Quote</h3>
                 <p className="text-xs text-secondary">Share a thought for 24 hours.</p>
             </div>
 

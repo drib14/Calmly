@@ -9,6 +9,7 @@ import SelectionCard from '../components/SelectionCard';
 import PillSelection from '../components/PillSelection';
 import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import FeedbackModal from '../components/FeedbackModal';
 
 const moods = [
@@ -480,18 +481,15 @@ const CreatePost = () => {
       </form>
 
       {/* Identity Delete Modal */}
-      <Modal isOpen={showDeleteIdentityModal} onClose={() => setShowDeleteIdentityModal(false)}>
-          <div className="text-center">
-              <h3 className="text-xl font-bold mb-2 text-text">Delete Identity?</h3>
-              <p className="text-secondary mb-6 text-sm">This will mark the identity as deleted. Your posts will remain but attribution will be anonymized.</p>
-              <div className="flex space-x-3">
-                  <button onClick={() => setShowDeleteIdentityModal(false)} disabled={deletingIdentity} className="flex-1 py-2 bg-background text-text rounded-lg disabled:opacity-50 border border-soft-border">Cancel</button>
-                  <button onClick={executeDeleteIdentity} disabled={deletingIdentity} className="flex-1 py-2 bg-red-500 text-white rounded-lg disabled:opacity-50">
-                    {deletingIdentity ? 'Deleting...' : 'Delete'}
-                  </button>
-              </div>
-          </div>
-      </Modal>
+      <ConfirmationModal
+          isOpen={showDeleteIdentityModal}
+          onClose={() => setShowDeleteIdentityModal(false)}
+          onConfirm={executeDeleteIdentity}
+          title="Delete Identity?"
+          message="This will mark the identity as deleted. Your posts will remain but attribution will be anonymized."
+          confirmText={deletingIdentity ? 'Deleting...' : 'Delete'}
+          isDanger={true}
+      />
 
       {/* Feedback Modal */}
       <FeedbackModal

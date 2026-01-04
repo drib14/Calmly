@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import clsx from 'clsx';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { useAuth } from '../context/AuthContext';
 import PinInput from '../components/PinInput';
 import PillSelection from '../components/PillSelection';
@@ -312,21 +313,16 @@ const Journal = () => {
         </div>
 
         {/* Delete Confirmation Modal */}
-        <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-            <div className="text-center">
-                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                    <Trash2 size={24} />
-                 </div>
-                 <h3 className="text-xl font-bold mb-2 text-text">Delete Entry?</h3>
-                 <p className="text-slate-500 mb-6 text-sm">This journal entry will be lost forever.</p>
-                 <div className="flex space-x-3">
-                     <button onClick={() => setShowDeleteModal(false)} disabled={deleting} className="flex-1 py-2 bg-slate-100 rounded-lg disabled:opacity-50">Cancel</button>
-                     <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2 bg-red-500 text-white rounded-lg disabled:opacity-50">
-                        {deleting ? 'Deleting...' : 'Delete'}
-                     </button>
-                 </div>
-            </div>
-        </Modal>
+        <ConfirmationModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirm={handleDelete}
+            title="Delete Entry?"
+            message="This journal entry will be lost forever."
+            confirmText={deleting ? 'Deleting...' : 'Delete'}
+            isDanger={true}
+            icon={Trash2}
+        />
     </div>
   );
 };

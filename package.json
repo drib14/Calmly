@@ -15,5 +15,8 @@
   "dependencies": {
     "acorn": "^8.15.0",
     "acorn-jsx": "^5.3.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0"
   }
 }

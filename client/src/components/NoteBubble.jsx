@@ -74,9 +74,7 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
                     ${bubbleClasses}
                 `}>
                     <span className="opacity-70">Share a thought...</span>
-                    <div className="absolute -top-2 -right-2 bg-accent text-white rounded-full p-0.5 border-2 border-surface shadow-sm">
-                        <Plus size={10} />
-                    </div>
+
                     {/* Tail */}
                     <div className={`
                         absolute -bottom-1.5 left-2 w-3 h-3

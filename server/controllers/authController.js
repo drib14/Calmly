@@ -40,16 +40,36 @@ const registerUser = async (req, res) => {
         handle: `@anon_${user._id.toString().slice(-6)}`,
       });
 
-      // Send WELCOME email instead of verification
-      await sendEmail({
-        to: email,
-        subject: 'Welcome to Calmly',
-        html: welcomeEmail(realName)
+      // Generate Tokens for Auto-Login
+      const accessToken = generateAccessToken(user._id);
+      const refreshToken = generateRefreshToken(user._id);
+
+      user.refreshToken.push(refreshToken);
+      await user.save();
+
+      res.cookie('jwt', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
+
+      // Send WELCOME email safely
+      // try {
+      //   await sendEmail({
+      //     to: email,
+      //     subject: 'Welcome to Calmly',
+      //     html: welcomeEmail(realName)
+      //   });
+      // } catch (emailError) {
+      //   console.error("Email failed to send:", emailError.message);
+      //   // Continue without failing the request
+      // }
 
       res.status(201).json({
           _id: user._id,
           email: user.email,
+          accessToken,
           message: 'Registration successful! Welcome.',
       });
 

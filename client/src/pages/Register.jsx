@@ -27,7 +27,7 @@ const Register = () => {
 
     const res = await register(email, password, realName);
     if (res.success) {
-      setMessage(res.message);
+      navigate('/feed');
     } else {
       setError(res.message);
     }
