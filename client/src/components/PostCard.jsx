@@ -46,8 +46,14 @@ const PostCard = ({ post, mutate }) => {
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
 
+  // Comment Actions State
+  const [activeCommentId, setActiveCommentId] = useState(null);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [commentToReport, setCommentToReport] = useState(null);
+
   const optionsRef = useRef(null);
   const shareRef = useRef(null);
+  const commentOptionsRef = useRef(null);
   const navigate = useNavigate();
 
   // SWR for Comments (Real-time polling when expanded)
@@ -77,6 +83,9 @@ const PostCard = ({ post, mutate }) => {
       }
       if (shareRef.current && !shareRef.current.contains(event.target)) {
         setShowShareMenu(false);
+      }
+      if (commentOptionsRef.current && !commentOptionsRef.current.contains(event.target)) {
+        setActiveCommentId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -169,15 +178,35 @@ const PostCard = ({ post, mutate }) => {
   const handleReport = async () => {
       setReporting(true);
       try {
-          await axios.post(`/posts/${post._id}/report`, { reason: reportReason });
+          if (commentToReport) {
+              await axios.post(`/comments/${commentToReport}/report`, { reason: reportReason });
+          } else {
+              await axios.post(`/posts/${post._id}/report`, { reason: reportReason });
+          }
           toast.success("Report submitted");
           setShowReportModal(false);
           setReportReason('');
+          setCommentToReport(null);
       } catch (err) {
           console.error(err);
           toast.error("Failed to submit report");
       }
       setReporting(false);
+  };
+
+  const handleDeleteComment = async () => {
+      if (!commentToDelete) return;
+      setDeleting(true);
+      try {
+          await axios.delete(`/comments/${commentToDelete}`);
+          toast.success("Comment deleted");
+          mutateComments();
+      } catch (err) {
+          toast.error("Failed to delete comment");
+      }
+      setDeleting(false);
+      setCommentToDelete(null);
+      setShowDeleteModal(false); // Reuse modal logic or create new
   };
 
   const handleProfileClick = (e) => {
@@ -512,6 +541,39 @@ const PostCard = ({ post, mutate }) => {
                                                 >
                                                     Reply
                                                 </button>
+
+                                                {/* Comment Options */}
+                                                <div className="relative">
+                                                    <button onClick={(e) => { e.stopPropagation(); setActiveCommentId(activeCommentId === c._id ? null : c._id); }} className="hover:text-text">
+                                                        <MoreHorizontal size={12} />
+                                                    </button>
+                                                    <AnimatePresence>
+                                                        {activeCommentId === c._id && (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                                animate={{ opacity: 1, scale: 1 }}
+                                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                                className="absolute left-0 top-4 bg-surface border border-soft-border shadow-lg rounded-lg p-1 z-20 min-w-[100px]"
+                                                                ref={commentOptionsRef}
+                                                            >
+                                                                {(c.identity._id === currentIdentity?._id || isOwner) && (
+                                                                    <button
+                                                                        onClick={() => { setCommentToDelete(c._id); setShowDeleteModal(true); setActiveCommentId(null); }}
+                                                                        className="flex items-center space-x-2 w-full px-2 py-1.5 text-xs font-medium text-red-500 hover:bg-background rounded"
+                                                                    >
+                                                                        <Trash2 size={10} /> <span>Delete</span>
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => { setCommentToReport(c._id); setShowReportModal(true); setActiveCommentId(null); }}
+                                                                    className="flex items-center space-x-2 w-full px-2 py-1.5 text-xs font-medium text-secondary hover:bg-background rounded hover:text-text"
+                                                                >
+                                                                    <Flag size={10} /> <span>Report</span>
+                                                                </button>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -578,9 +640,9 @@ const PostCard = ({ post, mutate }) => {
       {/* Delete Modal */}
       <ConfirmationModal
           isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={handleDelete}
-          title="Delete this moment?"
+          onClose={() => { setShowDeleteModal(false); setCommentToDelete(null); }}
+          onConfirm={commentToDelete ? handleDeleteComment : handleDelete}
+          title={commentToDelete ? "Delete Comment?" : "Delete this moment?"}
           message="This action cannot be undone. Are you sure you want to let this go?"
           confirmText={deleting ? 'Deleting...' : 'Delete'}
           isDanger={true}

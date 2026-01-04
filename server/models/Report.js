@@ -8,8 +8,19 @@ const reportSchema = new mongoose.Schema({
   },
   post: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Post',
-    required: true
+    ref: 'Post'
+  },
+  comment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Comment'
+  },
+  quote: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Quote'
+  },
+  targetUser: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   reason: {
     type: String,

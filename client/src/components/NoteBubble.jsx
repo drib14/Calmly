@@ -1,25 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Avatar from './Avatar';
-import { Plus } from 'lucide-react';
 
 const moodColors = {
-    'Neutral': 'bg-slate-100 text-slate-900 border-slate-200',
-    'Happy': 'bg-yellow-100 text-yellow-900 border-yellow-200',
-    'Sad': 'bg-blue-100 text-blue-900 border-blue-200',
-    'Angry': 'bg-red-100 text-red-900 border-red-200',
-    'Hopeful': 'bg-green-100 text-green-900 border-green-200',
-    'Anxious': 'bg-purple-100 text-purple-900 border-purple-200',
+    'Neutral': 'fill-slate-100 text-slate-900 stroke-slate-200',
+    'Happy': 'fill-yellow-100 text-yellow-900 stroke-yellow-200',
+    'Sad': 'fill-blue-100 text-blue-900 stroke-blue-200',
+    'Angry': 'fill-red-100 text-red-900 stroke-red-200',
+    'Hopeful': 'fill-green-100 text-green-900 stroke-green-200',
+    'Anxious': 'fill-purple-100 text-purple-900 stroke-purple-200',
 };
+
+const placeholders = [
+    "Share a thought...",
+    "What's on your mind?",
+    "Feeling...?",
+    "Today's vibe?",
+    "Thinking about...",
+    "Current mood..."
+];
 
 const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size = "lg" }) => {
   const hasQuote = !!quote;
+  const [placeholder, setPlaceholder] = useState("Share a thought...");
 
-  // Position: Top-Right of Avatar (approx 1 o'clock)
+  useEffect(() => {
+      setPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)]);
+  }, []);
+
+  // Position: Top-Right of Avatar
   const bubblePosition = {
-      md: "-top-8 -right-4",
-      lg: "-top-10 -right-6",
-      xl: "-top-12 -right-8",
-  }[size] || "-top-10 -right-6";
+      md: "-top-12 -right-10",
+      lg: "-top-14 -right-12",
+      xl: "-top-16 -right-14",
+  }[size] || "-top-14 -right-12";
 
   const handleQuoteClick = (e) => {
       e.stopPropagation();
@@ -31,59 +44,49 @@ const NoteBubble = ({ identity, quote, isMe, onQuoteClick, onAvatarClick, size =
       if (onAvatarClick) onAvatarClick();
   };
 
-  // Get tail color from mood class (bg-...)
-  // We need to extract the color class to apply to the tail
-  // moodColors value format: 'bg-color text-color border-color'
-  const bubbleClasses = hasQuote
+  const colorClass = hasQuote
     ? (moodColors[quote.mood] || moodColors['Neutral'])
-    : 'bg-surface border-soft-border text-secondary';
+    : 'fill-surface stroke-soft-border text-secondary';
 
-  // Extract bg class for tail
-  const bgClass = bubbleClasses.split(' ').find(c => c.startsWith('bg-')) || 'bg-slate-100';
-  const borderClass = bubbleClasses.split(' ').find(c => c.startsWith('border-')) || 'border-slate-200';
+  // Extract classes
+  const fillClass = colorClass.split(' ').find(c => c.startsWith('fill-')) || 'fill-white';
+  const strokeClass = colorClass.split(' ').find(c => c.startsWith('stroke-')) || 'stroke-slate-200';
+  const textClass = colorClass.split(' ').find(c => c.startsWith('text-')) || 'text-slate-900';
 
   return (
     <div className="relative inline-block group">
-      {/* The Note Bubble */}
+      {/* The Note Cloud Bubble */}
       {(hasQuote || isMe) && (
         <div
-            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer`}
+            className={`absolute ${bubblePosition} z-20 transition-transform duration-200 hover:-translate-y-1 origin-bottom-left cursor-pointer w-32 h-24 flex items-center justify-center`}
             onClick={handleQuoteClick}
         >
-            {hasQuote ? (
-                <div className={`
-                    relative px-3 py-2 rounded-2xl shadow-sm border text-[11px] leading-tight max-w-[100px] text-center
-                    ${bubbleClasses} ${quote.font || ''}
-                    line-clamp-3 animate-in fade-in zoom-in duration-300
-                `}>
-                    {quote.content}
+            <svg
+                viewBox="0 0 120 100"
+                className={`absolute inset-0 w-full h-full drop-shadow-sm ${fillClass} ${strokeClass} transition-colors duration-300`}
+                preserveAspectRatio="none"
+            >
+                {/* Cloud Shape */}
+                <path
+                    strokeWidth="2"
+                    d="M30,75
+                       Q10,75 10,55
+                       Q10,35 30,30
+                       Q40,10 60,10
+                       Q80,10 90,30
+                       Q110,35 110,55
+                       Q110,75 90,75
+                       Q80,75 75,75
+                       L30,75 Z"
+                />
+                {/* Trailing Circles */}
+                <circle cx="25" cy="85" r="5" strokeWidth="2" />
+                <circle cx="15" cy="95" r="3" strokeWidth="2" />
+            </svg>
 
-                    {/* Tail: Bottom-Left pointing to avatar */}
-                    {/* Creating a small tail using pseudo-element style div */}
-                    <div className={`
-                        absolute -bottom-1.5 left-2 w-3 h-3
-                        ${bgClass}
-                        border-b border-r ${borderClass}
-                        rotate-45 transform
-                    `}></div>
-                </div>
-            ) : (
-                /* Empty State (Add Note) */
-                <div className={`
-                    relative px-3 py-2 rounded-2xl shadow-sm border text-[10px] whitespace-nowrap
-                    ${bubbleClasses}
-                `}>
-                    <span className="opacity-70">Share a thought...</span>
-
-                    {/* Tail */}
-                    <div className={`
-                        absolute -bottom-1.5 left-2 w-3 h-3
-                        ${bgClass}
-                        border-b border-r ${borderClass}
-                        rotate-45 transform
-                    `}></div>
-                </div>
-            )}
+            <div className={`relative z-10 px-4 pb-2 text-[10px] text-center leading-tight line-clamp-3 max-w-[80%] ${textClass} ${hasQuote && quote.font ? quote.font : ''}`}>
+                {hasQuote ? quote.content : <span className="opacity-70">{placeholder}</span>}
+            </div>
         </div>
       )}
 

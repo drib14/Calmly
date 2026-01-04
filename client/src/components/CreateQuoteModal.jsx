@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSWRConfig } from 'swr';
 import Modal from './Modal';
@@ -23,12 +23,27 @@ const fontOptions = [
     { value: 'font-[system-ui]', label: 'System', fontClass: 'font-[system-ui]' },
 ];
 
+const placeholders = [
+    "What's on your mind? (Max 60 chars)",
+    "Share a thought...",
+    "Today's vibe...",
+    "Feeling...",
+    "Thinking about..."
+];
+
 const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
   const { mutate } = useSWRConfig();
   const [content, setContent] = useState('');
   const [mood, setMood] = useState('Neutral');
   const [font, setFont] = useState('font-serif');
   const [submitting, setSubmitting] = useState(false);
+  const [placeholder, setPlaceholder] = useState(placeholders[0]);
+
+  useEffect(() => {
+      if (isOpen) {
+          setPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)]);
+      }
+  }, [isOpen]);
 
   const handleCreate = async () => {
       if (!content.trim()) return;
@@ -66,16 +81,30 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
             </div>
 
             <div className="flex justify-center py-4">
-                <div className={`relative p-4 rounded-2xl w-48 text-center text-sm shadow-sm border transition-all ${moodColors[mood]} ${font}`}>
-                    {content || "Your thought here..."}
-                    <div className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 border-b border-r bg-inherit ${moodColors[mood]?.split(' ')[2] || 'border-slate-200'}`}></div>
+                {/* Note Cloud Preview */}
+                <div className={`relative w-48 h-32 flex items-center justify-center`}>
+                     <svg
+                        viewBox="0 0 120 100"
+                        className={`absolute inset-0 w-full h-full drop-shadow-sm transition-colors duration-300 ${
+                            moodColors[mood].replace('bg-', 'fill-').replace('border-', 'stroke-')
+                        }`}
+                        preserveAspectRatio="none"
+                        style={{ strokeWidth: '2px' }}
+                    >
+                        <path d="M30,75 Q10,75 10,55 Q10,35 30,30 Q40,10 60,10 Q80,10 90,30 Q110,35 110,55 Q110,75 90,75 Q80,75 75,75 L30,75 Z" />
+                        <circle cx="25" cy="85" r="5" />
+                        <circle cx="15" cy="95" r="3" />
+                    </svg>
+                    <div className={`relative z-10 px-6 pb-2 text-[11px] text-center leading-tight line-clamp-3 w-full ${moodColors[mood].split(' ')[1]} ${font}`}>
+                        {content || placeholder}
+                    </div>
                 </div>
             </div>
 
             <textarea
                 className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none"
                 rows="2"
-                placeholder="What's on your mind? (Max 60 chars)"
+                placeholder={placeholder}
                 maxLength={60}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

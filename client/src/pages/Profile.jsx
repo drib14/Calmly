@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, MoreHorizontal, Flag, Ban } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatDistanceToNow, addHours } from 'date-fns';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import NoteBubble from '../components/NoteBubble';
@@ -48,6 +49,10 @@ const Profile = () => {
   const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
   const [deletingQuote, setDeletingQuote] = useState(false);
 
+  // Profile Options (Block/Report)
+  const [showProfileOptions, setShowProfileOptions] = useState(false);
+  const optionsRef = useRef(null);
+
   const [activeTab, setActiveTab] = useState('moments');
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
@@ -56,6 +61,16 @@ const Profile = () => {
   const { identity, posts, quote } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
+
+  useEffect(() => {
+      const handleClickOutside = (event) => {
+          if (optionsRef.current && !optionsRef.current.contains(event.target)) {
+              setShowProfileOptions(false);
+          }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const openEditModal = () => {
       setEditName(identity.name);
@@ -122,6 +137,31 @@ const Profile = () => {
           toast.error("Failed to remove quote");
       } finally {
           setDeletingQuote(false);
+      }
+  };
+
+  const handleBlockUser = async () => {
+      if (!currentIdentity) return toast.error("Login to block users");
+      try {
+          // Block the USER associated with this identity
+          await axios.post('/settings/block-user', { userId: identity.user._id });
+          toast.success("User blocked");
+          setShowProfileOptions(false);
+          navigate('/feed');
+      } catch (err) {
+          toast.error("Failed to block user");
+      }
+  };
+
+  const handleReportUser = async () => {
+      if (!currentIdentity) return toast.error("Login to report");
+      // For simplicity, reporting immediately with generic reason
+      try {
+          await axios.post('/settings/report-user', { targetUserId: identity.user._id, reason: 'Profile content' });
+          toast.success("User reported");
+          setShowProfileOptions(false);
+      } catch (err) {
+          toast.error("Failed to report user");
       }
   };
 
@@ -229,13 +269,41 @@ const Profile = () => {
                   />
               </div>
 
-              {/* Close/Back Button */}
-              <button
-                  onClick={() => navigate(-1)} // Navigate back
-                  className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition z-10"
-              >
-                  <X size={20} />
-              </button>
+              <div className="absolute top-4 right-4 flex items-center space-x-2 z-10">
+                  {/* Profile Options (Block/Report) */}
+                  {!isOwner && (
+                      <div className="relative" ref={optionsRef}>
+                          <button onClick={() => setShowProfileOptions(!showProfileOptions)} className="p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition">
+                              <MoreHorizontal size={20} />
+                          </button>
+                          <AnimatePresence>
+                              {showProfileOptions && (
+                                  <motion.div
+                                      initial={{ opacity: 0, scale: 0.95 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0.95 }}
+                                      className="absolute right-0 top-10 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-20 min-w-[140px]"
+                                  >
+                                      <button onClick={handleBlockUser} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                                          <Ban size={14} /> <span>Block User</span>
+                                      </button>
+                                      <button onClick={handleReportUser} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
+                                          <Flag size={14} /> <span>Report User</span>
+                                      </button>
+                                  </motion.div>
+                              )}
+                          </AnimatePresence>
+                      </div>
+                  )}
+
+                  {/* Close/Back Button */}
+                  <button
+                      onClick={() => navigate(-1)} // Navigate back
+                      className="p-2 bg-black/20 hover:bg-black/40 text-white rounded-full transition"
+                  >
+                      <X size={20} />
+                  </button>
+              </div>
 
               <div className="flex justify-between items-start mt-2 relative">
                   <div>
@@ -364,21 +432,44 @@ const Profile = () => {
              <div className="text-center space-y-6">
                  <div>
                     <h3 className="text-lg font-bold text-text mb-1">Your Quote</h3>
-                    <p className="text-xs text-secondary">Visible for 24 hours</p>
+                    {quote && (
+                        <p className="text-xs text-secondary">
+                            Posted {formatDistanceToNow(new Date(quote.createdAt))} ago • Expires in {formatDistanceToNow(addHours(new Date(quote.createdAt), 24))}
+                        </p>
+                    )}
                  </div>
 
                  {quote && (
                      <div className="flex justify-center">
-                         <div className={`p-4 rounded-2xl max-w-[200px] text-center text-sm shadow-sm border ${
-                             quote.mood === 'Neutral' ? 'bg-slate-100 text-slate-900 border-slate-200' :
-                             quote.mood === 'Happy' ? 'bg-yellow-100 text-yellow-900 border-yellow-200' :
-                             quote.mood === 'Sad' ? 'bg-blue-100 text-blue-900 border-blue-200' :
-                             quote.mood === 'Angry' ? 'bg-red-100 text-red-900 border-red-200' :
-                             quote.mood === 'Hopeful' ? 'bg-green-100 text-green-900 border-green-200' :
-                             quote.mood === 'Anxious' ? 'bg-purple-100 text-purple-900 border-purple-200' :
-                             'bg-slate-100 text-slate-900 border-slate-200'
-                         } ${quote.font || ''}`}>
-                             {quote.content}
+                         {/* Cloud Preview in Modal */}
+                         <div className={`relative w-48 h-32 flex items-center justify-center`}>
+                             <svg
+                                viewBox="0 0 120 100"
+                                className={`absolute inset-0 w-full h-full drop-shadow-sm transition-colors duration-300 ${
+                                    (quote.mood === 'Neutral' ? 'fill-slate-100 stroke-slate-200' :
+                                    quote.mood === 'Happy' ? 'fill-yellow-100 stroke-yellow-200' :
+                                    quote.mood === 'Sad' ? 'fill-blue-100 stroke-blue-200' :
+                                    quote.mood === 'Angry' ? 'fill-red-100 stroke-red-200' :
+                                    quote.mood === 'Hopeful' ? 'fill-green-100 stroke-green-200' :
+                                    quote.mood === 'Anxious' ? 'fill-purple-100 stroke-purple-200' : 'fill-white stroke-slate-200')
+                                }`}
+                                preserveAspectRatio="none"
+                                style={{ strokeWidth: '2px' }}
+                            >
+                                <path d="M30,75 Q10,75 10,55 Q10,35 30,30 Q40,10 60,10 Q80,10 90,30 Q110,35 110,55 Q110,75 90,75 Q80,75 75,75 L30,75 Z" />
+                                <circle cx="25" cy="85" r="5" />
+                                <circle cx="15" cy="95" r="3" />
+                            </svg>
+                             <div className={`relative z-10 px-6 pb-2 text-[11px] text-center leading-tight line-clamp-3 w-full ${
+                                 quote.mood === 'Neutral' ? 'text-slate-900' :
+                                 quote.mood === 'Happy' ? 'text-yellow-900' :
+                                 quote.mood === 'Sad' ? 'text-blue-900' :
+                                 quote.mood === 'Angry' ? 'text-red-900' :
+                                 quote.mood === 'Hopeful' ? 'text-green-900' :
+                                 quote.mood === 'Anxious' ? 'text-purple-900' : 'text-slate-900'
+                             } ${quote.font || ''}`}>
+                                 {quote.content}
+                             </div>
                          </div>
                      </div>
                  )}

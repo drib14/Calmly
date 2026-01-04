@@ -4,6 +4,7 @@ const { protect } = require('../middleware/authMiddleware');
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
+const Report = require('../models/Report');
 const { upload } = require('../utils/cloudinary');
 
 // Get comments for a post
@@ -83,6 +84,55 @@ router.put('/:id/like', protect, async (req, res) => {
         res.json(comment.likes);
     } catch (error) {
         console.error("Comment Like Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete Comment
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const comment = await Comment.findById(req.params.id).populate('identity');
+        if (!comment) return res.status(404).json({ message: 'Comment not found' });
+
+        // Check ownership (Comment identity's user must match requesting user)
+        // We populated identity, but we need to check the user field of that identity
+        const identity = await Identity.findById(comment.identity._id);
+        if (!identity || identity.user.toString() !== req.user._id.toString()) {
+             // Also allow Post owner to delete comments? Usually yes.
+             const post = await Post.findById(comment.post).populate('identity');
+             // Need to check post owner identity's user
+             const postOwnerIdentity = await Identity.findById(post.identity._id || post.identity);
+
+             if (!postOwnerIdentity || postOwnerIdentity.user.toString() !== req.user._id.toString()) {
+                 return res.status(403).json({ message: 'Unauthorized' });
+             }
+        }
+
+        await comment.deleteOne();
+        res.json({ message: 'Comment deleted' });
+    } catch (error) {
+        console.error("Delete Comment Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Report Comment
+router.post('/:id/report', protect, async (req, res) => {
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ message: 'Reason required' });
+
+    try {
+        const comment = await Comment.findById(req.params.id);
+        if (!comment) return res.status(404).json({ message: 'Comment not found' });
+
+        await Report.create({
+            reporter: req.user._id,
+            comment: comment._id,
+            reason
+        });
+
+        res.status(201).json({ message: 'Report submitted' });
+    } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });

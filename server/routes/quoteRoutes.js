@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
 const Quote = require('../models/Quote');
 const Identity = require('../models/Identity');
+const Report = require('../models/Report');
 
 // Get recent quotes (Feed widget)
 router.get('/feed', protect, async (req, res) => {
@@ -71,6 +72,27 @@ router.delete('/:id', protect, async (req, res) => {
 
         await quote.deleteOne();
         res.json({ message: 'Quote removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Report Quote
+router.post('/:id/report', protect, async (req, res) => {
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ message: 'Reason required' });
+
+    try {
+        const quote = await Quote.findById(req.params.id);
+        if (!quote) return res.status(404).json({ message: 'Quote not found' });
+
+        await Report.create({
+            reporter: req.user._id,
+            quote: quote._id,
+            reason
+        });
+
+        res.status(201).json({ message: 'Report submitted' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

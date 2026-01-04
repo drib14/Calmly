@@ -220,6 +220,37 @@ const verifyJournalPassword = async (req, res) => {
   }
 };
 
+// Block User
+const blockUser = async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user.settings.blockedUsers.includes(userId)) {
+            user.settings.blockedUsers.push(userId);
+            await user.save();
+        }
+        res.json({ message: 'User blocked' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Report User
+const reportUser = async (req, res) => {
+    const { targetUserId, reason } = req.body;
+    try {
+        const Report = require('../models/Report');
+        await Report.create({
+            reporter: req.user._id,
+            targetUser: targetUserId,
+            reason
+        });
+        res.json({ message: 'User reported' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Download User Data
 const downloadUserData = async (req, res) => {
   try {
@@ -271,5 +302,7 @@ module.exports = {
   deleteAccount,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  blockUser,
+  reportUser
 };
