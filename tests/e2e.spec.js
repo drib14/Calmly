@@ -21,15 +21,7 @@ test.describe.serial('Calmly Platform E2E Tests', () => {
     // Submit
     await page.click('button[type="submit"]');
 
-    // Wait for "Navigating to feed..." log or some indication
-    await page.waitForTimeout(2000);
-
-    // Manual navigation fallback if auto-redirect is slow/fails in test env
-    if (page.url().includes('register')) {
-        await page.goto('/feed');
-    }
-
-    // Expect redirection to Feed
+    // Expect redirection to Feed (App does window.location.href = '/feed')
     await expect(page).toHaveURL(/\/feed/);
 
     // Check for "Moments" header (Feed page)
@@ -63,8 +55,6 @@ test.describe.serial('Calmly Platform E2E Tests', () => {
     const widget = page.locator('.custom-scrollbar').first();
     await expect(widget).toBeVisible();
 
-    // The "Share a thought..." text is inside a span with opacity-70
-    // Sometimes strict matching fails. We can try clicking the first bubble container.
     // The first child of widget is the "My Quote" slot.
     const mySlot = widget.locator('> div').first();
     await expect(mySlot).toBeVisible();
@@ -104,7 +94,7 @@ test.describe.serial('Calmly Platform E2E Tests', () => {
     await expect(page.locator('text=This is a test quote.')).not.toBeVisible(); // Quote gone
   });
 
-  test.fixme('4. Settings and Delete Account', async ({ page }) => {
+  test('4. Settings and Delete Account', async ({ page }) => {
     // Login
     await page.goto('/login');
     await page.fill('input[type="email"]', email);

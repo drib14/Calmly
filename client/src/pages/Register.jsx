@@ -27,7 +27,8 @@ const Register = () => {
 
     const res = await register(email, password, realName);
     if (res.success) {
-      navigate('/feed');
+      // Force reload to ensure AuthContext picks up the new token/user state correctly
+      window.location.href = '/feed';
     } else {
       setError(res.message);
     }
