@@ -363,8 +363,8 @@ const PostCard = ({ post, mutate }) => {
 
                   {/* Media Carousel */}
                   {post.media && post.media.length > 0 && (
-                      <div className="relative mb-4 group">
-                          <div className="rounded-2xl overflow-hidden bg-black/5 aspect-[4/5] flex items-center justify-center relative">
+                      <div className="relative mb-4 group -mx-5 md:-mx-6">
+                          <div className="overflow-hidden bg-black/5 aspect-[4/5] flex items-center justify-center relative">
                               {post.media[currentMediaIndex].type === 'video' ? (
                                   <MediaPlayer src={post.media[currentMediaIndex].url} />
                               ) : (

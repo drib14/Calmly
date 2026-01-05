@@ -11,6 +11,8 @@ const COLORS = [
 
 const Avatar = ({ identity, size = "md" }) => {
   const sizeClasses = {
+    xxs: "w-4 h-4 text-[8px]",
+    xs: "w-6 h-6 text-[10px]",
     sm: "w-8 h-8 text-xs",
     md: "w-10 h-10 text-sm",
     lg: "w-16 h-16 text-lg",
