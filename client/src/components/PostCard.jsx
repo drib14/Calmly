@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
+import { formatShortTime } from '../utils/dateUtils';
 import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -229,7 +229,7 @@ const PostCard = ({ post, mutate }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={clsx(
-            "bg-surface text-text p-5 md:p-6 rounded-3xl shadow-sm border border-soft-border mb-6 relative transition-all hover:shadow-md",
+            "bg-surface/30 backdrop-blur-md text-text p-5 md:p-6 rounded-3xl shadow-sm border border-white/20 dark:border-white/10 mb-6 relative transition-all hover:shadow-md overflow-hidden",
             getTypeStyles()
         )}
     >
@@ -259,7 +259,7 @@ const PostCard = ({ post, mutate }) => {
                <div className="text-[11px] text-secondary font-medium uppercase tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
                    <span>{post.identity.type}</span>
                    <span>•</span>
-                   <span className="whitespace-nowrap">{formatDistanceToNow(new Date(post.createdAt))} ago</span>
+                   <span className="whitespace-nowrap">{formatShortTime(post.createdAt)}</span>
 
                    {/* Visibility Icon */}
                    {post.visibility === 'public' && <Globe size={12} className="text-secondary flex-shrink-0" />}
@@ -364,13 +364,15 @@ const PostCard = ({ post, mutate }) => {
                   {/* Media Carousel */}
                   {post.media && post.media.length > 0 && (
                       <div className="relative mb-4 group -mx-5 md:-mx-6">
-                          <div className="overflow-hidden bg-black/5 aspect-[4/5] flex items-center justify-center relative">
+                          <div className="overflow-hidden flex items-center justify-center relative bg-black/5">
                               {post.media[currentMediaIndex].type === 'video' ? (
-                                  <MediaPlayer src={post.media[currentMediaIndex].url} />
+                                  <div className="w-full">
+                                      <MediaPlayer src={post.media[currentMediaIndex].url} />
+                                  </div>
                               ) : (
                                   <img
                                       src={post.media[currentMediaIndex].url}
-                                      className="w-full h-full object-cover cursor-pointer"
+                                      className="w-full h-auto max-h-[80vh] object-contain cursor-pointer"
                                       onClick={() => openViewer(post.media[currentMediaIndex].url)}
                                   />
                               )}
@@ -540,7 +542,7 @@ const PostCard = ({ post, mutate }) => {
                                                 )}
                                             </div>
                                             <div className="flex items-center space-x-4 mt-1 ml-2 text-[10px] text-secondary">
-                                                <span>{formatDistanceToNow(new Date(c.createdAt))} ago</span>
+                                                <span>{formatShortTime(c.createdAt)}</span>
                                                 <button
                                                     onClick={() => handleCommentLike(c._id)}
                                                     className={clsx("font-bold hover:text-red-500 transition flex items-center space-x-1", isCommentLiked && "text-red-500")}

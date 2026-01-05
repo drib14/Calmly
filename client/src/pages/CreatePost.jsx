@@ -22,10 +22,9 @@ const moods = [
 ];
 
 const postTypes = [
-    { value: 'confession', label: 'Post', description: 'Share a secret or a thought.' },
+    { value: 'confession', label: 'Post', description: 'Share a thought or moment.' },
     { value: 'poetry', label: 'Poetry', description: 'Express yourself in verse.' },
     { value: 'letter', label: 'Letter', description: 'Write a letter to someone.' },
-    { value: 'mood', label: 'Mood Drop', description: 'Just a vibe.' },
 ];
 
 // Expanded Styles for Letters (Textures)

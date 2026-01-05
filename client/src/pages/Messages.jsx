@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatShortTime } from '../utils/dateUtils';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
@@ -194,23 +194,23 @@ const Messages = () => {
           <div
                 onClick={() => navigate(`/post/${post._id}`)}
                 className={clsx(
-                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group bg-surface",
-                    isMe ? "border-white/20" : "border-soft-border hover:shadow-md"
+                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group backdrop-blur-md",
+                    isMe ? "bg-white/10 border-white/20" : "bg-surface/30 border-white/20 hover:shadow-md"
                 )}
           >
               <div className="flex flex-col h-full relative">
                   {/* Top Left: Avatar + Name */}
-                  <div className="p-3 flex items-center space-x-2 border-b border-soft-border bg-surface z-10 relative">
+                  <div className={clsx("p-3 flex items-center space-x-2 border-b z-10 relative", isMe ? "border-white/10" : "border-white/10")}>
                       <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
                            <Avatar identity={post.identity} size="xs" />
                       </div>
-                      <span className="text-xs font-bold text-text truncate cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
+                      <span className={clsx("text-xs font-bold truncate cursor-pointer hover:underline", isMe ? "text-white" : "text-text")} onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
                           {post.identity?.name || 'Unknown'}
                       </span>
                   </div>
 
                   {/* Main Content */}
-                  <div className="bg-background relative">
+                  <div className="relative">
                       {hasMedia ? (
                           <>
                               <div className="aspect-[4/3] w-full bg-black/5 flex items-center justify-center overflow-hidden">
@@ -248,11 +248,11 @@ const Messages = () => {
                   </div>
 
                   {/* Bottom Left: Logo */}
-                  <div className="mt-auto p-3 border-t border-soft-border bg-surface flex items-center space-x-2 opacity-80">
+                  <div className={clsx("mt-auto p-3 border-t flex items-center space-x-2 opacity-80", isMe ? "border-white/10" : "border-white/10")}>
                       <div className="w-4 h-4 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
                           <img src="/favicon.png" className="w-3 h-3 object-contain" alt="Logo" />
                       </div>
-                      <span className="text-[9px] font-bold text-secondary uppercase tracking-wider">
+                      <span className={clsx("text-[9px] font-bold uppercase tracking-wider", isMe ? "text-white/70" : "text-secondary")}>
                           Calmly
                       </span>
                   </div>
@@ -335,7 +335,7 @@ const Messages = () => {
                               <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-baseline mb-1">
                                       <span className={clsx("text-sm truncate", isUnread ? "font-bold text-text" : "font-medium text-text/80")}>{other.name}</span>
-                                      <span className="text-[10px] text-secondary">{formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}</span>
+                                      <span className="text-[10px] text-secondary">{formatShortTime(msg.createdAt)}</span>
                                   </div>
                                   <p className={clsx("text-xs truncate", isUnread ? "font-semibold text-text" : "text-secondary")}>
                                       {isSenderMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a moment' : msg.replyToQuote ? 'Replied to a note' : msg.content || 'Sent a file'}
@@ -459,7 +459,7 @@ const Messages = () => {
                                       )}
 
                                       <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>
-                                          {formatDistanceToNow(new Date(msg.createdAt))}
+                                          {formatShortTime(msg.createdAt)}
                                       </div>
                                   </div>
                               </div>

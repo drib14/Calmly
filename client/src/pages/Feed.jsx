@@ -32,10 +32,9 @@ const Feed = () => {
                 <PillSelection
                     options={[
                         { value: '', label: 'All' },
-                        { value: 'confession', label: 'Confession' },
+                        { value: 'confession', label: 'Post' },
                         { value: 'poetry', label: 'Poetry' },
                         { value: 'letter', label: 'Letter' },
-                        { value: 'mood', label: 'Mood' },
                     ]}
                     value={filter.type}
                     onChange={(val) => setFilter({...filter, type: val})}
