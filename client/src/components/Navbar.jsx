@@ -113,7 +113,7 @@ const Navbar = () => {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className={clsx("p-3 rounded-xl relative", showProfileMenu ? "text-slate-900" : "text-slate-400")}
             >
-                <Avatar identity={currentIdentity} size="sm" />
+                <Avatar identity={currentIdentity} size="sm" showStatus={false} />
             </div>
 
             {/* Mobile Profile Menu */}
@@ -262,7 +262,7 @@ const Navbar = () => {
             )}
         >
             <div className="flex-shrink-0">
-                <Avatar identity={currentIdentity} size="sm" />
+                <Avatar identity={currentIdentity} size="sm" showStatus={false} />
             </div>
             {isExpanded && (
                 <div className="overflow-hidden flex-1 min-w-0">

@@ -10,7 +10,7 @@ const COLORS = [
   'bg-fuchsia-500', 'bg-pink-500', 'bg-rose-500'
 ];
 
-const Avatar = ({ identity, size = "md" }) => {
+const Avatar = ({ identity, size = "md", showStatus = true }) => {
   const { onlineUsers } = useSocket() || {}; // Handle if context missing
   const sizeClasses = {
     xxs: "w-4 h-4 text-[8px]",
@@ -27,7 +27,7 @@ const Avatar = ({ identity, size = "md" }) => {
 
   const OnlineIndicator = () => (
       isOnline ? (
-          <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white transform translate-x-1/4 translate-y-1/4" />
+          <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-900" />
       ) : null
   );
 
@@ -35,7 +35,7 @@ const Avatar = ({ identity, size = "md" }) => {
   const Wrapper = ({ children }) => (
       <div className="relative inline-block">
           {children}
-          {size !== 'xxs' && size !== 'xs' && <OnlineIndicator />}
+          {showStatus && size !== 'xxs' && size !== 'xs' && <OnlineIndicator />}
       </div>
   );
 
