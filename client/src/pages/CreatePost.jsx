@@ -217,7 +217,12 @@ const CreatePost = () => {
 
         } catch (error) {
             console.error(error);
-            toast.error("Failed to post");
+            if (error.response?.status === 403) {
+                console.error("403 Debug:", error.response.data?.debug);
+                toast.error(error.response.data?.message || "Identity permission denied");
+            } else {
+                toast.error("Failed to post");
+            }
         } finally {
             setUploading(false);
         }
