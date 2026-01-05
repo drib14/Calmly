@@ -193,66 +193,50 @@ const Messages = () => {
           <div
                 onClick={() => navigate(`/post/${post._id}`)}
                 className={clsx(
-                    "rounded-3xl overflow-hidden cursor-pointer border mb-1 transition-all w-64 md:w-72 relative group bg-surface",
-                    isMe ? "border-white/20" : "border-soft-border hover:shadow-md"
+                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group",
+                    isMe ? "border-white/20" : "border-soft-border hover:shadow-md",
+                    // Use standard bubble styling base, but adapted for card
                 )}
           >
-              {/* Card Container - Consistent Height for BOTH Media and Text types */}
-              <div className="relative h-80 w-full flex flex-col">
+              {/* Card Container */}
+              <div className="relative aspect-[3/4] w-full flex flex-col">
 
                   {/* Background Layer */}
                   {hasMedia ? (
                       <div className="absolute inset-0">
                           <img src={post.media[0].url} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/60" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
                       </div>
                   ) : (
-                      // Text Mode: Use a rich gradient background instead of just solid color
-                      // to give it that 'Moments' feel similar to the Media card
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-800 to-black">
-                          {/* Decorative pattern/texture overlay */}
-                          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-
-                          <p className="font-serif text-lg text-white/90 text-center italic leading-relaxed line-clamp-6 relative z-10 drop-shadow-sm">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-white dark:from-slate-800 dark:to-slate-900">
+                          <p className="font-serif text-sm text-text text-center italic leading-relaxed line-clamp-6 relative z-10">
                               "{textContent}"
                           </p>
                       </div>
                   )}
 
-                  {/* Top Left: User Info (Consistent Position) */}
-                  <div className="absolute top-4 left-4 flex items-center space-x-2 z-20">
+                  {/* Header */}
+                  <div className="absolute top-3 left-3 flex items-center space-x-2 z-20">
                       <Avatar identity={post.identity} size="xs" />
-                      <span className="text-xs font-bold text-white shadow-sm drop-shadow-md">
+                      <span className={clsx("text-[10px] font-bold shadow-sm", hasMedia ? "text-white" : "text-text")}>
                           {post.identity?.name || 'Unknown'}
                       </span>
                   </div>
 
-                  {/* Multi-Media Indicator */}
-                  {post.media && post.media.length > 1 && (
-                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full flex items-center space-x-1 z-20 border border-white/10">
-                          <Layers size={12} className="text-white" />
-                          <span className="text-[10px] font-bold text-white">+{post.media.length - 1}</span>
-                      </div>
-                  )}
-
-                  {/* Bottom Content Area */}
-                  <div className="mt-auto p-4 z-20 w-full">
-                      {/* Text Content (only show here if it's a Media card, because Text cards show it in center) */}
+                  {/* Content (Bottom) */}
+                  <div className="mt-auto p-3 z-20 w-full">
                       {hasMedia && textContent && (
-                          <p className="text-xs text-white/90 mb-3 font-medium drop-shadow-md line-clamp-2">
+                          <p className="text-[10px] text-white/90 mb-2 font-medium line-clamp-2">
                               {truncatedText}
                           </p>
                       )}
-
-                      {/* Bottom Left: Platform Branding */}
-                      <div className="flex items-center space-x-2 opacity-90">
-                          {/* Circular Logo Wrapper */}
-                          <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-sm border border-white/20">
-                              <img src="/favicon.png" className="w-3.5 h-3.5 object-contain" alt="Logo" />
-                          </div>
-                          <span className="text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
-                              Calmly
-                          </span>
+                      <div className="flex items-center space-x-1 opacity-80">
+                           <div className="bg-white/20 backdrop-blur rounded-full p-1">
+                               <img src="/favicon.png" className="w-2 h-2 object-contain" />
+                           </div>
+                           <span className={clsx("text-[8px] font-bold uppercase tracking-wider", hasMedia ? "text-white" : "text-secondary")}>
+                               Shared Moment
+                           </span>
                       </div>
                   </div>
               </div>
@@ -425,24 +409,23 @@ const Messages = () => {
                                       {msg.replyToQuote && (
                                           <div className="mb-1">
                                               <div className={clsx(
-                                                  "px-4 py-3 rounded-2xl border mb-1 max-w-sm",
-                                                  // Dark theme style from image: dark blue/black background
+                                                  "p-3 rounded-2xl border mb-1 max-w-sm relative",
                                                   isMe
-                                                    ? "bg-slate-900/40 border-white/10 text-white"
-                                                    : "bg-slate-950 border-slate-800 text-white"
+                                                    ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text"
+                                                    : "bg-white dark:bg-slate-900 border-soft-border text-text"
                                               )}>
-                                                  <div className="flex items-center space-x-2 mb-2">
-                                                      <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                                                          <CornerUpLeft size={10} className="text-indigo-300" />
+                                                  <div className="flex items-start space-x-2">
+                                                      <div className="mt-0.5">
+                                                          <CornerUpLeft size={12} className="text-secondary" />
                                                       </div>
-                                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-200">Replying to Note</span>
-                                                  </div>
-
-                                                  <div className="flex space-x-3">
-                                                      <div className="w-1 rounded-full bg-indigo-500/50 flex-shrink-0 my-0.5"></div>
-                                                      <p className="text-sm font-medium italic text-slate-300 line-clamp-3">
-                                                          "{msg.replyToQuote.content}"
-                                                      </p>
+                                                      <div>
+                                                          <p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p>
+                                                          <div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600">
+                                                              <p className="text-sm font-serif italic text-text/80 line-clamp-3">
+                                                                  "{msg.replyToQuote.content}"
+                                                              </p>
+                                                          </div>
+                                                      </div>
                                                   </div>
                                               </div>
                                           </div>

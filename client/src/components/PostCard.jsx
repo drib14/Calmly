@@ -364,13 +364,13 @@ const PostCard = ({ post, mutate }) => {
                   {/* Media Carousel */}
                   {post.media && post.media.length > 0 && (
                       <div className="relative mb-4 group">
-                          <div className="rounded-2xl overflow-hidden bg-black/5 aspect-square max-h-[500px] flex items-center justify-center relative">
+                          <div className="rounded-2xl overflow-hidden bg-black/5 aspect-[4/5] flex items-center justify-center relative">
                               {post.media[currentMediaIndex].type === 'video' ? (
                                   <MediaPlayer src={post.media[currentMediaIndex].url} />
                               ) : (
                                   <img
                                       src={post.media[currentMediaIndex].url}
-                                      className="w-full h-full object-contain cursor-pointer"
+                                      className="w-full h-full object-cover cursor-pointer"
                                       onClick={() => openViewer(post.media[currentMediaIndex].url)}
                                   />
                               )}
@@ -384,22 +384,27 @@ const PostCard = ({ post, mutate }) => {
                                           e.stopPropagation();
                                           setCurrentMediaIndex((prev) => (prev === 0 ? post.media.length - 1 : prev - 1));
                                       }}
-                                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/40 transition shadow-sm z-10"
                                   >
-                                      <ChevronLeft size={20} />
+                                      <ChevronLeft size={24} />
                                   </button>
                                   <button
                                       onClick={(e) => {
                                           e.stopPropagation();
                                           setCurrentMediaIndex((prev) => (prev === post.media.length - 1 ? 0 : prev + 1));
                                       }}
-                                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/40 transition shadow-sm z-10"
                                   >
-                                      <ChevronRight size={20} />
+                                      <ChevronRight size={24} />
                                   </button>
 
+                                  {/* Multi-media Indicator */}
+                                  <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white z-10 pointer-events-none">
+                                      {currentMediaIndex + 1}/{post.media.length}
+                                  </div>
+
                                   {/* Pagination Dots */}
-                                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5">
+                                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10">
                                       {post.media.map((_, idx) => (
                                           <div
                                               key={idx}

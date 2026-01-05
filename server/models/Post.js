@@ -57,6 +57,10 @@ const postSchema = new mongoose.Schema({
   burnAfter: {
     type: Date, // Auto-delete date
   },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now,

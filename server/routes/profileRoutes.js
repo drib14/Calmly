@@ -64,17 +64,15 @@ router.get('/:handle', protect, async (req, res) => {
     };
 
     // Get Authored Posts
-    const authoredPosts = await fetchWithComments({ identity: identity._id, visibility: 'public' });
+    const authoredPosts = await fetchWithComments({ identity: identity._id, visibility: 'public', deletedAt: null });
 
     // Get Reposted Posts (Where this identity is in the reposts array)
-    // Note: in aggregation, 'reposts.identity' matching ObjectId needs careful handling if Repost schema is objects.
-    // 'reposts' is array of objects { user: ID, identity: ID }.
-    // Match: { 'reposts.identity': identity._id } works in standard Mongoose find.
-    // In aggregate $match, it also works if identity._id is ObjectId.
-    const repostedPosts = await fetchWithComments({ 'reposts.identity': identity._id, visibility: 'public' });
+    const repostedPosts = await fetchWithComments({ 'reposts.identity': identity._id, visibility: 'public', deletedAt: null });
 
-    // Get Active Quote
-    const activeQuote = await Quote.findOne({ identity: identity._id }).sort({ createdAt: -1 });
+    // Get Active Quote and POPULATE IDENTITY
+    const activeQuote = await Quote.findOne({ identity: identity._id })
+        .sort({ createdAt: -1 })
+        .populate('identity', 'name handle avatar type');
 
     res.json({
         identity,

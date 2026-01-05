@@ -8,6 +8,7 @@ const { welcomeEmail, passwordResetEmail } = require('../utils/emailTemplates');
 
 const registerUser = async (req, res) => {
   const { email, password, realName } = req.body;
+  console.log('Registering:', email);
 
   try {
     const userExists = await User.findOne({ email });
@@ -17,11 +18,13 @@ const registerUser = async (req, res) => {
     }
 
     // No verification token needed anymore
+    console.log('Creating user...');
     const user = await User.create({
       email,
       password,
       isVerified: true, // Auto-verify
     });
+    console.log('User created');
 
     if (user) {
       // Create default "Real" identity
@@ -31,6 +34,7 @@ const registerUser = async (req, res) => {
         name: realName,
         handle: `@${realName.replace(/\s+/g, '').toLowerCase()}`,
       });
+      console.log('Real identity created');
 
       // Create "Anonymous" identity
       await Identity.create({
@@ -39,13 +43,14 @@ const registerUser = async (req, res) => {
         name: 'Anonymous',
         handle: `@anon_${user._id.toString().slice(-6)}`,
       });
+      console.log('Anon identity created');
 
       // Send WELCOME email instead of verification
-      await sendEmail({
-        to: email,
-        subject: 'Welcome to Calmly',
-        html: welcomeEmail(realName)
-      });
+      // await sendEmail({
+      //   to: email,
+      //   subject: 'Welcome to Calmly',
+      //   html: welcomeEmail(realName)
+      // });
 
       res.status(201).json({
           _id: user._id,
