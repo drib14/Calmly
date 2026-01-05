@@ -171,7 +171,7 @@ const Messages = () => {
       if (!post || !post.identity) {
           return (
               <div className={clsx(
-                  "rounded-2xl border p-4 w-64 md:w-72 mb-1 flex items-center space-x-3 opacity-80",
+                  "rounded-2xl border p-4 w-60 mb-1 flex items-center space-x-3 opacity-80",
                   isMe ? "bg-white/5 border-white/10 text-white/70" : "bg-surface border-soft-border text-secondary"
               )}>
                    <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0">
@@ -185,7 +185,8 @@ const Messages = () => {
           );
       }
 
-      const hasMedia = post.media && post.media.length > 0 && post.media[0].type === 'image';
+      const hasMedia = post.media && post.media.length > 0;
+      const media = hasMedia ? post.media[0] : null;
       const textContent = post.content || '';
       const truncatedText = textContent.length > 60 ? textContent.slice(0, 60) + '...' : textContent;
 
@@ -193,51 +194,67 @@ const Messages = () => {
           <div
                 onClick={() => navigate(`/post/${post._id}`)}
                 className={clsx(
-                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group",
-                    isMe ? "border-white/20" : "border-soft-border hover:shadow-md",
-                    // Use standard bubble styling base, but adapted for card
+                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group bg-surface",
+                    isMe ? "border-white/20" : "border-soft-border hover:shadow-md"
                 )}
           >
-              {/* Card Container */}
-              <div className="relative aspect-[3/4] w-full flex flex-col">
-
-                  {/* Background Layer */}
-                  {hasMedia ? (
-                      <div className="absolute inset-0">
-                          <img src={post.media[0].url} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
+              <div className="flex flex-col h-full relative">
+                  {/* Top Left: Avatar + Name */}
+                  <div className="p-3 flex items-center space-x-2 border-b border-soft-border bg-surface z-10 relative">
+                      <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
+                           <Avatar identity={post.identity} size="xs" />
                       </div>
-                  ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-100 to-white dark:from-slate-800 dark:to-slate-900">
-                          <p className="font-serif text-sm text-text text-center italic leading-relaxed line-clamp-6 relative z-10">
-                              "{textContent}"
-                          </p>
-                      </div>
-                  )}
-
-                  {/* Header */}
-                  <div className="absolute top-3 left-3 flex items-center space-x-2 z-20">
-                      <Avatar identity={post.identity} size="xs" />
-                      <span className={clsx("text-[10px] font-bold shadow-sm", hasMedia ? "text-white" : "text-text")}>
+                      <span className="text-xs font-bold text-text truncate cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
                           {post.identity?.name || 'Unknown'}
                       </span>
                   </div>
 
-                  {/* Content (Bottom) */}
-                  <div className="mt-auto p-3 z-20 w-full">
-                      {hasMedia && textContent && (
-                          <p className="text-[10px] text-white/90 mb-2 font-medium line-clamp-2">
-                              {truncatedText}
-                          </p>
+                  {/* Main Content */}
+                  <div className="bg-background relative">
+                      {hasMedia ? (
+                          <>
+                              <div className="aspect-[4/3] w-full bg-black/5 flex items-center justify-center overflow-hidden">
+                                  {media.type === 'video' ? (
+                                      <video
+                                          src={media.url}
+                                          className="w-full h-full object-cover"
+                                          muted
+                                          loop
+                                          playsInline
+                                          onMouseOver={e => e.target.play()}
+                                          onMouseOut={e => e.target.pause()}
+                                      />
+                                  ) : (
+                                      <img src={media.url} className="w-full h-full object-cover" />
+                                  )}
+                              </div>
+                              {/* Caption Below Media */}
+                              {textContent && (
+                                  <div className="p-3 pt-2">
+                                      <p className="text-xs text-text/90 font-serif leading-relaxed line-clamp-2">
+                                          {truncatedText}
+                                      </p>
+                                  </div>
+                              )}
+                          </>
+                      ) : (
+                          // Text Only Mode
+                          <div className="p-4 py-6 flex items-center justify-center min-h-[120px]">
+                              <p className="font-serif text-sm text-text text-center italic leading-relaxed line-clamp-6">
+                                  "{textContent}"
+                              </p>
+                          </div>
                       )}
-                      <div className="flex items-center space-x-1 opacity-80">
-                           <div className="bg-white/20 backdrop-blur rounded-full p-1">
-                               <img src="/favicon.png" className="w-2 h-2 object-contain" />
-                           </div>
-                           <span className={clsx("text-[8px] font-bold uppercase tracking-wider", hasMedia ? "text-white" : "text-secondary")}>
-                               Shared Moment
-                           </span>
+                  </div>
+
+                  {/* Bottom Left: Logo */}
+                  <div className="mt-auto p-3 border-t border-soft-border bg-surface flex items-center space-x-2 opacity-80">
+                      <div className="w-4 h-4 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
+                          <img src="/favicon.png" className="w-3 h-3 object-contain" alt="Logo" />
                       </div>
+                      <span className="text-[9px] font-bold text-secondary uppercase tracking-wider">
+                          Calmly
+                      </span>
                   </div>
               </div>
           </div>

@@ -134,7 +134,7 @@ router.get('/:id', async (req, res) => {
         }
 
         // Use findOne to populate correctly
-        const post = await Post.findById(req.params.id)
+        const post = await Post.findOne({ _id: req.params.id, deletedAt: null })
             .populate({
                 path: 'identity',
                 populate: { path: 'user', select: 'settings' } // Need settings for interaction checks
