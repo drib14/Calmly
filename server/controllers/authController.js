@@ -67,7 +67,7 @@ const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
+    if (user && user.password && (await user.matchPassword(password))) {
       // Removed isVerified check
 
       const accessToken = generateAccessToken(user._id);
@@ -92,6 +92,7 @@ const loginUser = async (req, res) => {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
+    console.error("Login Error:", error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -363,6 +363,13 @@ const Profile = () => {
       <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
              <div className="text-center space-y-4">
                  <h3 className="text-lg font-bold text-text">Your Quote</h3>
+                 {quote && (
+                     <div className="py-4 px-6 bg-surface rounded-2xl border border-soft-border italic text-secondary relative mb-4">
+                        <span className="text-2xl text-slate-300 absolute top-2 left-2">"</span>
+                        <p className="font-serif text-lg text-text">{quote.content}</p>
+                        <span className="text-2xl text-slate-300 absolute bottom-2 right-2">"</span>
+                     </div>
+                 )}
                  <div className="grid grid-cols-2 gap-3 pt-4">
                      <button
                         onClick={() => { setShowMyQuoteOptions(false); setShowQuoteModal(true); }}

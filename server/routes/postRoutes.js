@@ -8,7 +8,7 @@ const Report = require('../models/Report');
 const { upload } = require('../utils/cloudinary');
 
 // Create a post
-router.post('/', protect, upload.array('media', 4), async (req, res) => {
+router.post('/', protect, upload.array('media', 100), async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
   let media = [];
 
@@ -22,6 +22,7 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
   try {
     const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
     if (!identity) {
+      console.error(`Create Post Failed: Identity ${identityId} not owned by user ${req.user._id}`);
       return res.status(403).json({ message: 'Invalid identity' });
     }
 

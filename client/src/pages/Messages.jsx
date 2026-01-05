@@ -360,7 +360,25 @@ const Messages = () => {
                                       ))}
 
                                       {/* Shared Post Bubble */}
-                                      {msg.sharedPost && renderSharedPost(msg.sharedPost, isMe)}
+                                      {msg.sharedPost && (
+                                          <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>
+                                              {renderSharedPost(msg.sharedPost, isMe)}
+                                          </div>
+                                      )}
+
+                                      {/* Reply Quote Bubble */}
+                                      {msg.replyToQuote && (
+                                          <div className={clsx(
+                                              "mb-1 px-3 py-2 text-xs rounded-xl border opacity-80",
+                                              isMe ? "bg-white/10 border-white/20 text-white" : "bg-background border-soft-border text-secondary"
+                                          )}>
+                                              <div className="flex items-center space-x-1 mb-1 font-bold opacity-75">
+                                                  <Reply size={10} />
+                                                  <span>Replying to quote</span>
+                                              </div>
+                                              <p className="line-clamp-2 italic">"{msg.replyToQuote.content}"</p>
+                                          </div>
+                                      )}
 
                                       {/* Text Bubble */}
                                       {msg.content && (

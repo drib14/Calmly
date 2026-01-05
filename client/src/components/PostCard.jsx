@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -30,6 +30,7 @@ const PostCard = ({ post, mutate }) => {
   // Image Viewer
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState(null);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   // Comment Input State
   const [newComment, setNewComment] = useState('');
@@ -360,21 +361,57 @@ const PostCard = ({ post, mutate }) => {
                       {post.content}
                   </div>
 
-                  {/* Media Grid */}
+                  {/* Media Carousel */}
                   {post.media && post.media.length > 0 && (
-                      <div className={clsx("grid gap-2 mb-4 rounded-2xl overflow-hidden", post.media.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-                          {post.media.map((file, idx) => (
-                              file.type === 'video' ? (
-                                  <MediaPlayer key={idx} src={file.url} />
+                      <div className="relative mb-4 group">
+                          <div className="rounded-2xl overflow-hidden bg-black/5 aspect-square max-h-[500px] flex items-center justify-center relative">
+                              {post.media[currentMediaIndex].type === 'video' ? (
+                                  <MediaPlayer src={post.media[currentMediaIndex].url} />
                               ) : (
                                   <img
-                                    key={idx}
-                                    src={file.url}
-                                    className="w-full h-full object-cover aspect-square cursor-pointer hover:opacity-90 transition"
-                                    onClick={() => openViewer(file.url)}
+                                      src={post.media[currentMediaIndex].url}
+                                      className="w-full h-full object-contain cursor-pointer"
+                                      onClick={() => openViewer(post.media[currentMediaIndex].url)}
                                   />
-                              )
-                          ))}
+                              )}
+                          </div>
+
+                          {/* Navigation Chevrons */}
+                          {post.media.length > 1 && (
+                              <>
+                                  <button
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCurrentMediaIndex((prev) => (prev === 0 ? post.media.length - 1 : prev - 1));
+                                      }}
+                                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                  >
+                                      <ChevronLeft size={20} />
+                                  </button>
+                                  <button
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCurrentMediaIndex((prev) => (prev === post.media.length - 1 ? 0 : prev + 1));
+                                      }}
+                                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+                                  >
+                                      <ChevronRight size={20} />
+                                  </button>
+
+                                  {/* Pagination Dots */}
+                                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5">
+                                      {post.media.map((_, idx) => (
+                                          <div
+                                              key={idx}
+                                              className={clsx(
+                                                  "w-1.5 h-1.5 rounded-full transition-all shadow-sm",
+                                                  idx === currentMediaIndex ? "bg-white scale-125" : "bg-white/50"
+                                              )}
+                                          />
+                                      ))}
+                                  </div>
+                              </>
+                          )}
                       </div>
                   )}
               </>

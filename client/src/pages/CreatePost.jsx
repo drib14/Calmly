@@ -22,7 +22,7 @@ const moods = [
 ];
 
 const postTypes = [
-    { value: 'confession', label: 'Confession', description: 'Share a secret or a thought.' },
+    { value: 'confession', label: 'Post', description: 'Share a secret or a thought.' },
     { value: 'poetry', label: 'Poetry', description: 'Express yourself in verse.' },
     { value: 'letter', label: 'Letter', description: 'Write a letter to someone.' },
     { value: 'mood', label: 'Mood Drop', description: 'Just a vibe.' },
@@ -127,8 +127,8 @@ const CreatePost = () => {
 
   const handleFileChange = (e) => {
       const selectedFiles = Array.from(e.target.files);
-      if (selectedFiles.length + files.length > 4) {
-          toast.error("Max 4 files allowed");
+      if (selectedFiles.length + files.length > 100) {
+          toast.error("Max 100 files allowed");
           return;
       }
       setFiles([...files, ...selectedFiles]);
