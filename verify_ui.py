@@ -11,10 +11,13 @@ def verify_ui():
         page.goto("http://localhost:5173/login")
 
         # Use known credentials from curl
+        print("Filling login credentials...")
+        page.wait_for_selector("input[type='email']")
         page.fill("input[type='email']", "test@test.com")
         page.fill("input[type='password']", "password")
         page.click("button[type='submit']")
 
+        print("Waiting for feed...")
         page.wait_for_url("**/feed")
         print("Logged in!")
 
@@ -72,6 +75,15 @@ def verify_ui():
                     "createdAt": "2023-10-27T10:06:00.000Z"
                 },
                 {
+                    "_id": "m4",
+                    "sender": {"_id": "me", "name": "Test User", "handle": "@test", "type": "real"},
+                    "recipient": {"_id": "other1", "name": "Chat Partner", "handle": "@partner", "type": "real"},
+                    "sharedPost": {
+                        "identity": null
+                    },
+                    "createdAt": "2023-10-27T10:06:00.000Z"
+                },
+                {
                     "_id": "m3",
                     "sender": {"_id": "me", "name": "Test User", "handle": "@test", "type": "real"},
                     "recipient": {"_id": "other1", "name": "Chat Partner", "handle": "@partner", "type": "real"},
@@ -101,6 +113,13 @@ def verify_ui():
         except Exception as e:
             print(f"Error: {e}")
             page.screenshot(path="verification_error.png")
+
+        # Verify 404
+        print("Verifying 404 Page...")
+        page.goto("http://localhost:5173/some/random/route")
+        page.wait_for_selector("text=Lost in Space")
+        page.screenshot(path="verification_404.png")
+        print("404 screenshot taken.")
 
         browser.close()
 

@@ -20,6 +20,8 @@ import Profile from './pages/Profile';
 import About from './pages/About';
 import Legal from './pages/Legal';
 import Settings from './pages/Settings';
+import SinglePost from './pages/SinglePost';
+import NotFound from './pages/NotFound';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -86,6 +88,15 @@ function App() {
                     <CreatePost />
                   </ProtectedRoute>
                 } />
+
+                <Route path="/post/:id" element={
+                  <ProtectedRoute>
+                    <SinglePost />
+                  </ProtectedRoute>
+                } />
+
+                {/* Catch-all 404 */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
           </SocketProvider>

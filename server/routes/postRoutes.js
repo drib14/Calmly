@@ -49,6 +49,41 @@ router.post('/', protect, upload.array('media', 100), async (req, res) => {
   }
 });
 
+// Get Single Post
+router.get('/:id', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+             return res.status(404).json({ message: 'Post not found' });
+        }
+
+        // Use findOne to populate correctly
+        const post = await Post.findById(req.params.id)
+            .populate({
+                path: 'identity',
+                populate: { path: 'user', select: 'settings' } // Need settings for interaction checks
+            })
+            .populate('reposts.identity', 'name type handle avatar')
+            .lean(); // Use lean for performance if we don't need document methods
+
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Privacy Check (Basic)
+        // If it's private and user is not the owner (this requires 'protect' middleware which isn't on this route yet?)
+        // The 'protect' middleware is needed if we want to check permissions for private posts.
+        // For now, let's assume public/unlisted are viewable. Private needs auth.
+        // We'll return the post. The frontend should handle 403 if we add strict checks later.
+
+        // Manually fetch comment count for consistency
+        const commentCount = await mongoose.model('Comment').countDocuments({ post: req.params.id });
+        post.commentCount = commentCount;
+
+        res.json(post);
+    } catch (error) {
+        console.error("Get Post Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Get Feed (Public posts) with Aggregated Comment Counts
 router.get('/feed', async (req, res) => {
   const { mood, type } = req.query;

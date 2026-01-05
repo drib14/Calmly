@@ -167,7 +167,23 @@ const Messages = () => {
   };
 
   const renderSharedPost = (post, isMe) => {
-      if (!post) return <div className="text-xs text-red-400 italic">Post deleted or unavailable</div>;
+      // 1. Unavailable Moment Card
+      if (!post || !post.identity) {
+          return (
+              <div className={clsx(
+                  "rounded-2xl border p-4 w-64 md:w-72 mb-1 flex items-center space-x-3 opacity-80",
+                  isMe ? "bg-white/5 border-white/10 text-white/70" : "bg-surface border-soft-border text-secondary"
+              )}>
+                   <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0">
+                       <Shield size={18} className="opacity-50" />
+                   </div>
+                   <div className="flex-1 min-w-0">
+                       <p className="text-xs font-bold leading-tight">Unavailable Moment</p>
+                       <p className="text-[10px] opacity-70 mt-0.5">This post has been deleted or is hidden.</p>
+                   </div>
+              </div>
+          );
+      }
 
       const hasMedia = post.media && post.media.length > 0 && post.media[0].type === 'image';
       const textContent = post.content || '';
@@ -175,33 +191,36 @@ const Messages = () => {
 
       return (
           <div
-                onClick={() => navigate(`/feed#post-${post._id}`)}
+                onClick={() => navigate(`/post/${post._id}`)}
                 className={clsx(
                     "rounded-3xl overflow-hidden cursor-pointer border mb-1 transition-all w-64 md:w-72 relative group bg-surface",
                     isMe ? "border-white/20" : "border-soft-border hover:shadow-md"
                 )}
           >
-              {/* Card Container */}
+              {/* Card Container - Consistent Height for BOTH Media and Text types */}
               <div className="relative h-80 w-full flex flex-col">
 
-                  {/* Thumbnail / Background */}
+                  {/* Background Layer */}
                   {hasMedia ? (
                       <div className="absolute inset-0">
                           <img src={post.media[0].url} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/60" />
                       </div>
                   ) : (
-                      // Text Only Mode: Use text as "Thumbnail"
-                      <div className="absolute inset-0 bg-background flex items-center justify-center p-6 bg-gradient-to-br from-surface to-background">
-                          <p className="font-serif text-lg text-text text-center italic leading-relaxed opacity-80 line-clamp-6">
+                      // Text Mode: Use a rich gradient background instead of just solid color
+                      // to give it that 'Moments' feel similar to the Media card
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-800 to-black">
+                          {/* Decorative pattern/texture overlay */}
+                          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
+
+                          <p className="font-serif text-lg text-white/90 text-center italic leading-relaxed line-clamp-6 relative z-10 drop-shadow-sm">
                               "{textContent}"
                           </p>
-                          <div className="absolute inset-0 bg-black/10" />
                       </div>
                   )}
 
-                  {/* Top Left: User Info */}
-                  <div className="absolute top-4 left-4 flex items-center space-x-2 z-10">
+                  {/* Top Left: User Info (Consistent Position) */}
+                  <div className="absolute top-4 left-4 flex items-center space-x-2 z-20">
                       <Avatar identity={post.identity} size="xs" />
                       <span className="text-xs font-bold text-white shadow-sm drop-shadow-md">
                           {post.identity?.name || 'Unknown'}
@@ -217,8 +236,8 @@ const Messages = () => {
                   )}
 
                   {/* Bottom Content Area */}
-                  <div className="mt-auto p-4 z-10 w-full">
-                      {/* Text Content (if media exists) */}
+                  <div className="mt-auto p-4 z-20 w-full">
+                      {/* Text Content (only show here if it's a Media card, because Text cards show it in center) */}
                       {hasMedia && textContent && (
                           <p className="text-xs text-white/90 mb-3 font-medium drop-shadow-md line-clamp-2">
                               {truncatedText}
@@ -226,9 +245,10 @@ const Messages = () => {
                       )}
 
                       {/* Bottom Left: Platform Branding */}
-                      <div className="flex items-center space-x-1.5 opacity-90">
-                          <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center overflow-hidden">
-                              <img src="/favicon.png" className="w-3 h-3 object-contain" alt="Logo" />
+                      <div className="flex items-center space-x-2 opacity-90">
+                          {/* Circular Logo Wrapper */}
+                          <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-sm border border-white/20">
+                              <img src="/favicon.png" className="w-3.5 h-3.5 object-contain" alt="Logo" />
                           </div>
                           <span className="text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
                               Calmly
