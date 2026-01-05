@@ -22,8 +22,14 @@ export const SocketProvider = ({ children }) => {
             return;
         }
 
-        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5080', {
-            auth: { token }
+        // Determine socket URL: Use Env var, or localhost if dev, or relative '/' if prod
+        const socketUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5080' : '/');
+
+        const newSocket = io(socketUrl, {
+            auth: { token },
+            // If strictly using Vercel rewrites to /api, we might need path adjustment,
+            // but usually /socket.io on root works if rewrite handles it or if separate backend.
+            // Assuming same origin or configured CORS.
         });
 
         newSocket.on('connect', () => {
