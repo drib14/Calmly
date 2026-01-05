@@ -3,7 +3,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
@@ -368,21 +368,27 @@ const Messages = () => {
 
                                       {/* Reply Quote Bubble */}
                                       {msg.replyToQuote && (
-                                          <div className={clsx(
-                                              "mb-2 p-3 rounded-2xl border relative overflow-hidden",
-                                              isMe ? "bg-white/10 border-white/20 text-white" : "bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 border-indigo-100 dark:border-slate-700 text-text"
-                                          )}>
-                                              <div className="flex items-center space-x-2 mb-2 opacity-80">
-                                                  <div className={clsx("p-1 rounded-full", isMe ? "bg-white/20" : "bg-indigo-100 dark:bg-slate-700")}>
-                                                      <Reply size={10} className={clsx(isMe ? "text-white" : "text-indigo-500 dark:text-indigo-400")} />
+                                          <div className="mb-1">
+                                              <div className={clsx(
+                                                  "px-4 py-3 rounded-2xl border mb-1 max-w-sm",
+                                                  // Dark theme style from image: dark blue/black background
+                                                  isMe
+                                                    ? "bg-slate-900/40 border-white/10 text-white"
+                                                    : "bg-slate-950 border-slate-800 text-white"
+                                              )}>
+                                                  <div className="flex items-center space-x-2 mb-2">
+                                                      <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                                          <CornerUpLeft size={10} className="text-indigo-300" />
+                                                      </div>
+                                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-200">Replying to Note</span>
                                                   </div>
-                                                  <span className="text-[10px] font-bold uppercase tracking-wide">Replying to Note</span>
-                                              </div>
-                                              <div className="relative pl-3">
-                                                  <div className={clsx("absolute left-0 top-0 bottom-0 w-0.5 rounded-full", isMe ? "bg-white/40" : "bg-indigo-400/40")} />
-                                                  <p className="text-xs font-serif italic line-clamp-3 opacity-90">
-                                                      "{msg.replyToQuote.content}"
-                                                  </p>
+
+                                                  <div className="flex space-x-3">
+                                                      <div className="w-1 rounded-full bg-indigo-500/50 flex-shrink-0 my-0.5"></div>
+                                                      <p className="text-sm font-medium italic text-slate-300 line-clamp-3">
+                                                          "{msg.replyToQuote.content}"
+                                                      </p>
+                                                  </div>
                                               </div>
                                           </div>
                                       )}
