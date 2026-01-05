@@ -63,9 +63,11 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  console.log(`Login attempt for: ${email}`);
 
   try {
     const user = await User.findOne({ email });
+    console.log(`User found: ${!!user}`);
 
     let isMatch = false;
     if (user && user.password) {
@@ -85,12 +87,14 @@ const loginUser = async (req, res) => {
 
     if (isMatch) {
       // Removed isVerified check
+      console.log("Password matched. Generating tokens...");
 
       const accessToken = generateAccessToken(user._id);
       const refreshToken = generateRefreshToken(user._id);
 
       user.refreshToken.push(refreshToken);
       await user.save();
+      console.log("User session saved.");
 
       res.cookie('jwt', refreshToken, {
           httpOnly: true,
