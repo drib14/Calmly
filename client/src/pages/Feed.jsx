@@ -20,7 +20,7 @@ const Feed = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
       {/* Main Feed */}
-      <div className="lg:col-span-8 lg:col-start-2 max-w-2xl mx-auto w-full">
+      <div className="lg:col-span-8 lg:col-start-2 max-w-[470px] mx-auto w-full">
 
         {/* Quotes Widget */}
         <QuotesWidget />

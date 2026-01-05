@@ -229,7 +229,7 @@ const PostCard = ({ post, mutate }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className={clsx(
-            "bg-surface/30 backdrop-blur-md text-text p-5 md:p-6 rounded-3xl shadow-sm border border-white/20 dark:border-white/10 mb-6 relative transition-all hover:shadow-md overflow-hidden",
+            "bg-surface/30 backdrop-blur-md text-text p-5 md:p-6 rounded-3xl shadow-sm border border-white/20 dark:border-white/10 mb-6 relative transition-all hover:shadow-md",
             getTypeStyles()
         )}
     >
@@ -365,18 +365,8 @@ const PostCard = ({ post, mutate }) => {
                   {post.media && post.media.length > 0 && (
                       <div className="relative mb-4 group -mx-5 md:-mx-6">
                           <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center">
-                              {/* Blurred Background for Images */}
-                              {post.media[currentMediaIndex].type === 'image' && (
-                                  <div className="absolute inset-0">
-                                      <img
-                                          src={post.media[currentMediaIndex].url}
-                                          className="w-full h-full object-cover opacity-50 blur-2xl scale-110"
-                                      />
-                                  </div>
-                              )}
-
                               {/* Main Content */}
-                              <div className="relative z-10 w-full h-full flex items-center justify-center">
+                              <div className="w-full h-full flex items-center justify-center">
                                   {post.media[currentMediaIndex].type === 'video' ? (
                                       <div className="w-full h-full">
                                           <MediaPlayer src={post.media[currentMediaIndex].url} />
