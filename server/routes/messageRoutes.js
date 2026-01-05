@@ -7,7 +7,7 @@ const { upload } = require('../utils/cloudinary');
 
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
   try {
-      const { senderIdentityId, recipientIdentityId, content } = req.body;
+      const { senderIdentityId, recipientIdentityId, content, sharedPost, sharedPostId, replyToQuote } = req.body;
       let media = [];
 
       if (req.files) {
@@ -52,12 +52,27 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
           return res.status(403).json({ message: 'This user does not accept messages from pseudonyms.' });
       }
 
-      const message = await Message.create({
+      const messageData = {
         sender: senderIdentityId,
         recipient: recipientIdentityId,
         content: content || '',
         media
-      });
+      };
+
+      if (sharedPost || sharedPostId) {
+          messageData.sharedPost = sharedPost || sharedPostId;
+      }
+
+      if (replyToQuote) {
+          // Parse if it came as a JSON string (Multipart form data)
+          messageData.replyToQuote = typeof replyToQuote === 'string' ? JSON.parse(replyToQuote) : replyToQuote;
+      }
+
+      const message = await Message.create(messageData);
+
+      // Populate for immediate return (so frontend can render cards)
+      await message.populate('sharedPost');
+
       res.status(201).json(message);
   } catch (error) {
     console.error("Message Error:", error);
@@ -76,7 +91,11 @@ router.get('/conversation', protect, async (req, res) => {
         })
         .sort({ createdAt: 1 })
         .populate('sender', 'name type handle avatar')
-        .populate('recipient', 'name type handle avatar'); // We might want to populate user settings here too for read receipts logic in frontend if needed
+        .populate('recipient', 'name type handle avatar')
+        .populate({
+            path: 'sharedPost',
+            populate: { path: 'identity', select: 'name type handle avatar' }
+        });
 
         res.json(messages);
     } catch (error) {
@@ -94,6 +113,7 @@ router.get('/inbox', protect, async (req, res) => {
     })
     .sort({ createdAt: -1 })
     .populate('sender', 'name type handle avatar')
+    .populate('sharedPost') // Populate shared post for preview text logic
     .populate({
         path: 'recipient',
         select: 'name type handle avatar',

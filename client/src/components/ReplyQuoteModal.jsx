@@ -27,7 +27,21 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
           const formData = new FormData();
           formData.append('senderIdentityId', currentIdentity._id);
           formData.append('recipientIdentityId', quote.identity._id);
-          formData.append('content', `Replying to your note: "${quote.content}"\n\n${replyText}`);
+          formData.append('content', replyText);
+
+          // Send structured reply data
+          const replyData = {
+              quoteId: quote._id,
+              content: quote.content,
+              mood: quote.mood,
+              font: quote.font,
+              identity: {
+                  name: quote.identity.name,
+                  handle: quote.identity.handle,
+                  avatar: quote.identity.avatar
+              }
+          };
+          formData.append('replyToQuote', JSON.stringify(replyData));
 
           await axios.post('/messages', formData);
           toast.success("Reply sent");

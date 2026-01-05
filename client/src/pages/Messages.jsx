@@ -210,7 +210,7 @@ const Messages = () => {
 
       {/* Sidebar (List View) */}
       <div className={clsx(
-          "w-full md:w-1/3 border-r border-soft-border flex flex-col absolute md:relative h-full bg-surface z-10 transition-transform duration-300",
+          "w-full md:w-96 border-r border-soft-border flex flex-col absolute md:relative h-full bg-surface z-10 transition-transform duration-300 flex-shrink-0",
           view === 'list' ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       )}>
           <div className="p-4 border-b border-soft-border">

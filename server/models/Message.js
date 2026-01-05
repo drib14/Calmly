@@ -18,6 +18,17 @@ const messageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Post',
   },
+  replyToQuote: {
+    quoteId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quote' },
+    content: String,
+    mood: String,
+    font: String,
+    identity: { // Snapshot identity in case quote/user is deleted
+        name: String,
+        handle: String,
+        avatar: String
+    }
+  },
   media: [{
     url: String,
     type: { type: String, enum: ['image', 'video', 'audio', 'file'] },
