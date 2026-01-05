@@ -1,8 +1,11 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
+const jwt = require('jsonwebtoken');
 
 // Load env vars
 dotenv.config();
@@ -11,6 +14,41 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.trim() : 'http://localhost:5173',
+        credentials: true
+    }
+});
+
+// Online Users Map (userId -> socketId)
+const onlineUsers = new Map();
+
+io.on('connection', (socket) => {
+    // console.log('Socket connected:', socket.id);
+
+    // Auth Handshake
+    const token = socket.handshake.auth?.token;
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET); // Or refresh token? Usually Access.
+            if (decoded && decoded.id) {
+                onlineUsers.set(decoded.id, socket.id);
+                // Broadcast updated list
+                io.emit('online_users', Array.from(onlineUsers.keys()));
+
+                socket.on('disconnect', () => {
+                    onlineUsers.delete(decoded.id);
+                    io.emit('online_users', Array.from(onlineUsers.keys()));
+                });
+            }
+        } catch (err) {
+            // console.error('Socket Auth Failed:', err.message);
+        }
+    }
+});
 
 // Middleware
 app.use(cors({
@@ -41,7 +79,7 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

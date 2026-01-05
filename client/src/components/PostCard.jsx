@@ -230,7 +230,8 @@ const PostCard = ({ post, mutate }) => {
         animate={{ opacity: 1, y: 0 }}
         className={clsx(
             "bg-surface/30 backdrop-blur-md text-text p-5 md:p-6 rounded-3xl shadow-sm border border-white/20 dark:border-white/10 mb-6 relative transition-all hover:shadow-md",
-            getTypeStyles()
+            getTypeStyles(),
+            (showOptions || showShareMenu) ? "z-30" : "z-0"
         )}
     >
       {/* Repost Indicator */}
@@ -367,17 +368,28 @@ const PostCard = ({ post, mutate }) => {
                           <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center">
                               {/* Main Content */}
                               <div className="w-full h-full flex items-center justify-center">
-                                  {post.media[currentMediaIndex].type === 'video' ? (
-                                      <div className="w-full h-full">
-                                          <MediaPlayer src={post.media[currentMediaIndex].url} />
-                                      </div>
-                                  ) : (
-                                      <img
-                                          src={post.media[currentMediaIndex].url}
-                                          className="w-full h-full object-contain cursor-pointer"
-                                          onClick={() => openViewer(post.media[currentMediaIndex].url)}
-                                      />
-                                  )}
+                                  <AnimatePresence mode="wait">
+                                      <motion.div
+                                          key={currentMediaIndex}
+                                          initial={{ opacity: 0 }}
+                                          animate={{ opacity: 1 }}
+                                          exit={{ opacity: 0 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="w-full h-full flex items-center justify-center"
+                                      >
+                                          {post.media[currentMediaIndex].type === 'video' ? (
+                                              <div className="w-full h-full">
+                                                  <MediaPlayer src={post.media[currentMediaIndex].url} />
+                                              </div>
+                                          ) : (
+                                              <img
+                                                  src={post.media[currentMediaIndex].url}
+                                                  className="w-full h-full object-contain cursor-pointer"
+                                                  onClick={() => openViewer(post.media[currentMediaIndex].url)}
+                                              />
+                                          )}
+                                      </motion.div>
+                                  </AnimatePresence>
                               </div>
                           </div>
 

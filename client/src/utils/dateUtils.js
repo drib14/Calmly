@@ -6,7 +6,7 @@ export const formatShortTime = (date) => {
     const now = new Date();
     const diffInSeconds = Math.floor((now - d) / 1000);
 
-    if (diffInSeconds < 60) return 'Just Now';
+    if (diffInSeconds < 60) return 'just now';
 
     const distance = formatDistanceToNowStrict(d);
 
@@ -17,7 +17,7 @@ export const formatShortTime = (date) => {
     const val = parts[0];
     const unit = parts[1];
 
-    if (unit.startsWith('second')) return 'Just Now';
+    if (unit.startsWith('second')) return 'just now';
     if (unit.startsWith('minute')) return `${val}m`;
     if (unit.startsWith('hour')) return `${val}h`;
     if (unit.startsWith('day')) return `${val}d`;

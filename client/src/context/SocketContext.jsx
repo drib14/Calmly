@@ -10,22 +10,37 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
-    const { user } = useAuth();
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const { user } = useAuth(); // Contains token info if structured right?
+    // AuthContext stores accessToken in localStorage. useAuth provides user data.
+    // We need to pass token explicitly.
 
     useEffect(() => {
-        // If there's no backend socket logic, we can leave this null or connect to a dummy path.
-        // However, to fix the build, this file just needs to exist.
-        // If the backend isn't set up for socket.io, the connection will fail or fallback to polling if configured.
-        // Given the prompt constraints and "polling via swr" memory, this is likely a placeholder.
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            if (socket) socket.close();
+            return;
+        }
 
-        // Disabling actual socket connection to prevent errors if backend doesn't support it
-        // const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
-        // setSocket(newSocket);
-        // return () => newSocket.close();
-    }, [user]);
+        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5080', {
+            auth: { token }
+        });
+
+        newSocket.on('connect', () => {
+            // console.log('Connected to socket');
+        });
+
+        newSocket.on('online_users', (users) => {
+            setOnlineUsers(users);
+        });
+
+        setSocket(newSocket);
+
+        return () => newSocket.close();
+    }, [user]); // Re-connect if user changes (login/logout)
 
     return (
-        <SocketContext.Provider value={{ socket }}>
+        <SocketContext.Provider value={{ socket, onlineUsers }}>
             {children}
         </SocketContext.Provider>
     );
