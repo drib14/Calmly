@@ -67,7 +67,23 @@ const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
 
-    if (user && user.password && (await user.matchPassword(password))) {
+    let isMatch = false;
+    if (user && user.password) {
+        try {
+            // Check if password looks like a bcrypt hash ($2...)
+            if (user.password.startsWith('$2')) {
+                isMatch = await user.matchPassword(password);
+            } else {
+                console.error(`User ${email} has invalid password hash format. Denying access.`);
+                isMatch = false;
+            }
+        } catch (matchError) {
+            console.error("Password Match Error:", matchError);
+            isMatch = false;
+        }
+    }
+
+    if (isMatch) {
       // Removed isVerified check
 
       const accessToken = generateAccessToken(user._id);

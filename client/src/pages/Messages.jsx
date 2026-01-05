@@ -3,7 +3,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
