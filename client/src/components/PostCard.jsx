@@ -364,18 +364,31 @@ const PostCard = ({ post, mutate }) => {
                   {/* Media Carousel */}
                   {post.media && post.media.length > 0 && (
                       <div className="relative mb-4 group -mx-5 md:-mx-6">
-                          <div className="overflow-hidden flex items-center justify-center relative bg-black/5">
-                              {post.media[currentMediaIndex].type === 'video' ? (
-                                  <div className="w-full">
-                                      <MediaPlayer src={post.media[currentMediaIndex].url} />
+                          <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center">
+                              {/* Blurred Background for Images */}
+                              {post.media[currentMediaIndex].type === 'image' && (
+                                  <div className="absolute inset-0">
+                                      <img
+                                          src={post.media[currentMediaIndex].url}
+                                          className="w-full h-full object-cover opacity-50 blur-2xl scale-110"
+                                      />
                                   </div>
-                              ) : (
-                                  <img
-                                      src={post.media[currentMediaIndex].url}
-                                      className="w-full h-auto max-h-[80vh] object-contain cursor-pointer"
-                                      onClick={() => openViewer(post.media[currentMediaIndex].url)}
-                                  />
                               )}
+
+                              {/* Main Content */}
+                              <div className="relative z-10 w-full h-full flex items-center justify-center">
+                                  {post.media[currentMediaIndex].type === 'video' ? (
+                                      <div className="w-full h-full">
+                                          <MediaPlayer src={post.media[currentMediaIndex].url} />
+                                      </div>
+                                  ) : (
+                                      <img
+                                          src={post.media[currentMediaIndex].url}
+                                          className="w-full h-full object-contain cursor-pointer"
+                                          onClick={() => openViewer(post.media[currentMediaIndex].url)}
+                                      />
+                                  )}
+                              </div>
                           </div>
 
                           {/* Navigation Chevrons */}
