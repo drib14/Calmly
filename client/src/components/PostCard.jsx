@@ -269,7 +269,7 @@ const PostCard = ({ post, mutate }) => {
                    {post.type !== 'mood' && (
                        <>
                         <span>•</span>
-                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">{post.type}</span>
+                        <span className="bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase whitespace-nowrap">{post.type === 'confession' ? 'Post' : post.type}</span>
                        </>
                    )}
                </div>

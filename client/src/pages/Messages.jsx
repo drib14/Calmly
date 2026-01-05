@@ -171,34 +171,34 @@ const Messages = () => {
 
       return (
           <div
-                onClick={() => {
-                    // Navigate to feed but use state to potentially scroll to post?
-                    // Or since we don't have a dedicated post page, we'll try to find it in feed.
-                    // Actually, let's assume there is a way to view a single post, or we just go to feed.
-                    // User requested "redirect to that post".
-                    // I will verify if I can create a simple Post View or if Feed supports #hash.
-                    // For now, I will use a hash which is a standard web pattern.
-                    navigate(`/feed#post-${post._id}`);
-                    // Trigger a custom event or check location hash in Feed to scroll?
-                    // Given the constraints, I'll stick to the hash approach.
-                }}
-            className={clsx(
-                "rounded-xl overflow-hidden cursor-pointer border mb-1 transition-colors w-full max-w-sm",
-                isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-background border-soft-border hover:bg-background/80"
-            )}
+                onClick={() => navigate(`/feed#post-${post._id}`)}
+                className={clsx(
+                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-full max-w-sm relative group",
+                    isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-surface border-soft-border hover:shadow-md"
+                )}
           >
+              {/* Media Preview (Hero Image style) */}
               {post.media && post.media.length > 0 && post.media[0].type === 'image' && (
-                  <img src={post.media[0].url} className="w-full h-32 object-cover" />
-              )}
-              <div className="p-3">
-                  <div className="flex items-center space-x-2 mb-1">
-                      {post.identity && <Avatar identity={post.identity} size="xs" />}
-                      <span className={clsx("text-xs font-bold truncate", isMe ? "text-white" : "text-text")}>
-                          {post.identity?.name || 'Unknown'}
-                      </span>
+                  <div className="relative h-40 w-full">
+                      <img src={post.media[0].url} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                   </div>
-                  <p className={clsx("text-xs line-clamp-2", isMe ? "text-white/80" : "text-secondary")}>
-                      {post.content || (post.media?.length ? 'Shared media' : 'Shared content')}
+              )}
+
+              <div className="p-4 relative">
+                  <div className="flex items-center space-x-2 mb-2">
+                      {post.identity && <Avatar identity={post.identity} size="xs" />}
+                      <div className="flex flex-col">
+                          <span className={clsx("text-xs font-bold leading-none", isMe ? "text-white" : "text-text")}>
+                              {post.identity?.name || 'Unknown'}
+                          </span>
+                          <span className={clsx("text-[10px] uppercase tracking-wider opacity-70", isMe ? "text-white" : "text-secondary")}>
+                              {post.type === 'confession' ? 'Post' : post.type}
+                          </span>
+                      </div>
+                  </div>
+                  <p className={clsx("text-xs font-serif leading-relaxed line-clamp-3", isMe ? "text-white/90" : "text-text/90")}>
+                      {post.content || (post.media?.length ? 'Shared a moment' : 'Shared content')}
                   </p>
               </div>
           </div>
@@ -369,14 +369,21 @@ const Messages = () => {
                                       {/* Reply Quote Bubble */}
                                       {msg.replyToQuote && (
                                           <div className={clsx(
-                                              "mb-1 px-3 py-2 text-xs rounded-xl border opacity-80",
-                                              isMe ? "bg-white/10 border-white/20 text-white" : "bg-background border-soft-border text-secondary"
+                                              "mb-2 p-3 rounded-2xl border relative overflow-hidden",
+                                              isMe ? "bg-white/10 border-white/20 text-white" : "bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 border-indigo-100 dark:border-slate-700 text-text"
                                           )}>
-                                              <div className="flex items-center space-x-1 mb-1 font-bold opacity-75">
-                                                  <Reply size={10} />
-                                                  <span>Replying to quote</span>
+                                              <div className="flex items-center space-x-2 mb-2 opacity-80">
+                                                  <div className={clsx("p-1 rounded-full", isMe ? "bg-white/20" : "bg-indigo-100 dark:bg-slate-700")}>
+                                                      <Reply size={10} className={clsx(isMe ? "text-white" : "text-indigo-500 dark:text-indigo-400")} />
+                                                  </div>
+                                                  <span className="text-[10px] font-bold uppercase tracking-wide">Replying to Note</span>
                                               </div>
-                                              <p className="line-clamp-2 italic">"{msg.replyToQuote.content}"</p>
+                                              <div className="relative pl-3">
+                                                  <div className={clsx("absolute left-0 top-0 bottom-0 w-0.5 rounded-full", isMe ? "bg-white/40" : "bg-indigo-400/40")} />
+                                                  <p className="text-xs font-serif italic line-clamp-3 opacity-90">
+                                                      "{msg.replyToQuote.content}"
+                                                  </p>
+                                              </div>
                                           </div>
                                       )}
 
