@@ -3,7 +3,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
@@ -169,37 +169,72 @@ const Messages = () => {
   const renderSharedPost = (post, isMe) => {
       if (!post) return <div className="text-xs text-red-400 italic">Post deleted or unavailable</div>;
 
+      const hasMedia = post.media && post.media.length > 0 && post.media[0].type === 'image';
+      const textContent = post.content || '';
+      const truncatedText = textContent.length > 60 ? textContent.slice(0, 60) + '...' : textContent;
+
       return (
           <div
                 onClick={() => navigate(`/feed#post-${post._id}`)}
                 className={clsx(
-                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-full max-w-sm relative group",
-                    isMe ? "bg-white/10 border-white/20 hover:bg-white/20" : "bg-surface border-soft-border hover:shadow-md"
+                    "rounded-3xl overflow-hidden cursor-pointer border mb-1 transition-all w-64 md:w-72 relative group bg-surface",
+                    isMe ? "border-white/20" : "border-soft-border hover:shadow-md"
                 )}
           >
-              {/* Media Preview (Hero Image style) */}
-              {post.media && post.media.length > 0 && post.media[0].type === 'image' && (
-                  <div className="relative h-40 w-full">
-                      <img src={post.media[0].url} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  </div>
-              )}
+              {/* Card Container */}
+              <div className="relative h-80 w-full flex flex-col">
 
-              <div className="p-4 relative">
-                  <div className="flex items-center space-x-2 mb-2">
-                      {post.identity && <Avatar identity={post.identity} size="xs" />}
-                      <div className="flex flex-col">
-                          <span className={clsx("text-xs font-bold leading-none", isMe ? "text-white" : "text-text")}>
-                              {post.identity?.name || 'Unknown'}
-                          </span>
-                          <span className={clsx("text-[10px] uppercase tracking-wider opacity-70", isMe ? "text-white" : "text-secondary")}>
-                              {post.type === 'confession' ? 'Post' : post.type}
+                  {/* Thumbnail / Background */}
+                  {hasMedia ? (
+                      <div className="absolute inset-0">
+                          <img src={post.media[0].url} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
+                      </div>
+                  ) : (
+                      // Text Only Mode: Use text as "Thumbnail"
+                      <div className="absolute inset-0 bg-background flex items-center justify-center p-6 bg-gradient-to-br from-surface to-background">
+                          <p className="font-serif text-lg text-text text-center italic leading-relaxed opacity-80 line-clamp-6">
+                              "{textContent}"
+                          </p>
+                          <div className="absolute inset-0 bg-black/10" />
+                      </div>
+                  )}
+
+                  {/* Top Left: User Info */}
+                  <div className="absolute top-4 left-4 flex items-center space-x-2 z-10">
+                      <Avatar identity={post.identity} size="xs" />
+                      <span className="text-xs font-bold text-white shadow-sm drop-shadow-md">
+                          {post.identity?.name || 'Unknown'}
+                      </span>
+                  </div>
+
+                  {/* Multi-Media Indicator */}
+                  {post.media && post.media.length > 1 && (
+                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full flex items-center space-x-1 z-20 border border-white/10">
+                          <Layers size={12} className="text-white" />
+                          <span className="text-[10px] font-bold text-white">+{post.media.length - 1}</span>
+                      </div>
+                  )}
+
+                  {/* Bottom Content Area */}
+                  <div className="mt-auto p-4 z-10 w-full">
+                      {/* Text Content (if media exists) */}
+                      {hasMedia && textContent && (
+                          <p className="text-xs text-white/90 mb-3 font-medium drop-shadow-md line-clamp-2">
+                              {truncatedText}
+                          </p>
+                      )}
+
+                      {/* Bottom Left: Platform Branding */}
+                      <div className="flex items-center space-x-1.5 opacity-90">
+                          <div className="w-4 h-4 rounded-full bg-white flex items-center justify-center overflow-hidden">
+                              <img src="/favicon.png" className="w-3 h-3 object-contain" alt="Logo" />
+                          </div>
+                          <span className="text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
+                              Calmly
                           </span>
                       </div>
                   </div>
-                  <p className={clsx("text-xs font-serif leading-relaxed line-clamp-3", isMe ? "text-white/90" : "text-text/90")}>
-                      {post.content || (post.media?.length ? 'Shared a moment' : 'Shared content')}
-                  </p>
               </div>
           </div>
       );
