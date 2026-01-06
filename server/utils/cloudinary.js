@@ -4,15 +4,22 @@ const multer = require('multer');
 
 let upload;
 
-if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+// Helper to safely get and trim env vars
+const getEnv = (key) => (process.env[key] ? process.env[key].trim() : '');
+
+const cloudName = getEnv('CLOUDINARY_CLOUD_NAME');
+const apiKey = getEnv('CLOUDINARY_API_KEY');
+const apiSecret = getEnv('CLOUDINARY_API_SECRET');
+
+if (!cloudName || !apiKey || !apiSecret) {
   console.warn("Cloudinary env vars missing. Falling back to memory storage.");
   const storage = multer.memoryStorage();
   upload = multer({ storage });
 } else {
   cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
   });
 
   const storage = new CloudinaryStorage({

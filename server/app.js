@@ -45,4 +45,16 @@ app.get('/', (req, res) => {
   res.send('Calmly API is running...');
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error("Global Error Handler:", err);
+    // Ensure we return JSON and not default HTML for 500s
+    const statusCode = err.statusCode || 500;
+    res.status(statusCode).json({
+        message: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+        error: process.env.NODE_ENV === 'production' ? null : err
+    });
+});
+
 module.exports = app;

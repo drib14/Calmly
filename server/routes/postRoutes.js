@@ -7,8 +7,30 @@ const Identity = require('../models/Identity');
 const Report = require('../models/Report');
 const { upload } = require('../utils/cloudinary');
 
+// Wrapper to handle Multer errors
+const uploadMiddleware = (req, res, next) => {
+    upload.array('media', 100)(req, res, (err) => {
+        if (err) {
+            console.error("Multer/Upload Error:", err);
+            // Multer errors are often 400 or 500 depending on code
+            // specifically catching file too large or limit errors
+            const status = (err.code === 'LIMIT_FILE_SIZE' || err.code === 'LIMIT_UNEXPECTED_FILE') ? 400 : 500;
+            return res.status(status).json({
+                message: "Upload failed",
+                error: err.message,
+                code: err.code
+            });
+        }
+        next();
+    });
+};
+
 // Create a post
-router.post('/', protect, upload.array('media', 100), async (req, res) => {
+router.post('/', protect, uploadMiddleware, async (req, res) => {
+  // Debug log to verify request reached handler
+  console.log("POST /api/posts reached. Body keys:", Object.keys(req.body));
+  if (req.files) console.log("Files received:", req.files.length);
+
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
   let media = [];
 
