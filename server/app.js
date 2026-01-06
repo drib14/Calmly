@@ -31,6 +31,7 @@ app.use(cookieParser());
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/identities', require('./routes/identityRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/journal', require('./routes/journalRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));

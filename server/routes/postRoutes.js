@@ -5,19 +5,11 @@ const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
 const Report = require('../models/Report');
-const { upload } = require('../utils/cloudinary');
-
 // Create a post
-router.post('/', protect, upload.array('media', 100), async (req, res) => {
-  const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
-  let media = [];
+router.post('/', protect, async (req, res) => {
+  const { identityId, type, content, mood, visibility, title, tags, letterFields, style, media } = req.body;
 
-  if (req.files) {
-      media = req.files.map(file => ({
-          url: file.path,
-          type: file.mimetype.startsWith('video') ? 'video' : 'image'
-      }));
-  }
+  // media matches [{ url, type }] schema if sent from frontend
 
   try {
     const identity = await Identity.findById(identityId);

@@ -185,37 +185,54 @@ const CreatePost = () => {
     } else {
         if (!currentIdentity) return toast.error("Select an identity");
 
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-            console.error("No access token found in localStorage!");
-            toast.error("Authentication missing. Please login again.");
-            return;
-        }
-        console.log("Token present:", !!token);
-
         setUploading(true);
 
         try {
-            const formData = new FormData();
-            formData.append('identityId', currentIdentity._id);
-            formData.append('type', type);
-            formData.append('mood', mood);
-            formData.append('content', content);
-            formData.append('visibility', visibility);
-            if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
+            let uploadedMedia = [];
+            if (files.length > 0) {
+                // Fetch Signature
+                const { data: signData } = await axios.get('/upload/signature');
 
-            if (type === 'letter') formData.append('letterFields', JSON.stringify(letterFields));
-            if (type === 'poetry') formData.append('style', JSON.stringify(poemStyle));
+                // Upload Loop
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('api_key', signData.apiKey);
+                    formData.append('timestamp', signData.timestamp);
+                    formData.append('signature', signData.signature);
+                    formData.append('folder', signData.folder);
 
-            files.forEach(file => {
-                formData.append('media', file);
-            });
+                    // Remove Auth header for Cloudinary request
+                    const res = await axios.post(
+                        `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`,
+                        formData,
+                        { transformRequest: (data, headers) => {
+                            delete headers.common['Authorization'];
+                            delete headers['Authorization'];
+                            return data;
+                        }}
+                    );
 
-            await axios.post('/posts', formData, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
+                    uploadedMedia.push({
+                        url: res.data.secure_url,
+                        type: res.data.resource_type === 'video' ? 'video' : 'image'
+                    });
                 }
-            });
+            }
+
+            const postData = {
+                identityId: currentIdentity._id,
+                type,
+                mood,
+                content,
+                visibility,
+                title: ((type === 'poetry' || type === 'letter') && title) ? title : undefined,
+                letterFields: type === 'letter' ? letterFields : undefined,
+                style: type === 'poetry' ? poemStyle : undefined,
+                media: uploadedMedia
+            };
+
+            await axios.post('/posts', postData); // JSON Request
 
             localStorage.removeItem('post_draft'); // Clear draft
 
