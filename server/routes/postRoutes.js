@@ -20,13 +20,18 @@ router.post('/', protect, upload.array('media', 100), async (req, res) => {
   }
 
   try {
-    const identity = await Identity.findOne({ _id: identityId, user: req.user._id });
+    const identity = await Identity.findById(identityId);
+
     if (!identity) {
-      console.error(`Create Post Failed: Identity ${identityId} not owned by user ${req.user._id}`);
-      return res.status(403).json({
-          message: 'Invalid identity',
-          debug: `Identity ${identityId} not found for user ${req.user._id}`
-      });
+        return res.status(404).json({ message: 'Identity not found' });
+    }
+
+    if (identity.user.toString() !== req.user._id.toString()) {
+        console.error(`Create Post Failed: Identity ${identityId} (User: ${identity.user}) not owned by ${req.user._id}`);
+        return res.status(403).json({
+            message: 'Invalid identity ownership',
+            debug: `Identity owner ${identity.user} !== Request user ${req.user._id}`
+        });
     }
 
     const postData = {

@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 // Load env vars
 dotenv.config();
 
-// Connect to database
+// Connect to database (Ensure MongoDB URI is set)
 connectDB();
 
 const app = express();

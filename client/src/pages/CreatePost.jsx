@@ -217,9 +217,12 @@ const CreatePost = () => {
 
         } catch (error) {
             console.error(error);
-            if (error.response?.status === 403) {
-                console.error("403 Debug:", error.response.data?.debug);
-                toast.error(error.response.data?.message || "Identity permission denied");
+            const status = error.response?.status;
+            const data = error.response?.data;
+
+            if (status === 403 || status === 404) {
+                console.error("Post Error Debug:", data?.debug);
+                toast.error(data?.message || "Failed to verify identity");
             } else {
                 toast.error("Failed to post");
             }
