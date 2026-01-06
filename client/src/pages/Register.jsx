@@ -28,6 +28,7 @@ const Register = () => {
     const res = await register(email, password, realName);
     if (res.success) {
       setMessage(res.message);
+      setTimeout(() => navigate('/login'), 1500);
     } else {
       setError(res.message);
     }
