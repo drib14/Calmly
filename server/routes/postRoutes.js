@@ -7,8 +7,26 @@ const Identity = require('../models/Identity');
 const Report = require('../models/Report');
 const { upload } = require('../utils/cloudinary');
 
+// Helper to wrap multer and catch errors
+const uploadMiddleware = (req, res, next) => {
+    upload.array('media', 100)(req, res, (err) => {
+        if (err) {
+            console.error("Multer Upload Error:", err);
+            return res.status(500).json({
+                message: "File upload failed",
+                error: err.message,
+                code: err.code
+            });
+        }
+        next();
+    });
+};
+
 // Create a post
-router.post('/', protect, upload.array('media', 100), async (req, res) => {
+router.post('/', (req, res, next) => {
+    console.log("POST /api/posts - Request Received");
+    next();
+}, protect, uploadMiddleware, async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
   let media = [];
 
