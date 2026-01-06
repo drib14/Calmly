@@ -213,7 +213,6 @@ const CreatePost = () => {
 
             await axios.post('/posts', formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`
                 }
             });
