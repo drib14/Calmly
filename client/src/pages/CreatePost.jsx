@@ -184,6 +184,15 @@ const CreatePost = () => {
         }
     } else {
         if (!currentIdentity) return toast.error("Select an identity");
+
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            console.error("No access token found in localStorage!");
+            toast.error("Authentication missing. Please login again.");
+            return;
+        }
+        console.log("Token present:", !!token);
+
         setUploading(true);
 
         try {
@@ -216,15 +225,25 @@ const CreatePost = () => {
             }
 
         } catch (error) {
-            console.error(error);
+            console.error("Create Post Error Full Object:", error);
+            console.error("Response Status:", error.response?.status);
+            console.error("Response Headers:", error.response?.headers);
+            console.error("Response Data Type:", typeof error.response?.data);
+            console.error("Response Data:", error.response?.data);
+
             const status = error.response?.status;
             const data = error.response?.data;
 
             if (status === 403 || status === 404) {
-                console.error("Post Error Debug:", data?.debug);
-                toast.error(data?.message || "Failed to verify identity");
+                if (typeof data === 'string') {
+                    console.error("Received non-JSON response (likely HTML from Vercel/WAF):", data.substring(0, 200));
+                    toast.error("Server Error (HTML Response)");
+                } else {
+                    console.error("Post Error Debug:", data?.debug);
+                    toast.error(data?.message || "Failed to verify identity");
+                }
             } else {
-                toast.error("Failed to post");
+                toast.error(data?.message || "Failed to post");
             }
         } finally {
             setUploading(false);
