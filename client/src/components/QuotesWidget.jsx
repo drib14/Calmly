@@ -121,14 +121,14 @@ const QuotesWidget = () => {
                  <div className="grid grid-cols-2 gap-3 pt-4">
                      <button
                         onClick={() => { setShowMyQuoteOptions(false); setShowCreateModal(true); }}
-                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
+                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text active:scale-95 transition-transform"
                      >
                          New quote
                      </button>
                      <button
                         onClick={handleDelete}
                         disabled={deletingQuote}
-                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50"
+                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50 active:scale-95 transition-transform"
                      >
                          {deletingQuote ? 'Deleting...' : 'Delete quote'}
                      </button>

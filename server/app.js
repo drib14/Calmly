@@ -8,7 +8,7 @@ const connectDB = require('./config/db');
 dotenv.config();
 
 // Connect to database
-connectDB();
+// connectDB(); // Moved to index.js to await it
 
 const app = express();
 app.set('trust proxy', 1);

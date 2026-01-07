@@ -148,6 +148,8 @@ const CreatePost = () => {
   };
 
   const checkFeedbackEligibility = () => {
+      if (localStorage.getItem('calmly_feedback_given') === 'true') return false;
+
       const postsCount = parseInt(localStorage.getItem('calmly_posts_count') || '0', 10) + 1;
       localStorage.setItem('calmly_posts_count', postsCount.toString());
 

@@ -92,7 +92,7 @@ const Navbar = () => {
                 <NavLink
                     key={item.path}
                     to={item.path}
-                    className={clsx("p-3 rounded-xl relative", isActive ? "text-text" : "text-secondary")}
+                    className={clsx("p-3 rounded-xl relative active:scale-95 transition-transform", isActive ? "text-text" : "text-secondary")}
                 >
                     <div className="relative">
                         <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />

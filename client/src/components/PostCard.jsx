@@ -223,6 +223,11 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
+  // Get reactor avatars
+  const reactorAvatars = post.likes
+      ?.map(l => l.identity)
+      .filter((id, index, self) => id && self.findIndex(i => i?._id === id._id) === index) || [];
+
   return (
     <motion.div
         layout
@@ -250,7 +255,7 @@ const PostCard = ({ post, mutate }) => {
       {/* Header */}
       <div className="flex justify-between items-start mb-4 relative">
         <div className="flex items-center space-x-3 min-w-0 flex-1 mr-2">
-           <div onClick={handleProfileClick} className="cursor-pointer flex-shrink-0">
+           <div onClick={handleProfileClick} className="cursor-pointer flex-shrink-0 active:scale-95 transition-transform">
                <Avatar identity={post.identity} />
            </div>
            <div className="min-w-0 flex-1">
@@ -278,7 +283,7 @@ const PostCard = ({ post, mutate }) => {
         </div>
 
         <div className="relative" ref={optionsRef}>
-            <button onClick={() => setShowOptions(!showOptions)} className="text-secondary hover:text-text transition p-2">
+            <button onClick={() => setShowOptions(!showOptions)} className="text-secondary hover:text-text transition p-2 active:scale-95">
                 <MoreHorizontal size={20} />
             </button>
 
@@ -291,11 +296,11 @@ const PostCard = ({ post, mutate }) => {
                         className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
                         {isOwner && (
-                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
+                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg active:bg-red-50">
                                 <Trash2 size={14} /> <span>Delete Post</span>
                             </button>
                         )}
-                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text">
+                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text active:bg-background/80">
                             <Flag size={14} /> <span>Report Content</span>
                         </button>
                     </motion.div>
@@ -313,7 +318,7 @@ const PostCard = ({ post, mutate }) => {
                   <p className="text-xs text-secondary mb-4">This post contains a mood that might be triggering.</p>
                   <button
                       onClick={() => setIsRevealed(true)}
-                      className="px-4 py-2 bg-surface border border-soft-border rounded-full text-xs font-bold text-text hover:bg-background transition"
+                      className="px-4 py-2 bg-surface border border-soft-border rounded-full text-xs font-bold text-text hover:bg-background transition active:scale-95"
                   >
                       Reveal Content
                   </button>
@@ -362,77 +367,93 @@ const PostCard = ({ post, mutate }) => {
                       {post.content}
                   </div>
 
-                  {/* Media Carousel */}
+                  {/* Media Display */}
                   {post.media && post.media.length > 0 && (
                       <div className="relative mb-4 group -mx-5 md:-mx-6">
-                          <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center">
-                              {/* Main Content */}
-                              <div className="w-full h-full flex items-center justify-center">
-                                  <AnimatePresence mode="wait">
-                                      <motion.div
-                                          key={currentMediaIndex}
-                                          initial={{ opacity: 0 }}
-                                          animate={{ opacity: 1 }}
-                                          exit={{ opacity: 0 }}
-                                          transition={{ duration: 0.2 }}
-                                          className="w-full h-full flex items-center justify-center"
-                                      >
-                                          {post.media[currentMediaIndex].type === 'video' ? (
-                                              <div className="w-full h-full">
-                                                  <MediaPlayer src={post.media[currentMediaIndex].url} />
-                                              </div>
-                                          ) : (
-                                              <img
-                                                  src={post.media[currentMediaIndex].url}
-                                                  className="w-full h-full object-contain cursor-pointer"
-                                                  onClick={() => openViewer(post.media[currentMediaIndex].url)}
-                                              />
-                                          )}
-                                      </motion.div>
-                                  </AnimatePresence>
+                          {/* Single Media: Flexible Height */}
+                          {post.media.length === 1 ? (
+                              <div className="w-full max-h-[70vh] flex items-center justify-center bg-black/5 dark:bg-black/40 overflow-hidden">
+                                   {post.media[0].type === 'video' ? (
+                                        <div className="w-full">
+                                            <MediaPlayer src={post.media[0].url} />
+                                        </div>
+                                   ) : (
+                                       <img
+                                           src={post.media[0].url}
+                                           className="max-w-full max-h-[70vh] w-full object-contain cursor-pointer"
+                                           onClick={() => openViewer(post.media[0].url)}
+                                       />
+                                   )}
                               </div>
-                          </div>
-
-                          {/* Navigation Chevrons */}
-                          {post.media.length > 1 && (
-                              <>
-                                  <button
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          setCurrentMediaIndex((prev) => (prev === 0 ? post.media.length - 1 : prev - 1));
-                                      }}
-                                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/40 transition shadow-sm z-10"
-                                  >
-                                      <ChevronLeft size={24} />
-                                  </button>
-                                  <button
-                                      onClick={(e) => {
-                                          e.stopPropagation();
-                                          setCurrentMediaIndex((prev) => (prev === post.media.length - 1 ? 0 : prev + 1));
-                                      }}
-                                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/40 transition shadow-sm z-10"
-                                  >
-                                      <ChevronRight size={24} />
-                                  </button>
-
-                                  {/* Multi-media Indicator */}
-                                  <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white z-10 pointer-events-none">
-                                      {currentMediaIndex + 1}/{post.media.length}
-                                  </div>
-
-                                  {/* Pagination Dots */}
-                                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10">
-                                      {post.media.map((_, idx) => (
-                                          <div
-                                              key={idx}
-                                              className={clsx(
-                                                  "w-1.5 h-1.5 rounded-full transition-all shadow-sm",
-                                                  idx === currentMediaIndex ? "bg-white scale-125" : "bg-white/50"
+                          ) : (
+                              /* Multi-Media Carousel: Fixed Ratio */
+                              <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center">
+                                  {/* Main Content */}
+                                  <div className="w-full h-full flex items-center justify-center">
+                                      <AnimatePresence mode="wait">
+                                          <motion.div
+                                              key={currentMediaIndex}
+                                              initial={{ opacity: 0 }}
+                                              animate={{ opacity: 1 }}
+                                              exit={{ opacity: 0 }}
+                                              transition={{ duration: 0.2 }}
+                                              className="w-full h-full flex items-center justify-center"
+                                          >
+                                              {post.media[currentMediaIndex].type === 'video' ? (
+                                                  <div className="w-full h-full">
+                                                      <MediaPlayer src={post.media[currentMediaIndex].url} />
+                                                  </div>
+                                              ) : (
+                                                  <img
+                                                      src={post.media[currentMediaIndex].url}
+                                                      className="w-full h-full object-contain cursor-pointer"
+                                                      onClick={() => openViewer(post.media[currentMediaIndex].url)}
+                                                  />
                                               )}
-                                          />
-                                      ))}
+                                          </motion.div>
+                                      </AnimatePresence>
                                   </div>
-                              </>
+
+                                  {/* Navigation Chevrons */}
+                                  <>
+                                      <button
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              setCurrentMediaIndex((prev) => (prev === 0 ? post.media.length - 1 : prev - 1));
+                                          }}
+                                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/40 transition shadow-sm z-10 active:scale-90"
+                                      >
+                                          <ChevronLeft size={24} />
+                                      </button>
+                                      <button
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              setCurrentMediaIndex((prev) => (prev === post.media.length - 1 ? 0 : prev + 1));
+                                          }}
+                                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-black/40 transition shadow-sm z-10 active:scale-90"
+                                      >
+                                          <ChevronRight size={24} />
+                                      </button>
+
+                                      {/* Multi-media Indicator */}
+                                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white z-10 pointer-events-none">
+                                          {currentMediaIndex + 1}/{post.media.length}
+                                      </div>
+
+                                      {/* Pagination Dots */}
+                                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-10">
+                                          {post.media.map((_, idx) => (
+                                              <div
+                                                  key={idx}
+                                                  className={clsx(
+                                                      "w-1.5 h-1.5 rounded-full transition-all shadow-sm",
+                                                      idx === currentMediaIndex ? "bg-white scale-125" : "bg-white/50"
+                                                  )}
+                                              />
+                                          ))}
+                                      </div>
+                                  </>
+                              </div>
                           )}
                       </div>
                   )}
@@ -451,69 +472,89 @@ const PostCard = ({ post, mutate }) => {
           </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-soft-border">
-          <div className="flex space-x-6 relative">
-              {interactionsEnabled && (
-                  <button
-                    onClick={handleLike}
-                    className={clsx(
-                        "flex items-center space-x-2 transition group",
-                        isLiked ? "text-red-500" : "text-secondary hover:text-red-500"
-                    )}
-                  >
-                      <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
-                      <span className="text-xs font-bold">{post.likes?.length || 0}</span>
-                  </button>
-              )}
-
-              {commentsEnabled && (
-                  <button
-                    onClick={() => setExpanded(!expanded)}
-                    className="flex items-center space-x-2 text-secondary hover:text-blue-500 transition group"
-                  >
-                      <MessageCircle size={20} />
-                      <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
-                  </button>
-              )}
-
-              <button
-                onClick={handleRepost}
-                className={clsx("flex items-center space-x-2 transition group", isReposted ? "text-green-500" : "text-secondary hover:text-green-500")}
-              >
-                  <Repeat size={20} className={clsx("transition-transform", isReposting && "animate-spin")} />
-                  <span className="text-xs font-bold">{post.reposts?.length || 0}</span>
-              </button>
-
-              <div className="relative" ref={shareRef}>
-                  <button
-                    onClick={() => setShowShareMenu(!showShareMenu)}
-                    className="flex items-center space-x-2 text-secondary hover:text-text transition group"
-                  >
-                      <Share2 size={20} />
-                  </button>
-
-                  <AnimatePresence>
-                      {showShareMenu && (
-                          <motion.div
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute left-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
-                          >
-                              <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition">
-                                  <LinkIcon size={14} /> <span>Copy Link</span>
-                              </button>
-                              <button
-                                onClick={() => { setShowShareModal(true); setShowShareMenu(false); }}
-                                className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition"
-                              >
-                                  <Send size={14} /> <span>Share as Message</span>
-                              </button>
-                          </motion.div>
-                      )}
-                  </AnimatePresence>
+      {/* Action Bar */}
+      <div className="pt-4 border-t border-soft-border">
+          {/* Reactor Avatars */}
+          {reactorAvatars.length > 0 && interactionsEnabled && (
+              <div className="flex items-center mb-3">
+                  <div className="flex -space-x-1.5 mr-2">
+                    {reactorAvatars.slice(0, 3).map((identity) => (
+                        <div key={identity._id} className="w-5 h-5 rounded-full ring-2 ring-surface z-0 relative">
+                            <Avatar identity={identity} size="xs" />
+                        </div>
+                    ))}
+                  </div>
+                  {reactorAvatars.length > 3 && (
+                      <span className="text-[10px] font-bold text-secondary bg-background px-1.5 py-0.5 rounded-md border border-soft-border">
+                          +{reactorAvatars.length - 3}
+                      </span>
+                  )}
               </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-6 relative">
+                {interactionsEnabled && (
+                    <button
+                      onClick={handleLike}
+                      className={clsx(
+                          "flex items-center space-x-2 transition group active:scale-95",
+                          isLiked ? "text-red-500" : "text-secondary hover:text-red-500"
+                      )}
+                    >
+                        <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
+                        <span className="text-xs font-bold">{post.likes?.length || 0}</span>
+                    </button>
+                )}
+
+                {commentsEnabled && (
+                    <button
+                      onClick={() => setExpanded(!expanded)}
+                      className="flex items-center space-x-2 text-secondary hover:text-blue-500 transition group active:scale-95"
+                    >
+                        <MessageCircle size={20} />
+                        <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
+                    </button>
+                )}
+
+                <button
+                  onClick={handleRepost}
+                  className={clsx("flex items-center space-x-2 transition group active:scale-95", isReposted ? "text-green-500" : "text-secondary hover:text-green-500")}
+                >
+                    <Repeat size={20} className={clsx("transition-transform", isReposting && "animate-spin")} />
+                    <span className="text-xs font-bold">{post.reposts?.length || 0}</span>
+                </button>
+
+                <div className="relative" ref={shareRef}>
+                    <button
+                      onClick={() => setShowShareMenu(!showShareMenu)}
+                      className="flex items-center space-x-2 text-secondary hover:text-text transition group active:scale-95"
+                    >
+                        <Share2 size={20} />
+                    </button>
+
+                    <AnimatePresence>
+                        {showShareMenu && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="absolute left-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
+                            >
+                                <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition active:bg-surface">
+                                    <LinkIcon size={14} /> <span>Copy Link</span>
+                                </button>
+                                <button
+                                  onClick={() => { setShowShareModal(true); setShowShareMenu(false); }}
+                                  className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition active:bg-surface"
+                                >
+                                    <Send size={14} /> <span>Share as Message</span>
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
           </div>
       </div>
 
@@ -598,7 +639,7 @@ const PostCard = ({ post, mutate }) => {
                       )}
 
                       <div className="flex items-center space-x-2 bg-surface p-1.5 pl-2 rounded-full border border-soft-border focus-within:ring-2 ring-slate-100 dark:ring-slate-700 transition-shadow">
-                          <label className="p-2 cursor-pointer text-secondary hover:text-text transition rounded-full hover:bg-background">
+                          <label className="p-2 cursor-pointer text-secondary hover:text-text transition rounded-full hover:bg-background active:scale-95">
                               <input type="file" className="hidden" accept="image/*,video/*" onChange={handleCommentFile} />
                               <ImageIcon size={18} />
                           </label>
@@ -612,7 +653,7 @@ const PostCard = ({ post, mutate }) => {
                           <button
                             onClick={submitComment}
                             disabled={submittingComment}
-                            className="w-8 h-8 bg-slate-900 dark:bg-slate-100 rounded-full flex items-center justify-center text-white dark:text-slate-900 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                            className="w-8 h-8 bg-slate-900 dark:bg-slate-100 rounded-full flex items-center justify-center text-white dark:text-slate-900 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 active:scale-95"
                           >
                               <Send size={14} className="-ml-0.5 mt-0.5 text-white dark:text-slate-900" />
                           </button>
@@ -663,8 +704,8 @@ const PostCard = ({ post, mutate }) => {
               />
 
               <div className="flex space-x-3">
-                  <button onClick={() => setShowReportModal(false)} disabled={reporting} className="flex-1 py-3 bg-background text-text font-medium rounded-xl hover:bg-surface transition disabled:opacity-50 border border-soft-border">Cancel</button>
-                  <button onClick={handleReport} disabled={reporting} className="flex-1 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition disabled:opacity-50">
+                  <button onClick={() => setShowReportModal(false)} disabled={reporting} className="flex-1 py-3 bg-background text-text font-medium rounded-xl hover:bg-surface transition disabled:opacity-50 border border-soft-border active:scale-95">Cancel</button>
+                  <button onClick={handleReport} disabled={reporting} className="flex-1 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition disabled:opacity-50 active:scale-95">
                     {reporting ? 'Reporting...' : 'Submit Report'}
                   </button>
               </div>
