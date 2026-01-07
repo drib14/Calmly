@@ -159,7 +159,7 @@ const CreatePost = () => {
       return false;
   };
 
-  // Helper to upload a single file directly to Cloudinary
+  // Helper to upload a single file directly to Cloudinary using fetch to bypass axios global config
   const uploadToCloudinary = async (file, signData) => {
       const formData = new FormData();
       formData.append('file', file);
@@ -170,10 +170,22 @@ const CreatePost = () => {
 
       const url = `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`;
 
-      const response = await axios.post(url, formData);
+      // Use fetch to avoid global axios interceptors (which add Authorization headers causing CORS errors)
+      const response = await fetch(url, {
+          method: 'POST',
+          body: formData
+          // Note: fetch does NOT send cookies/credentials by default, which is what we want for Cloudinary
+      });
+
+      if (!response.ok) {
+          throw new Error(`Cloudinary Upload Failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
       return {
-          url: response.data.secure_url,
-          type: response.data.resource_type === 'video' ? 'video' : 'image'
+          url: data.secure_url,
+          type: data.resource_type === 'video' ? 'video' : 'image'
       };
   };
 
@@ -260,18 +272,20 @@ const CreatePost = () => {
 
         } catch (error) {
             console.error("Create Post Error Full Object:", error);
+            // Handle Axios errors vs Fetch errors
             const status = error.response?.status;
             const data = error.response?.data;
+            const message = data?.message || error.message;
 
             if (status === 403 || status === 404) {
                 if (typeof data === 'string') {
                     console.error("Received non-JSON response:", data.substring(0, 200));
                     toast.error("Server Error (HTML Response)");
                 } else {
-                    toast.error(data?.message || "Failed to verify identity");
+                    toast.error(message || "Failed to verify identity");
                 }
             } else {
-                toast.error(data?.message || "Failed to post");
+                toast.error(message || "Failed to post");
             }
         } finally {
             setUploading(false);
