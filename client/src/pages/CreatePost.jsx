@@ -299,6 +299,9 @@ const CreatePost = () => {
           setShowNewIdentity(false);
           setNewIdentityName('');
           toast.success("Identity created");
+      } else {
+          // ADDED ERROR HANDLING TOAST
+          toast.error(res.message || "Failed to create identity");
       }
       setCreatingIdentity(false);
   };

@@ -17,24 +17,45 @@ router.get('/', protect, async (req, res) => {
 // Create a new identity (Pseudonym)
 router.post('/', protect, async (req, res) => {
   const { name, bio, avatar } = req.body;
-  const handle = `@${name.replace(/\s+/g, '').toLowerCase()}`;
+
+  if (!name || !name.trim()) {
+      return res.status(400).json({ message: 'Name is required' });
+  }
+
+  // Base handle generation
+  let handle = `@${name.trim().replace(/\s+/g, '').toLowerCase()}`;
+
+  // Ensure handle isn't empty/invalid
+  if (handle === '@') {
+      handle = `@user_${Math.floor(Math.random() * 10000)}`;
+  }
 
   try {
-    const exists = await Identity.findOne({ handle });
+    // Check for collision and retry with suffix
+    let exists = await Identity.findOne({ handle });
     if (exists) {
-        return res.status(400).json({ message: 'Pseudonym already taken' });
+        // Append random 4-digit number
+        const suffix = Math.floor(1000 + Math.random() * 9000); // 1000-9999
+        handle = `${handle}_${suffix}`;
+
+        // Double check (unlikely to collide again, but good practice)
+        exists = await Identity.findOne({ handle });
+        if (exists) {
+             return res.status(400).json({ message: 'Pseudonym handle collision. Please try a different name.' });
+        }
     }
 
     const identity = await Identity.create({
       user: req.user._id,
       type: 'pseudonym',
-      name,
+      name: name.trim(),
       bio,
       avatar,
       handle,
     });
     res.status(201).json(identity);
   } catch (error) {
+    console.error("Create Identity Error:", error);
     res.status(500).json({ message: error.message });
   }
 });
