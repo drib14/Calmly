@@ -66,9 +66,18 @@ const alignOptions = [
 ];
 
 const CreatePost = () => {
-  const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
+  const { identities, currentIdentity, createPseudonym, deleteIdentity } = useIdentity();
   const { settings } = useSettings();
   const navigate = useNavigate();
+
+  // Local State for Identity Selection (Decoupled from Global Context)
+  const [selectedIdentityId, setSelectedIdentityId] = useState(null);
+
+  useEffect(() => {
+      if (currentIdentity && !selectedIdentityId) {
+          setSelectedIdentityId(currentIdentity._id);
+      }
+  }, [currentIdentity]);
 
   const [type, setType] = useState('confession');
   const [mood, setMood] = useState('Neutral');
@@ -212,7 +221,7 @@ const CreatePost = () => {
             toast.error("Failed to save journal entry");
         }
     } else {
-        if (!currentIdentity) return toast.error("Select an identity");
+        if (!selectedIdentityId) return toast.error("Select an identity");
 
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -241,7 +250,7 @@ const CreatePost = () => {
 
             // 3. Send Post Data (JSON only)
             const postPayload = {
-                identityId: currentIdentity._id,
+                identityId: selectedIdentityId, // Use local selection
                 type,
                 mood,
                 content,
@@ -333,8 +342,8 @@ const CreatePost = () => {
               {identities.map(id => (
                   <div key={id._id} className="relative group">
                       <button
-                        onClick={() => selectIdentity(id._id)}
-                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
+                        onClick={() => setSelectedIdentityId(id._id)} // Update local state ONLY
+                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${selectedIdentityId === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
                       >
                           <Avatar identity={id} size="sm" />
                           <div className="flex flex-col items-start leading-none">

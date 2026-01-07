@@ -100,15 +100,14 @@ const Profile = () => {
       setViewerOpen(true);
   };
 
-  const openMediaViewer = (mediaUrl) => {
-      // Fix potential crash if posts array is malformed
-      const allMedia = posts ? posts.flatMap(p => p.media).filter(Boolean) : [];
-      if (allMedia.length === 0) return;
+  const openMediaViewer = (targetMedia) => {
+      // Create a clean array of URL strings for the viewer
+      const viewerList = allMedia.map(m => m.url);
+      setViewerImages(viewerList);
 
-      setViewerImages(allMedia);
-      const idx = allMedia.indexOf(mediaUrl);
+      const idx = viewerList.indexOf(targetMedia.url);
       setViewerIndex(idx >= 0 ? idx : 0);
-      setViewerType(null); // No specific type context from media grid (could be ambiguous)
+      setViewerType(null);
       setViewerOpen(true);
   };
 
@@ -186,14 +185,30 @@ const Profile = () => {
   };
 
   // Aggregate Media for Gallery (Posts + Profile History)
-  const postMedia = posts ? posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media) : [];
-  const avatarMedia = identity.avatarHistory || [];
-  if (identity.avatar) avatarMedia.unshift(identity.avatar);
-  const coverMedia = identity.coverHistory || [];
-  if (identity.coverPhoto) coverMedia.unshift(identity.coverPhoto);
+  // Fix: Handle both legacy strings (history) and new objects (post media)
+  const postMedia = posts ? posts.flatMap(p => p.media || []) : [];
 
-  // Combine unique
-  const allMedia = [...new Set([...postMedia, ...avatarMedia, ...coverMedia])].filter(Boolean);
+  // Normalize everything to objects: { url, type }
+  const normalizedPostMedia = postMedia.map(m =>
+      typeof m === 'string' ? { url: m, type: 'image' } : m
+  );
+
+  const avatarMedia = (identity.avatarHistory || []).map(url => ({ url, type: 'image' }));
+  if (identity.avatar) avatarMedia.unshift({ url: identity.avatar, type: 'image' });
+
+  const coverMedia = (identity.coverHistory || []).map(url => ({ url, type: 'image' }));
+  if (identity.coverPhoto) coverMedia.unshift({ url: identity.coverPhoto, type: 'image' });
+
+  // Combine and deduplicate based on URL
+  const allMedia = [
+      ...normalizedPostMedia,
+      ...avatarMedia,
+      ...coverMedia
+  ].filter((item, index, self) =>
+      index === self.findIndex((t) => (
+          t.url === item.url
+      ))
+  );
 
   return (
     <div className="max-w-2xl mx-auto pb-20">
@@ -337,10 +352,10 @@ const Profile = () => {
                   ) : (
                       allMedia.map((media, idx) => (
                           <div key={idx} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer hover:opacity-90 transition" onClick={() => openMediaViewer(media)}>
-                              {media.match(/\.(mp4|webm)$/) ? (
-                                  <video src={media} className="w-full h-full object-cover" />
+                              {media.type === 'video' ? (
+                                  <video src={media.url} className="w-full h-full object-cover" />
                               ) : (
-                                  <img src={media} className="w-full h-full object-cover" loading="lazy" />
+                                  <img src={media.url} className="w-full h-full object-cover" loading="lazy" />
                               )}
                           </div>
                       ))
