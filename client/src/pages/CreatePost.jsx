@@ -159,8 +159,10 @@ const CreatePost = () => {
       return false;
   };
 
-  // Helper to upload a single file directly to Cloudinary using fetch to bypass axios global config
+  // Helper to upload a single file directly to Cloudinary using a separate Axios instance
   const uploadToCloudinary = async (file, signData) => {
+      console.log("Starting Upload via Dedicated Axios Instance...");
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('api_key', signData.apiKey);
@@ -170,22 +172,19 @@ const CreatePost = () => {
 
       const url = `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`;
 
-      // Use fetch to avoid global axios interceptors (which add Authorization headers causing CORS errors)
-      const response = await fetch(url, {
-          method: 'POST',
-          body: formData
-          // Note: fetch does NOT send cookies/credentials by default, which is what we want for Cloudinary
+      // Fix: Use a dedicated axios instance to avoid global interceptors
+      const instance = axios.create({
+          withCredentials: false // Disable cookies/credentials
       });
 
-      if (!response.ok) {
-          throw new Error(`Cloudinary Upload Failed: ${response.statusText}`);
-      }
+      // Explicitly delete Authorization header from defaults to be safe from inheritance
+      delete instance.defaults.headers.common['Authorization'];
 
-      const data = await response.json();
+      const response = await instance.post(url, formData);
 
       return {
-          url: data.secure_url,
-          type: data.resource_type === 'video' ? 'video' : 'image'
+          url: response.data.secure_url,
+          type: response.data.resource_type === 'video' ? 'video' : 'image'
       };
   };
 
@@ -272,7 +271,6 @@ const CreatePost = () => {
 
         } catch (error) {
             console.error("Create Post Error Full Object:", error);
-            // Handle Axios errors vs Fetch errors
             const status = error.response?.status;
             const data = error.response?.data;
             const message = data?.message || error.message;
