@@ -101,7 +101,10 @@ const Profile = () => {
   };
 
   const openMediaViewer = (mediaUrl) => {
-      const allMedia = posts.flatMap(p => p.media).filter(Boolean);
+      // Fix potential crash if posts array is malformed
+      const allMedia = posts ? posts.flatMap(p => p.media).filter(Boolean) : [];
+      if (allMedia.length === 0) return;
+
       setViewerImages(allMedia);
       const idx = allMedia.indexOf(mediaUrl);
       setViewerIndex(idx >= 0 ? idx : 0);
@@ -183,7 +186,7 @@ const Profile = () => {
   };
 
   // Aggregate Media for Gallery (Posts + Profile History)
-  const postMedia = posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media);
+  const postMedia = posts ? posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media) : [];
   const avatarMedia = identity.avatarHistory || [];
   if (identity.avatar) avatarMedia.unshift(identity.avatar);
   const coverMedia = identity.coverHistory || [];
@@ -278,7 +281,7 @@ const Profile = () => {
                        <span>Joined {new Date(identity.createdAt).toLocaleDateString()}</span>
                    </div>
                    <div>
-                       <span className="font-bold text-text">{posts.length}</span> Moments
+                       <span className="font-bold text-text">{posts ? posts.length : 0}</span> Moments
                    </div>
               </div>
           </div>
@@ -288,24 +291,24 @@ const Profile = () => {
       <div className="flex border-b border-soft-border mb-6">
           <button
             onClick={() => setActiveTab('moments')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 px-4 py-3 text-sm font-bold transition flex items-center justify-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
-              <Grid size={16} />
-              <span>Moments</span>
+              <Grid size={18} />
+              <span className="hidden md:inline">Moments</span>
           </button>
           <button
             onClick={() => setActiveTab('media')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 px-4 py-3 text-sm font-bold transition flex items-center justify-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
-              <ImageIcon size={16} />
-              <span>Media</span>
+              <ImageIcon size={18} />
+              <span className="hidden md:inline">Media</span>
           </button>
           <button
             onClick={() => setActiveTab('reposts')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 px-4 py-3 text-sm font-bold transition flex items-center justify-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
-              <Repeat size={16} />
-              <span>Reposts</span>
+              <Repeat size={18} />
+              <span className="hidden md:inline">Reposts</span>
           </button>
       </div>
 
@@ -313,7 +316,7 @@ const Profile = () => {
       <div className="min-h-[200px]">
           {activeTab === 'moments' && (
               <div className="space-y-6">
-                  {posts.length === 0 ? (
+                  {(!posts || posts.length === 0) ? (
                       <div className="text-center py-10 opacity-50">
                           <p className="text-secondary">This soul is quiet for now.</p>
                       </div>

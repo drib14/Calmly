@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatShortTime } from '../utils/dateUtils';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight, Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -15,7 +15,44 @@ import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
-import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
+
+// New Component: Reactors Modal
+const ReactorsModal = ({ isOpen, onClose, reactors }) => {
+    const navigate = useNavigate();
+
+    if (!isOpen) return null;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose}>
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-soft-border">
+                <h3 className="text-lg font-bold font-serif text-text">Liked by</h3>
+                <button onClick={onClose}><X size={20} className="text-secondary" /></button>
+            </div>
+            <div className="max-h-80 overflow-y-auto custom-scrollbar space-y-3">
+                {reactors.map((reactor, idx) => (
+                    <div
+                        key={idx}
+                        className="flex items-center justify-between p-2 hover:bg-background rounded-xl transition cursor-pointer"
+                        onClick={() => {
+                            if (reactor.handle) {
+                                navigate(`/profile/${reactor.handle.replace('@', '')}`);
+                                onClose();
+                            }
+                        }}
+                    >
+                        <div className="flex items-center space-x-3">
+                            <Avatar identity={reactor} size="sm" />
+                            <div>
+                                <p className="text-sm font-bold text-text">{reactor.name}</p>
+                                <p className="text-[10px] text-secondary uppercase tracking-wider">{reactor.type}</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </Modal>
+    );
+};
 
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
@@ -26,6 +63,9 @@ const PostCard = ({ post, mutate }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+
+  // Reactors Modal
+  const [showReactorsModal, setShowReactorsModal] = useState(false);
 
   // Image Viewer
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -184,18 +224,26 @@ const PostCard = ({ post, mutate }) => {
   const handleProfileClick = (e) => {
       e.stopPropagation();
       const myRealIdentity = identities?.find(i => i.type === 'real');
+
+      // Check if the current user owns the post's identity
+      // We assume identities are populated. If post.identity.user is populated, we can check IDs.
+      // Or we check if the post.identity._id matches one of MY identities.
       const isMyPost = identities?.some(i => i._id === post.identity._id);
 
       if (post.identity.type === 'anonymous') {
           if (isMyPost && myRealIdentity) {
+              // Redirect owner to their own profile (or the anon profile if they wish, but usually real profile is the main view)
+              // User said: "redirect that user to its own profile page"
               navigate(`/profile/${myRealIdentity.handle.replace('@', '')}`);
               return;
           } else {
+            // Not owner -> Show Error Modal
             setShowAnonError(true);
             return;
           }
       }
 
+      // Handle Pseudonyms and Real Identities linking
       if (post.identity.handle) {
           navigate(`/profile/${post.identity.handle.replace('@', '')}`);
       }
@@ -223,6 +271,17 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
+  // Reactors Logic
+  const reactors = post.likes?.map(l => l.identity) || [];
+  const reactorAvatars = reactors.slice(0, 3);
+  const remainingReactors = reactors.length - 3;
+  let reactorText = '';
+  if (reactors.length > 0) {
+      const firstName = reactors[0].name || 'Someone';
+      if (reactors.length === 1) reactorText = `${firstName} liked this`;
+      else reactorText = `${firstName} and ${reactors.length - 1} others liked this`;
+  }
+
   return (
     <motion.div
         layout
@@ -248,7 +307,7 @@ const PostCard = ({ post, mutate }) => {
       )}
 
       {/* Header */}
-      <div className="flex justify-between items-start mb-4 relative">
+      <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="flex items-center space-x-3 min-w-0 flex-1 mr-2">
            <div onClick={handleProfileClick} className="cursor-pointer flex-shrink-0">
                <Avatar identity={post.identity} />
@@ -288,7 +347,7 @@ const PostCard = ({ post, mutate }) => {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
+                        className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-30 min-w-[160px]"
                     >
                         {isOwner && (
                             <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg">
@@ -307,7 +366,7 @@ const PostCard = ({ post, mutate }) => {
       {/* Content */}
       <div className="md:pl-13 relative">
           {shouldBlur && (
-              <div className="absolute inset-0 z-20 backdrop-blur-md bg-white/60 dark:bg-black/60 flex flex-col items-center justify-center rounded-xl p-4 text-center">
+              <div className="absolute inset-0 z-0 backdrop-blur-md bg-white/60 dark:bg-black/60 flex flex-col items-center justify-center rounded-xl p-4 text-center border border-soft-border">
                   <EyeOff className="text-secondary mb-2" size={32} />
                   <p className="text-sm font-bold text-text mb-1">Content Hidden (Safe Mode)</p>
                   <p className="text-xs text-secondary mb-4">This post contains a mood that might be triggering.</p>
@@ -452,67 +511,95 @@ const PostCard = ({ post, mutate }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-4 border-t border-soft-border">
-          <div className="flex space-x-6 relative">
-              {interactionsEnabled && (
-                  <button
-                    onClick={handleLike}
-                    className={clsx(
-                        "flex items-center space-x-2 transition group",
-                        isLiked ? "text-red-500" : "text-secondary hover:text-red-500"
-                    )}
-                  >
-                      <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
-                      <span className="text-xs font-bold">{post.likes?.length || 0}</span>
-                  </button>
-              )}
-
-              {commentsEnabled && (
-                  <button
-                    onClick={() => setExpanded(!expanded)}
-                    className="flex items-center space-x-2 text-secondary hover:text-blue-500 transition group"
-                  >
-                      <MessageCircle size={20} />
-                      <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
-                  </button>
-              )}
-
-              <button
-                onClick={handleRepost}
-                className={clsx("flex items-center space-x-2 transition group", isReposted ? "text-green-500" : "text-secondary hover:text-green-500")}
+      <div className="pt-2 border-t border-soft-border">
+          {/* Reactors Summary */}
+          {reactors.length > 0 && (
+              <div
+                className="flex items-center space-x-2 mb-3 cursor-pointer group"
+                onClick={() => setShowReactorsModal(true)}
               >
-                  <Repeat size={20} className={clsx("transition-transform", isReposting && "animate-spin")} />
-                  <span className="text-xs font-bold">{post.reposts?.length || 0}</span>
-              </button>
+                  <div className="flex -space-x-1.5">
+                      {reactorAvatars.map(r => (
+                          <div key={r._id} className="ring-2 ring-surface rounded-full">
+                              <Avatar identity={r} size="xs" />
+                          </div>
+                      ))}
+                      {remainingReactors > 0 && (
+                          <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 ring-2 ring-surface flex items-center justify-center text-[8px] font-bold text-secondary">
+                              +{remainingReactors}
+                          </div>
+                      )}
+                  </div>
+                  <span className="text-[11px] text-secondary font-medium group-hover:underline decoration-soft-border underline-offset-2">
+                      {reactorText}
+                  </span>
+              </div>
+          )}
 
-              <div className="relative" ref={shareRef}>
+          <div className="flex items-center justify-between">
+              <div className="flex space-x-6 relative">
+                  {interactionsEnabled && (
+                      <button
+                        onClick={handleLike}
+                        className={clsx(
+                            "flex items-center space-x-2 transition group",
+                            isLiked ? "text-red-500" : "text-secondary hover:text-red-500"
+                        )}
+                      >
+                          <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
+                          {/* Removing number here since it is now in summary above, or keep? User requested summary at top of button. Usually replaces it or stays.
+                              User said: "display at the top of the reaction button of it the total... display also miniture...".
+                              I will keep the icon clean or show 0 if empty. */}
+                      </button>
+                  )}
+
+                  {commentsEnabled && (
+                      <button
+                        onClick={() => setExpanded(!expanded)}
+                        className="flex items-center space-x-2 text-secondary hover:text-blue-500 transition group"
+                      >
+                          <MessageCircle size={20} />
+                          <span className="text-xs font-bold">{comments ? comments.length : (post.commentCount || 0)}</span>
+                      </button>
+                  )}
+
                   <button
-                    onClick={() => setShowShareMenu(!showShareMenu)}
-                    className="flex items-center space-x-2 text-secondary hover:text-text transition group"
+                    onClick={handleRepost}
+                    className={clsx("flex items-center space-x-2 transition group", isReposted ? "text-green-500" : "text-secondary hover:text-green-500")}
                   >
-                      <Share2 size={20} />
+                      <Repeat size={20} className={clsx("transition-transform", isReposting && "animate-spin")} />
+                      <span className="text-xs font-bold">{post.reposts?.length || 0}</span>
                   </button>
 
-                  <AnimatePresence>
-                      {showShareMenu && (
-                          <motion.div
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute left-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
-                          >
-                              <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition">
-                                  <LinkIcon size={14} /> <span>Copy Link</span>
-                              </button>
-                              <button
-                                onClick={() => { setShowShareModal(true); setShowShareMenu(false); }}
-                                className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition"
+                  <div className="relative" ref={shareRef}>
+                      <button
+                        onClick={() => setShowShareMenu(!showShareMenu)}
+                        className="flex items-center space-x-2 text-secondary hover:text-text transition group"
+                      >
+                          <Share2 size={20} />
+                      </button>
+
+                      <AnimatePresence>
+                          {showShareMenu && (
+                              <motion.div
+                                  initial={{ opacity: 0, scale: 0.95 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  className="absolute left-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-30 min-w-[160px]"
                               >
-                                  <Send size={14} /> <span>Share as Message</span>
-                              </button>
-                          </motion.div>
-                      )}
-                  </AnimatePresence>
+                                  <button onClick={handleCopyLink} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition">
+                                      <LinkIcon size={14} /> <span>Copy Link</span>
+                                  </button>
+                                  <button
+                                    onClick={() => { setShowShareModal(true); setShowShareMenu(false); }}
+                                    className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg transition"
+                                  >
+                                      <Send size={14} /> <span>Share as Message</span>
+                                  </button>
+                              </motion.div>
+                          )}
+                      </AnimatePresence>
+                  </div>
               </div>
           </div>
       </div>
@@ -633,6 +720,13 @@ const PostCard = ({ post, mutate }) => {
               <button onClick={() => setShowAnonError(false)} className="mt-4 text-xs font-bold text-text hover:underline">Close</button>
           </div>
       </Modal>
+
+      {/* Reactors Modal */}
+      <ReactorsModal
+          isOpen={showReactorsModal}
+          onClose={() => setShowReactorsModal(false)}
+          reactors={reactors}
+      />
 
       {/* Delete Modal */}
       <ConfirmationModal
