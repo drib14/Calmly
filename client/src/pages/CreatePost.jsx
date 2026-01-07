@@ -159,6 +159,24 @@ const CreatePost = () => {
       return false;
   };
 
+  // Helper to upload a single file directly to Cloudinary
+  const uploadToCloudinary = async (file, signData) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('api_key', signData.apiKey);
+      formData.append('timestamp', signData.timestamp);
+      formData.append('signature', signData.signature);
+      formData.append('folder', 'calmly_uploads');
+
+      const url = `https://api.cloudinary.com/v1_1/${signData.cloudName}/auto/upload`;
+
+      const response = await axios.post(url, formData);
+      return {
+          url: response.data.secure_url,
+          type: response.data.resource_type === 'video' ? 'video' : 'image'
+      };
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -191,29 +209,43 @@ const CreatePost = () => {
             toast.error("Authentication missing. Please login again.");
             return;
         }
-        console.log("Token present:", !!token);
 
         setUploading(true);
 
         try {
-            const formData = new FormData();
-            formData.append('identityId', currentIdentity._id);
-            formData.append('type', type);
-            formData.append('mood', mood);
-            formData.append('content', content);
-            formData.append('visibility', visibility);
-            if ((type === 'poetry' || type === 'letter') && title) formData.append('title', title);
+            let uploadedMedia = [];
 
-            if (type === 'letter') formData.append('letterFields', JSON.stringify(letterFields));
-            if (type === 'poetry') formData.append('style', JSON.stringify(poemStyle));
+            // Client-side Upload Logic
+            if (files.length > 0) {
+                // 1. Get Signature
+                const signRes = await axios.get('/posts/sign-upload', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const signData = signRes.data;
 
-            files.forEach(file => {
-                formData.append('media', file);
-            });
+                // 2. Upload Files in Parallel
+                const uploadPromises = files.map(file => uploadToCloudinary(file, signData));
+                uploadedMedia = await Promise.all(uploadPromises);
+            }
 
-            await axios.post('/posts', formData, {
+            // 3. Send Post Data (JSON only)
+            const postPayload = {
+                identityId: currentIdentity._id,
+                type,
+                mood,
+                content,
+                visibility,
+                media: uploadedMedia // Array of { url, type }
+            };
+
+            if ((type === 'poetry' || type === 'letter') && title) postPayload.title = title;
+            if (type === 'letter') postPayload.letterFields = letterFields;
+            if (type === 'poetry') postPayload.style = poemStyle;
+
+            await axios.post('/posts', postPayload, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' // Explicitly JSON
                 }
             });
 
@@ -228,20 +260,14 @@ const CreatePost = () => {
 
         } catch (error) {
             console.error("Create Post Error Full Object:", error);
-            console.error("Response Status:", error.response?.status);
-            console.error("Response Headers:", error.response?.headers);
-            console.error("Response Data Type:", typeof error.response?.data);
-            console.error("Response Data:", error.response?.data);
-
             const status = error.response?.status;
             const data = error.response?.data;
 
             if (status === 403 || status === 404) {
                 if (typeof data === 'string') {
-                    console.error("Received non-JSON response (likely HTML from Vercel/WAF):", data.substring(0, 200));
+                    console.error("Received non-JSON response:", data.substring(0, 200));
                     toast.error("Server Error (HTML Response)");
                 } else {
-                    console.error("Post Error Debug:", data?.debug);
                     toast.error(data?.message || "Failed to verify identity");
                 }
             } else {
@@ -502,7 +528,7 @@ const CreatePost = () => {
                 disabled={uploading}
                 className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2 font-medium"
              >
-                 {uploading ? <span>Publishing...</span> : <span>Post</span>}
+                 {uploading ? <span>{uploading ? 'Publishing...' : 'Post'}</span> : <span>Post</span>}
              </button>
         </div>
       </form>

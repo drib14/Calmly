@@ -5,7 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
 const Report = require('../models/Report');
-const { upload } = require('../utils/cloudinary');
+const { upload, cloudinary } = require('../utils/cloudinary');
 
 // Wrapper to handle Multer errors
 const uploadMiddleware = (req, res, next) => {
@@ -25,6 +25,22 @@ const uploadMiddleware = (req, res, next) => {
     });
 };
 
+// Generate Cloudinary Signature for Client-Side Upload
+router.get('/sign-upload', protect, (req, res) => {
+    const timestamp = Math.round((new Date).getTime() / 1000);
+    const signature = cloudinary.utils.api_sign_request({
+        timestamp: timestamp,
+        folder: 'calmly_uploads'
+    }, process.env.CLOUDINARY_API_SECRET ? process.env.CLOUDINARY_API_SECRET.trim() : '');
+
+    res.json({
+        signature,
+        timestamp,
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME ? process.env.CLOUDINARY_CLOUD_NAME.trim() : '',
+        apiKey: process.env.CLOUDINARY_API_KEY ? process.env.CLOUDINARY_API_KEY.trim() : ''
+    });
+});
+
 // Create a post
 router.post('/', protect, uploadMiddleware, async (req, res) => {
   // Debug log to verify request reached handler
@@ -34,11 +50,24 @@ router.post('/', protect, uploadMiddleware, async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style } = req.body;
   let media = [];
 
-  if (req.files) {
+  // Handle Multer Files (Server-side upload)
+  if (req.files && req.files.length > 0) {
       media = req.files.map(file => ({
           url: file.path,
           type: file.mimetype.startsWith('video') ? 'video' : 'image'
       }));
+  }
+  // Handle JSON Media (Client-side upload)
+  else if (req.body.media && Array.isArray(req.body.media)) {
+      media = req.body.media; // Expecting [{ url: '...', type: '...' }]
+  }
+  // Handle JSON Media as string (Form data edge case)
+  else if (req.body.media && typeof req.body.media === 'string') {
+      try {
+          media = JSON.parse(req.body.media);
+      } catch (e) {
+          console.error("Failed to parse media string:", e);
+      }
   }
 
   try {
