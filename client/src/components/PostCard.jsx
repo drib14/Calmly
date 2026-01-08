@@ -476,7 +476,7 @@ const PostCard = ({ post, mutate }) => {
       <div className="pt-4 border-t border-soft-border">
           {/* Reactor Avatars */}
           {reactorAvatars.length > 0 && interactionsEnabled && (
-              <div className="flex items-center mb-3">
+              <div className="flex items-center mb-3 text-xs text-secondary">
                   <div className="flex -space-x-1.5 mr-2">
                     {reactorAvatars.slice(0, 3).map((identity) => (
                         <div key={identity._id} className="w-5 h-5 rounded-full ring-2 ring-surface z-0 relative">
@@ -484,11 +484,12 @@ const PostCard = ({ post, mutate }) => {
                         </div>
                     ))}
                   </div>
-                  {reactorAvatars.length > 3 && (
-                      <span className="text-[10px] font-bold text-secondary bg-background px-1.5 py-0.5 rounded-md border border-soft-border">
-                          +{reactorAvatars.length - 3}
-                      </span>
-                  )}
+                  <span>
+                      Liked by <span className="font-bold text-text">{reactorAvatars[0].name}</span>
+                      {reactorAvatars.length > 1 && (
+                          <> and <span className="font-bold text-text">{reactorAvatars.length - 1} others</span></>
+                      )}
+                  </span>
               </div>
           )}
 

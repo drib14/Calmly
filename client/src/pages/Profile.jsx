@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
@@ -101,9 +101,10 @@ const Profile = () => {
   };
 
   const openMediaViewer = (mediaUrl) => {
-      const allMedia = posts.flatMap(p => p.media).filter(Boolean);
-      setViewerImages(allMedia);
-      const idx = allMedia.indexOf(mediaUrl);
+      // Reconstruct all media list from the unified list
+      const allUrls = allMedia.map(m => m.url);
+      setViewerImages(allUrls);
+      const idx = allUrls.indexOf(mediaUrl);
       setViewerIndex(idx >= 0 ? idx : 0);
       setViewerType(null); // No specific type context from media grid (could be ambiguous)
       setViewerOpen(true);
@@ -183,14 +184,39 @@ const Profile = () => {
   };
 
   // Aggregate Media for Gallery (Posts + Profile History)
-  const postMedia = posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media);
-  const avatarMedia = identity.avatarHistory || [];
-  if (identity.avatar) avatarMedia.unshift(identity.avatar);
-  const coverMedia = identity.coverHistory || [];
-  if (identity.coverPhoto) coverMedia.unshift(identity.coverPhoto);
+  // Normalize to object: { url, type, stats: { likes, comments, reposts } }
+  const postMediaItems = posts.flatMap(p => {
+      if (!p.media || p.media.length === 0) return [];
+      return p.media.map(m => ({
+          url: m.url,
+          type: m.type,
+          stats: {
+              likes: p.likes?.length || 0,
+              comments: p.commentCount || 0,
+              reposts: p.reposts?.length || 0
+          }
+      }));
+  });
 
-  // Combine unique
-  const allMedia = [...new Set([...postMedia, ...avatarMedia, ...coverMedia])].filter(Boolean);
+  const avatarMediaItems = (identity.avatarHistory || []).map(url => ({
+      url, type: 'image', stats: null
+  }));
+  if (identity.avatar) avatarMediaItems.unshift({ url: identity.avatar, type: 'image', stats: null });
+
+  const coverMediaItems = (identity.coverHistory || []).map(url => ({
+      url, type: 'image', stats: null
+  }));
+  if (identity.coverPhoto) coverMediaItems.unshift({ url: identity.coverPhoto, type: 'image', stats: null });
+
+  // Combine and Deduplicate by URL
+  const allMediaRaw = [...postMediaItems, ...avatarMediaItems, ...coverMediaItems];
+  const uniqueMediaMap = new Map();
+  allMediaRaw.forEach(item => {
+      if (item.url && !uniqueMediaMap.has(item.url)) {
+          uniqueMediaMap.set(item.url, item);
+      }
+  });
+  const allMedia = Array.from(uniqueMediaMap.values());
 
   return (
     <div className="max-w-2xl mx-auto pb-20">
@@ -333,12 +359,33 @@ const Profile = () => {
                       </div>
                   ) : (
                       allMedia.map((media, idx) => (
-                          <div key={idx} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer hover:opacity-90 transition" onClick={() => openMediaViewer(media)}>
-                              {media.match(/\.(mp4|webm)$/) ? (
-                                  <video src={media} className="w-full h-full object-cover" />
+                          <div key={idx} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer relative group" onClick={() => openMediaViewer(media.url)}>
+                              {/* Media Content */}
+                              {media.type === 'video' || (media.url && media.url.match(/\.(mp4|webm)$/)) ? (
+                                  <video src={media.url} className="w-full h-full object-cover" />
                               ) : (
-                                  <img src={media} className="w-full h-full object-cover" loading="lazy" />
+                                  <img src={media.url} className="w-full h-full object-cover" loading="lazy" />
                               )}
+
+                              {/* Hover Overlay with Stats */}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+                                  {media.stats && (
+                                      <>
+                                          <div className="flex items-center gap-1 font-bold text-sm">
+                                              <Heart size={16} className="fill-white" />
+                                              <span>{media.stats.likes}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 font-bold text-sm">
+                                              <MessageCircle size={16} className="fill-white" />
+                                              <span>{media.stats.comments}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 font-bold text-sm">
+                                              <Repeat size={16} />
+                                              <span>{media.stats.reposts}</span>
+                                          </div>
+                                      </>
+                                  )}
+                              </div>
                           </div>
                       ))
                   )}
