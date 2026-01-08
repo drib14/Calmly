@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import NoteBubble from '../components/NoteBubble';
-import ImageViewer from '../components/ImageViewer';
+import MediaViewer from '../components/MediaViewer';
 import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
@@ -528,7 +528,7 @@ const Profile = () => {
         isDanger={true}
       />
 
-      <ImageViewer
+      <MediaViewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         images={viewerImages}

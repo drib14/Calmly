@@ -10,7 +10,7 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
-import ImageViewer from './ImageViewer';
+import MediaViewer from './MediaViewer';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
@@ -732,7 +732,7 @@ const PostCard = ({ post, mutate }) => {
           reactors={reactorAvatars}
       />
 
-      <ImageViewer
+      <MediaViewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         imageSrc={viewerImage}
