@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+
   try {
     const uri = process.env.MONGO_URI ? process.env.MONGO_URI.trim() : '';
     const conn = await mongoose.connect(uri);
