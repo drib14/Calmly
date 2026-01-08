@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { PenTool, Heart, Shield, Lock, Ghost, Users, Activity, User } from 'lucide-react';
+import { PenTool, Heart, Shield, Lock, Ghost, Users, Activity, User, Image, MessageCircle, Moon } from 'lucide-react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import Avatar from '../components/Avatar';
 import { useAuth } from '../context/AuthContext';
+import { useIdentity } from '../context/IdentityContext';
 
 const Landing = () => {
   const [stats, setStats] = useState(null);
   const { user } = useAuth();
+  const { currentIdentity } = useIdentity();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -95,10 +97,16 @@ const Landing = () => {
                               <PenTool size={20} />
                               <span>Create Moment</span>
                           </Link>
-                          <Link to={`/profile/${user.identities?.[0]?.handle?.replace('@', '') || ''}`} className="w-full md:w-auto px-8 py-4 bg-surface text-text border border-soft-border rounded-full font-medium text-lg hover:bg-background transition flex items-center justify-center space-x-2 active:scale-95">
-                              <User size={20} />
-                              <span>My Profile</span>
-                          </Link>
+                          {currentIdentity ? (
+                              <Link to={`/profile/${currentIdentity.handle.replace('@', '')}`} className="w-full md:w-auto px-8 py-4 bg-surface text-text border border-soft-border rounded-full font-medium text-lg hover:bg-background transition flex items-center justify-center space-x-2 active:scale-95">
+                                  <User size={20} />
+                                  <span>My Profile</span>
+                              </Link>
+                          ) : (
+                              <button disabled className="w-full md:w-auto px-8 py-4 bg-surface text-secondary border border-soft-border rounded-full font-medium text-lg cursor-not-allowed">
+                                  Loading Profile...
+                              </button>
+                          )}
                       </>
                   ) : (
                       <>
@@ -135,7 +143,6 @@ const Landing = () => {
                             </div>
                          </div>
                          <div className="h-[200px] w-full min-h-[200px]">
-                            {/* Explicit width/height to prevent Recharts -1/-1 error during initial render/animation */}
                             <ResponsiveContainer width="100%" height={200}>
                                 <LineChart data={stats.postsPerDay}>
                                     <XAxis
@@ -188,7 +195,6 @@ const Landing = () => {
                         {stats.feedbacks.map((fb) => (
                             <div key={fb._id} className="bg-surface p-6 rounded-2xl border border-soft-border shadow-sm hover:shadow-md transition-shadow">
                                 <div className="flex items-center space-x-3 mb-4">
-                                    {/* Mock Avatar or Initials if none */}
                                     <div className="w-10 h-10 bg-slate-900 dark:bg-white rounded-full flex items-center justify-center text-white dark:text-slate-900 font-bold">
                                         {fb.user.avatar ? <img src={fb.user.avatar} className="w-full h-full rounded-full object-cover" /> : fb.user.name[0]}
                                     </div>
@@ -213,12 +219,15 @@ const Landing = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 max-w-5xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-20 max-w-6xl mx-auto"
           >
               {[
                   { icon: Ghost, title: "Total Anonymity", desc: "Post anonymously with our Incognito identity system. Your secrets are safe." },
                   { icon: Users, title: "Multiple Personas", desc: "Create pseudonyms for different sides of your creative expression." },
-                  { icon: Lock, title: "Private Journals", desc: "Keep a secure, encrypted personal journal for your eyes only." }
+                  { icon: Lock, title: "Private Journals", desc: "Keep a secure, encrypted personal journal for your eyes only." },
+                  { icon: Heart, title: "React & Connect", desc: "Express yourself with reactions and see who resonates with your moments." },
+                  { icon: Image, title: "Immersive Media", desc: "Share photos and videos in beautiful, adaptive galleries." },
+                  { icon: Moon, title: "Your Theme, Your Vibe", desc: "Customize your experience with Dark Mode, Sage, and Ocean themes." }
               ].map((feature, i) => (
                   <div key={i} className="bg-surface/60 backdrop-blur-sm p-8 rounded-3xl border border-soft-border shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
                       <div className="w-12 h-12 bg-background rounded-2xl flex items-center justify-center mb-6 text-secondary">
