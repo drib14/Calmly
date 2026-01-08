@@ -38,7 +38,7 @@ const Layout = ({ children }) => {
     <div className={clsx("flex flex-col md:flex-row min-h-screen transition-colors duration-300", themeClass, fontClass, contrastClass)}>
       {user && !isAuthPage && <MobileTopBar />}
       <Navbar />
-      <main className="flex-1 md:ml-20 transition-all duration-300">
+      <main className="flex-1 transition-all duration-300 min-w-0">
         <div className={`container mx-auto p-4 md:p-8 ${user && !isAuthPage ? 'mt-16 md:mt-0 mb-16 md:mb-0' : ''}`}>
             {children}
         </div>

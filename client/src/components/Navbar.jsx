@@ -163,7 +163,7 @@ const Navbar = () => {
     {/* Sidebar (Desktop) */}
     <nav
       className={clsx(
-        "hidden md:flex fixed top-0 left-0 bottom-0 border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300",
+        "hidden md:flex sticky top-0 h-screen border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300 flex-shrink-0",
         isExpanded ? "w-64" : "w-20"
       )}
     >
