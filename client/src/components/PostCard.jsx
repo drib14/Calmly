@@ -53,6 +53,7 @@ const PostCard = ({ post, mutate }) => {
   // Touch State
   const touchStartRef = useRef(null);
   const lastTapRef = useRef(0);
+  const tapTimeoutRef = useRef(null);
 
   const optionsRef = useRef(null);
   const shareRef = useRef(null);
@@ -260,22 +261,25 @@ const PostCard = ({ post, mutate }) => {
       touchStartRef.current = null;
   };
 
-  const handleTap = (src) => {
+  const handleTap = (urlToView = null) => {
       const now = Date.now();
       const DOUBLE_TAP_DELAY = 300;
 
       if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
           // Double Tap Detected
+          if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current); // Cancel single tap action
           handleLike();
           lastTapRef.current = 0; // Reset
       } else {
-          // Single Tap - Wait to confirm it's not a double tap?
-          // For UI responsiveness, we might trigger viewer, or just ignore since we have a dedicated viewer logic?
-          // Since existing logic uses onClick to open viewer, we let that propagate if not caught?
-          // Actually, we should probably just open viewer on single tap (via onClick) and like on double.
-          // But opening viewer on double tap is annoying.
-          // We'll let onClick handle the viewer.
+          // Single Tap - Wait to confirm it's not a double tap
           lastTapRef.current = now;
+          if (urlToView) {
+              tapTimeoutRef.current = setTimeout(() => {
+                  openViewer(urlToView);
+              }, DOUBLE_TAP_DELAY);
+          }
+          // If no urlToView (text post), single tap does nothing or maybe expands?
+          // Currently we rely on "Show More" / click to expand logic if we had it.
       }
   };
 
@@ -308,8 +312,8 @@ const PostCard = ({ post, mutate }) => {
           </div>
       )}
 
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4 relative">
+      {/* Header - Z-Index 30 to stay above Safe Mode Overlay */}
+      <div className="flex justify-between items-start mb-4 relative z-30">
         <div className="flex items-center space-x-3 min-w-0 flex-1 mr-2">
            <div onClick={handleProfileClick} className="cursor-pointer flex-shrink-0 active:scale-95 transition-transform">
                <Avatar identity={post.identity} />
@@ -382,8 +386,10 @@ const PostCard = ({ post, mutate }) => {
           )}
 
           {post.type === 'letter' ? (
-              <div className={clsx(
-                  "p-6 md:p-8 rounded-lg mb-4 shadow-sm relative overflow-hidden",
+              <div
+                  onClick={() => handleTap()}
+                  className={clsx(
+                  "p-6 md:p-8 rounded-lg mb-4 shadow-sm relative overflow-hidden cursor-pointer",
                   // Apply dynamic styles based on paper type
                   post.letterFields?.paperType === 'parchment' ? 'bg-[#f0e6d2] text-[#5c4b35] border-[#e6dcc0]' :
                   post.letterFields?.paperType === 'classic' ? 'bg-amber-50 text-amber-900 border-amber-100' :
@@ -406,8 +412,9 @@ const PostCard = ({ post, mutate }) => {
               </div>
           ) : post.type === 'poetry' ? (
               <div
+                onClick={() => handleTap()}
                 className={clsx(
-                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden",
+                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden cursor-pointer",
                     post.style?.backgroundColor,
                     post.style?.align,
                     post.style?.font
@@ -419,7 +426,10 @@ const PostCard = ({ post, mutate }) => {
           ) : (
               <>
                   {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-text">{post.title}</h3>}
-                  <div className="text-text leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4">
+                  <div
+                      onClick={() => handleTap()}
+                      className="text-text leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4 cursor-pointer"
+                  >
                       {post.content}
                   </div>
 
@@ -455,7 +465,7 @@ const PostCard = ({ post, mutate }) => {
                                        <img
                                            src={post.media[0].url}
                                            className="max-w-full max-h-[70vh] w-full object-contain cursor-pointer"
-                                           onClick={(e) => { handleTap(); openViewer(post.media[0].url); }}
+                                           onClick={(e) => { handleTap(post.media[0].url); }}
                                        />
                                    )}
                               </div>
@@ -481,7 +491,7 @@ const PostCard = ({ post, mutate }) => {
                                                   <img
                                                       src={post.media[currentMediaIndex].url}
                                                       className="w-full h-full object-contain cursor-pointer"
-                                                      onClick={(e) => { handleTap(); openViewer(post.media[currentMediaIndex].url); }}
+                                                      onClick={(e) => { handleTap(post.media[currentMediaIndex].url); }}
                                                   />
                                               )}
                                           </motion.div>

@@ -17,10 +17,11 @@ router.get('/:handle', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (identity.type === 'anonymous') {
-        if (identity.user.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
-        }
+    // Check Ownership
+    const isOwner = identity.user.toString() === req.user._id.toString();
+
+    if (identity.type === 'anonymous' && !isOwner) {
+        return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
     }
 
     // Helper to fetch posts with Aggregated Comment Count
@@ -57,17 +58,40 @@ router.get('/:handle', protect, async (req, res) => {
 
         // Populate Reposts manually after aggregation (Mongoose specific population on plain objects)
         await Post.populate(posts, [
-            { path: 'reposts.identity', select: 'name type handle avatar' }
+            { path: 'reposts.identity', select: 'name type handle avatar' },
+            { path: 'likes.identity', select: 'name type handle avatar' }
         ]);
 
         return posts;
     };
 
+    // Match Criteria
+    // Owner sees all non-deleted posts. Visitors see public posts.
+    // Note: 'sensitive' isn't a visibility level, it's content.
+    // But if 'Safe Mode' hides posts from the feed API, it shouldn't hide them from the Profile API for the owner.
+    // Standard visibility: public, unlisted, private.
+    // If Owner: { identity: identity._id, deletedAt: null }
+    // If Visitor: { identity: identity._id, visibility: 'public', deletedAt: null }
+
+    const postMatch = isOwner
+        ? { identity: identity._id, deletedAt: null }
+        : { identity: identity._id, visibility: 'public', deletedAt: null };
+
     // Get Authored Posts
-    const authoredPosts = await fetchWithComments({ identity: identity._id, visibility: 'public', deletedAt: null });
+    const authoredPosts = await fetchWithComments(postMatch);
 
     // Get Reposted Posts (Where this identity is in the reposts array)
-    const repostedPosts = await fetchWithComments({ 'reposts.identity': identity._id, visibility: 'public', deletedAt: null });
+    // Reposts should probably respect visibility of the original post?
+    // Usually reposts are public actions. We'll filter public visibility for the original post unless owner.
+    // Actually, reposts array contains identities. We find posts where 'reposts.identity' has this ID.
+    // And the post itself must be public (or visible to viewer).
+    // For simplicity/safety, usually only public posts are repostable/visible.
+    const repostMatch = {
+        'reposts.identity': identity._id,
+        visibility: 'public',
+        deletedAt: null
+    };
+    const repostedPosts = await fetchWithComments(repostMatch);
 
     // Get Active Quote and POPULATE IDENTITY
     const activeQuote = await Quote.findOne({ identity: identity._id })
@@ -78,7 +102,8 @@ router.get('/:handle', protect, async (req, res) => {
         identity,
         quote: activeQuote,
         posts: authoredPosts,
-        reposts: repostedPosts
+        reposts: repostedPosts,
+        isOwner // Helper for frontend
     });
   } catch (error) {
     console.error("Profile Fetch Error:", error);
