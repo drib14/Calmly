@@ -15,6 +15,7 @@ import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
+import ReactorsModal from './ReactorsModal';
 import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
@@ -24,6 +25,7 @@ const PostCard = ({ post, mutate }) => {
   const [showOptions, setShowOptions] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showReactorsModal, setShowReactorsModal] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -223,7 +225,7 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
-  // Get reactor avatars
+  // Get reactor avatars (deduplicated by ID)
   const reactorAvatars = post.likes
       ?.map(l => l.identity)
       .filter((id, index, self) => id && self.findIndex(i => i?._id === id._id) === index) || [];
@@ -474,9 +476,12 @@ const PostCard = ({ post, mutate }) => {
 
       {/* Action Bar */}
       <div className="pt-4 border-t border-soft-border">
-          {/* Reactor Avatars */}
+          {/* Reactor Avatars & Text - Clickable */}
           {reactorAvatars.length > 0 && interactionsEnabled && (
-              <div className="flex items-center mb-3 text-xs text-secondary">
+              <button
+                  onClick={() => setShowReactorsModal(true)}
+                  className="flex items-center mb-3 text-xs text-secondary hover:text-text transition-colors text-left group"
+              >
                   <div className="flex -space-x-1.5 mr-2">
                     {reactorAvatars.slice(0, 3).map((identity) => (
                         <div key={identity._id} className="w-5 h-5 rounded-full ring-2 ring-surface z-0 relative">
@@ -484,13 +489,13 @@ const PostCard = ({ post, mutate }) => {
                         </div>
                     ))}
                   </div>
-                  <span>
+                  <span className="group-hover:underline decoration-slate-400 underline-offset-2">
                       Liked by <span className="font-bold text-text">{reactorAvatars[0].name}</span>
                       {reactorAvatars.length > 1 && (
                           <> and <span className="font-bold text-text">{reactorAvatars.length - 1} others</span></>
                       )}
                   </span>
-              </div>
+              </button>
           )}
 
           <div className="flex items-center justify-between">
@@ -718,6 +723,13 @@ const PostCard = ({ post, mutate }) => {
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
           post={post}
+      />
+
+      {/* Reactors Modal */}
+      <ReactorsModal
+          isOpen={showReactorsModal}
+          onClose={() => setShowReactorsModal(false)}
+          reactors={reactorAvatars}
       />
 
       <ImageViewer
