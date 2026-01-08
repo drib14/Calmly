@@ -73,11 +73,11 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
   };
 
   const durationOptions = [
-      { value: 3, label: '3h', icon: Battery },
-      { value: 6, label: '6h', icon: BatteryCharging },
-      { value: 12, label: '12h', icon: BatteryFull },
-      { value: 24, label: '24h', icon: Clock },
-      { value: 'custom', label: '...', icon: Zap },
+      { value: 24, label: '24 Hours' },
+      { value: 12, label: '12 Hours' },
+      { value: 6, label: '6 Hours' },
+      { value: 3, label: '3 Hours' },
+      { value: 'custom', label: 'Custom' },
   ];
 
   const audienceOptions = [
@@ -133,45 +133,35 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="text-xs font-bold text-secondary uppercase mb-2 block">Audience</label>
-                    <PillSelection
+                    <SelectionCard
                         options={audienceOptions}
                         value={audience}
                         onChange={setAudience}
+                        layout="list"
                     />
                 </div>
                 <div>
                     <label className="text-xs font-bold text-secondary uppercase mb-2 block">Duration</label>
-                    <div className="flex flex-wrap gap-2">
-                        {durationOptions.map((opt) => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setDuration(opt.value)}
-                                className={clsx(
-                                    "p-2 rounded-lg border flex items-center justify-center transition active:scale-95",
-                                    duration === opt.value
-                                        ? "bg-slate-900 text-white border-slate-900"
-                                        : "bg-background text-secondary border-soft-border hover:bg-surface"
-                                )}
-                                title={opt.label}
-                            >
-                                <opt.icon size={16} />
-                            </button>
-                        ))}
-                    </div>
-                    {duration === 'custom' && (
-                            <div className="flex items-center space-x-2 mt-2">
-                            <input
-                                type="number"
-                                className="w-full bg-background border border-soft-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-text"
-                                placeholder="Hours"
-                                min="1"
-                                max="168"
-                                value={customDuration}
-                                onChange={(e) => setCustomDuration(e.target.value)}
-                            />
-                            <span className="text-xs text-secondary">hrs</span>
-                            </div>
-                    )}
+                    <SelectionCard
+                        options={durationOptions}
+                        value={duration}
+                        onChange={setDuration}
+                        layout="list"
+                    />
+                     {duration === 'custom' && (
+                        <div className="flex items-center space-x-2 mt-2">
+                           <input
+                               type="number"
+                               className="w-full bg-background border border-soft-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-text"
+                               placeholder="Hours"
+                               min="1"
+                               max="168"
+                               value={customDuration}
+                               onChange={(e) => setCustomDuration(e.target.value)}
+                           />
+                           <span className="text-xs text-secondary">hrs</span>
+                        </div>
+                   )}
                 </div>
             </div>
 

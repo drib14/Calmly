@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Modal from './Modal';
 import Avatar from './Avatar';
-import { Send } from 'lucide-react';
+import { Send, Globe, Users, Lock, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useIdentity } from '../context/IdentityContext';
+import clsx from 'clsx';
 
 const moodColors = {
     'Neutral': 'bg-slate-100 text-slate-900 border-slate-200',
@@ -64,52 +65,60 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
 
   return (
     <Modal isOpen={!!quote} onClose={onClose}>
-        <div className="text-center relative pt-2 pb-2">
-            {/* Header: Expires in X hrs */}
-            {hoursLeft > 0 && (
-                 <div className="text-xs font-bold text-secondary uppercase tracking-widest mb-6">
-                     Expires in {hoursLeft} hrs
-                 </div>
-            )}
-
-            {/* Avatar & Name & Timestamp */}
-            <div className="flex flex-col items-center mb-6">
-                <div className="mb-2">
-                    <Avatar identity={quote.identity} size="lg" />
-                </div>
-                <h3 className="text-lg font-bold text-text">{quote.identity.name}</h3>
-                <p className="text-xs text-secondary mt-1 font-medium">{formatShortTime(quote.createdAt)}</p>
-            </div>
-
-            {/* Quote Content */}
-            <div className={clsx("text-xl md:text-2xl font-serif text-text mb-8 px-4 leading-relaxed", quote.font)}>
-                "{quote.content}"
-            </div>
-
-            {/* Footer Info */}
-            <div className="flex items-center justify-center space-x-4 text-xs text-secondary mb-8 border-t border-soft-border pt-4 w-2/3 mx-auto">
-                 {quote.audience && (
-                    <div className="flex items-center space-x-1">
-                         <span className="capitalize">{quote.audience === 'me' ? 'Only Me' : quote.audience}</span>
+        <div className="relative pt-2 pb-2">
+            {/* Header: User Info Top Left + Audience Icon */}
+            <div className="flex items-start justify-between mb-8">
+                <div className="flex items-center space-x-3">
+                    <Avatar identity={quote.identity} size="md" />
+                    <div>
+                        <h3 className="text-sm font-bold text-text">{quote.identity.name}</h3>
+                        <p className="text-xs text-secondary font-medium">{formatShortTime(quote.createdAt)}</p>
                     </div>
-                 )}
+                </div>
+
+                {/* Audience Icon */}
+                <div className="text-secondary" title={`Audience: ${quote.audience}`}>
+                    {quote.audience === 'public' && <Globe size={16} />}
+                    {quote.audience === 'followers' && <Users size={16} />}
+                    {quote.audience === 'me' && <Lock size={16} />}
+                </div>
             </div>
 
-            {/* Reply Input */}
-            <div className="bg-surface rounded-2xl border border-soft-border p-2 flex items-center shadow-sm">
-                <input
-                    className="flex-1 bg-transparent border-none outline-none text-sm px-3 text-text placeholder:text-secondary"
-                    placeholder={`Reply to ${quote.identity.name}...`}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleReply()}
-                />
-                <button
+            {/* Center: Content & Reply */}
+            <div className="text-center mb-8">
+                {/* Expires Header */}
+                {hoursLeft > 0 && (
+                     <div className="flex items-center justify-center space-x-1 text-xs font-bold text-secondary uppercase tracking-widest mb-4">
+                         <Clock size={12} />
+                         <span>Expires in {hoursLeft} hrs</span>
+                     </div>
+                )}
+
+                {/* Quote Content */}
+                <div className={clsx("text-xl md:text-2xl font-serif text-text mb-8 px-4 leading-relaxed break-words", quote.font)}>
+                    "{quote.content}"
+                </div>
+
+                {/* Reply Input */}
+                <div className="bg-surface rounded-2xl border border-soft-border p-2 flex items-center shadow-sm max-w-sm mx-auto">
+                    <input
+                        className="flex-1 bg-transparent border-none outline-none text-sm px-3 text-text placeholder:text-secondary"
+                        placeholder={`Reply to ${quote.identity.name}...`}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleReply()}
+                    />
+                </div>
+            </div>
+
+            {/* Action Buttons (Footer) */}
+            <div className="flex items-center justify-center space-x-4 border-t border-soft-border pt-4">
+                 <button
                     onClick={handleReply}
                     disabled={replying || !replyText.trim()}
-                    className="p-2 bg-text text-background rounded-xl disabled:opacity-50 hover:scale-105 transition-transform"
+                    className="flex-1 py-3 bg-text text-background rounded-xl font-bold disabled:opacity-50 flex items-center justify-center space-x-2 transition hover:opacity-90 active:scale-95"
                 >
-                    <Send size={16} />
+                    {replying ? <span>Sending...</span> : <><span>Send Reply</span><Send size={16}/></>}
                 </button>
             </div>
         </div>

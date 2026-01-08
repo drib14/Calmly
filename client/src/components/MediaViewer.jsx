@@ -35,6 +35,10 @@ const MediaViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
       }
   } else if (rawCurrent && typeof rawCurrent === 'object') {
       currentMedia = rawCurrent;
+      // Fallback detection if type not explicitly set in object but URL exists
+      if (!currentMedia.type && currentMedia.url && currentMedia.url.match(/\.(mp4|webm|mov)$/i)) {
+          currentMedia.type = 'video';
+      }
   }
 
   const hasMultiple = images.length > 1;
