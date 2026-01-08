@@ -22,9 +22,33 @@ router.get('/', async (req, res) => {
 
             const filter = { type: { $nin: ['anonymous', 'pseudonym'] } };
 
-            identities = await Identity.find(filter)
-                .sort({ createdAt: -1 })
-                .limit(20);
+            identities = await Identity.aggregate([
+                { $match: filter },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'user',
+                        foreignField: '_id',
+                        as: 'user'
+                    }
+                },
+                { $unwind: '$user' },
+                {
+                    $match: {
+                        'user.settings.hideProfileFromSearch': { $ne: true }
+                    }
+                },
+                { $sort: { createdAt: -1 } },
+                { $limit: 20 },
+                {
+                    $project: {
+                        name: 1,
+                        handle: 1,
+                        avatar: 1,
+                        type: 1
+                    }
+                }
+            ]);
         }
         return res.json({ posts: [], identities });
     }

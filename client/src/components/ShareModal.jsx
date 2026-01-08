@@ -10,6 +10,7 @@ import { useIdentity } from '../context/IdentityContext';
 const ShareModal = ({ isOpen, onClose, post }) => {
   const { currentIdentity, identities } = useIdentity();
   const [searchQuery, setSearchQuery] = useState('');
+  const [message, setMessage] = useState('');
   const [sending, setSending] = useState(null);
 
   // Suggested Users (All identities)
@@ -48,10 +49,12 @@ const ShareModal = ({ isOpen, onClose, post }) => {
           await axios.post('/messages', {
               senderIdentityId: currentIdentity._id,
               recipientIdentityId: recipient._id,
-              content: '', // Empty content, just shared post
-              sharedPost: post._id // Use 'sharedPost' to match backend expectation
+              content: message, // Allow optional message
+              sharedPost: post._id
           });
           toast.success(`Sent to ${recipient.name}`);
+          setMessage(''); // Clear message only, keep modal open for multiple shares if needed?
+          // Or close it? Usually one share at a time.
       } catch (err) {
           console.error(err);
           toast.error("Failed to send");
@@ -78,6 +81,16 @@ const ShareModal = ({ isOpen, onClose, post }) => {
                     value={searchQuery}
                     onChange={handleSearch}
                     autoFocus
+                />
+            </div>
+
+            {/* Message Input */}
+            <div className="mb-4">
+                <input
+                    className="w-full bg-surface border border-soft-border rounded-xl py-2 px-3 text-sm focus:ring-1 focus:ring-accent text-text placeholder-secondary outline-none"
+                    placeholder="Add a message (optional)..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
                 />
             </div>
 

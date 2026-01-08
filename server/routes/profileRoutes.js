@@ -69,12 +69,32 @@ router.get('/:handle', protect, async (req, res) => {
     // Owner sees all non-deleted posts. Visitors see public posts.
     // Ensure we are matching strictly by identity._id to avoid any population artifacts
 
-    const postMatch = isOwner
-        ? { identity: new mongoose.Types.ObjectId(identity._id), deletedAt: null }
-        : { identity: new mongoose.Types.ObjectId(identity._id), visibility: 'public', deletedAt: null };
+    // Filtering:
+    // 1. Regular Feed:
+    //    - Owner: All posts (except hidden ones which go to archive, unless we want to show them everywhere? Prompt says "all hidden posts must be listed in archive tab". Usually they are hidden from main feed).
+    //    - Visitor: Public posts, not hidden.
+    // 2. Archive Feed (Owner only):
+    //    - Hidden posts.
+
+    const baseMatch = {
+        identity: new mongoose.Types.ObjectId(identity._id),
+        deletedAt: null
+    };
+
+    const regularPostMatch = isOwner
+        ? { ...baseMatch, hidden: { $ne: true } }
+        : { ...baseMatch, visibility: 'public', hidden: { $ne: true } };
+
+    const archiveMatch = isOwner
+        ? { ...baseMatch, hidden: true }
+        : null;
 
     // Get Authored Posts
-    const authoredPosts = await fetchWithComments(postMatch);
+    const authoredPosts = await fetchWithComments(regularPostMatch);
+    let archives = [];
+    if (archiveMatch) {
+        archives = await fetchWithComments(archiveMatch);
+    }
 
     // Get Reposted Posts (Where this identity is in the reposts array)
     // Reposts should probably respect visibility of the original post?
@@ -99,6 +119,7 @@ router.get('/:handle', protect, async (req, res) => {
         quote: activeQuote,
         posts: authoredPosts,
         reposts: repostedPosts,
+        archives,
         isOwner // Helper for frontend
     });
   } catch (error) {

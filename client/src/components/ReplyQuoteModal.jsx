@@ -56,60 +56,76 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
 
   if (!quote) return null;
 
+  // Calculate Expiry Hours
+  const now = new Date();
+  const expires = new Date(quote.expireAt);
+  const diffMs = expires - now;
+  const hoursLeft = Math.ceil(diffMs / (1000 * 60 * 60));
+
   return (
     <Modal isOpen={!!quote} onClose={onClose}>
-        <div className="space-y-4">
-            <div className="flex items-center space-x-3 mb-2">
-                <Avatar identity={quote.identity} />
-                <div>
-                    <p className="text-sm font-bold text-text">{quote.identity.name}</p>
-                    <p className="text-xs text-secondary">{quote.identity.handle}</p>
-                </div>
-            </div>
-
-            <div className={`p-4 rounded-xl text-sm border ${moodColors[quote.mood] || moodColors['Neutral']} ${quote.font} mb-2 relative`}>
-                {quote.content}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-[10px] text-secondary uppercase tracking-wide mb-4 px-1">
-                 <div className="flex items-center space-x-1">
-                     <span>Uploaded:</span>
-                     <span className="font-bold text-text">{new Date(quote.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <div className="text-center relative pt-2 pb-2">
+            {/* Header: Expires in X hrs */}
+            {hoursLeft > 0 && (
+                 <div className="text-xs font-bold text-secondary uppercase tracking-widest mb-6">
+                     Expires in {hoursLeft} hrs
                  </div>
+            )}
+
+            {/* Avatar & Name & Timestamp */}
+            <div className="flex flex-col items-center mb-6">
+                <div className="mb-2">
+                    <Avatar identity={quote.identity} size="lg" />
+                </div>
+                <h3 className="text-lg font-bold text-text">{quote.identity.name}</h3>
+                <p className="text-xs text-secondary mt-1 font-medium">{formatShortTime(quote.createdAt)}</p>
+            </div>
+
+            {/* Quote Content */}
+            <div className={clsx("text-xl md:text-2xl font-serif text-text mb-8 px-4 leading-relaxed", quote.font)}>
+                "{quote.content}"
+            </div>
+
+            {/* Footer Info */}
+            <div className="flex items-center justify-center space-x-4 text-xs text-secondary mb-8 border-t border-soft-border pt-4 w-2/3 mx-auto">
                  {quote.audience && (
                     <div className="flex items-center space-x-1">
-                         <span>Audience:</span>
-                         <span className="font-bold text-text capitalize">{quote.audience === 'me' ? 'Only Me' : quote.audience}</span>
-                    </div>
-                 )}
-                 {quote.expireAt && (
-                    <div className="flex items-center space-x-1">
-                         <span>Expires:</span>
-                         <span className="font-bold text-text">
-                            {new Date(quote.expireAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                         </span>
+                         <span className="capitalize">{quote.audience === 'me' ? 'Only Me' : quote.audience}</span>
                     </div>
                  )}
             </div>
 
-            <textarea
-                className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none"
-                rows="3"
-                placeholder={`Reply to ${quote.identity.name}...`}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-            />
-
-            <button
-                onClick={handleReply}
-                disabled={replying || !replyText.trim()}
-                className="w-full bg-text text-background py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center space-x-2"
-            >
-                {replying ? <span>Sending...</span> : <><span>Send Reply</span><Send size={16}/></>}
-            </button>
+            {/* Reply Input */}
+            <div className="bg-surface rounded-2xl border border-soft-border p-2 flex items-center shadow-sm">
+                <input
+                    className="flex-1 bg-transparent border-none outline-none text-sm px-3 text-text placeholder:text-secondary"
+                    placeholder={`Reply to ${quote.identity.name}...`}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleReply()}
+                />
+                <button
+                    onClick={handleReply}
+                    disabled={replying || !replyText.trim()}
+                    className="p-2 bg-text text-background rounded-xl disabled:opacity-50 hover:scale-105 transition-transform"
+                >
+                    <Send size={16} />
+                </button>
+            </div>
         </div>
     </Modal>
   );
 };
+
+// Helper for relative time (duplicate of dateUtils but local for now or import it)
+function formatShortTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = (now - date) / 1000;
+    if (diff < 60) return `${Math.floor(diff)}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+}
 
 export default ReplyQuoteModal;

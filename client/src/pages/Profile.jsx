@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Heart } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Heart, Archive, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
@@ -53,7 +53,7 @@ const Profile = () => {
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
   if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
-  const { identity, posts, quote } = data;
+  const { identity, posts, quote, archives } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
@@ -321,28 +321,37 @@ const Profile = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-soft-border mb-6 sticky top-0 bg-background/95 backdrop-blur z-20">
+      <div className="flex border-b border-soft-border mb-6 sticky top-0 md:top-16 bg-background/95 backdrop-blur z-20 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('moments')}
-            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Grid size={16} />
               <span className="hidden md:inline">Moments</span>
           </button>
           <button
             onClick={() => setActiveTab('media')}
-            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <ImageIcon size={16} />
               <span className="hidden md:inline">Media</span>
           </button>
           <button
             onClick={() => setActiveTab('reposts')}
-            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Repeat size={16} />
               <span className="hidden md:inline">Reposts</span>
           </button>
+          {isOwner && (
+            <button
+                onClick={() => setActiveTab('archives')}
+                className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'archives' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            >
+                <Archive size={16} />
+                <span className="hidden md:inline">Archives</span>
+            </button>
+          )}
       </div>
 
       {/* Tab Content */}
@@ -405,6 +414,48 @@ const Profile = () => {
           {activeTab === 'reposts' && (
                <div className="text-center py-10 opacity-50">
                   <p className="text-secondary">No reposts yet.</p>
+              </div>
+          )}
+
+          {activeTab === 'archives' && isOwner && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {!archives || archives.length === 0 ? (
+                      <div className="col-span-full text-center py-10 opacity-50">
+                          <p className="text-secondary">No archived moments.</p>
+                      </div>
+                  ) : (
+                      archives.map(post => (
+                          <div
+                              key={post._id}
+                              className="bg-surface border border-soft-border rounded-xl p-4 cursor-pointer hover:shadow-md transition relative group overflow-hidden"
+                              onClick={() => navigate(`/post/${post._id}`)}
+                          >
+                              <div className="flex justify-between items-start mb-2 opacity-50">
+                                  <span className="text-[10px] font-bold uppercase">{post.type}</span>
+                                  <EyeOff size={14} />
+                              </div>
+                              <p className="text-sm font-serif line-clamp-3 mb-2">{post.content || (post.media ? 'Media content' : '')}</p>
+                              {post.media?.length > 0 && (
+                                  <div className="h-20 bg-background rounded-lg mb-2 overflow-hidden">
+                                      {post.media[0].type === 'video' ? (
+                                        <div className="w-full h-full flex items-center justify-center bg-black"><ImageIcon className="text-white"/></div>
+                                      ) : (
+                                        <img src={post.media[0].url} className="w-full h-full object-cover" />
+                                      )}
+                                  </div>
+                              )}
+
+                              {/* Hover Stats */}
+                              <div className="absolute inset-0 bg-surface/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex space-x-4 text-xs font-bold text-text">
+                                      <div className="flex items-center space-x-1"><Heart size={14}/> <span>{post.likes?.length || 0}</span></div>
+                                      <div className="flex items-center space-x-1"><MessageCircle size={14}/> <span>{post.commentCount || 0}</span></div>
+                                      <div className="flex items-center space-x-1"><Repeat size={14}/> <span>{post.reposts?.length || 0}</span></div>
+                                  </div>
+                              </div>
+                          </div>
+                      ))
+                  )}
               </div>
           )}
       </div>

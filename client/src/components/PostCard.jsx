@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatShortTime } from '../utils/dateUtils';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight, Eye, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -16,6 +16,7 @@ import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import ShareModal from './ShareModal';
 import ReactorsModal from './ReactorsModal';
+import EditPostModal from './EditPostModal';
 import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
 
 const PostCard = ({ post, mutate }) => {
@@ -46,6 +47,7 @@ const PostCard = ({ post, mutate }) => {
   const [showAnonError, setShowAnonError] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -217,6 +219,17 @@ const PostCard = ({ post, mutate }) => {
       setReporting(false);
   };
 
+  const handleHide = async () => {
+      try {
+          await axios.put(`/posts/${post._id}/hide`);
+          mutate();
+          toast.success(post.hidden ? "Post visible on profile" : "Post hidden from feed");
+      } catch (err) {
+          toast.error("Failed to update visibility");
+      }
+      setShowOptions(false);
+  };
+
   const handleProfileClick = (e) => {
       e.stopPropagation();
       const myRealIdentity = identities?.find(i => i.type === 'real');
@@ -384,14 +397,25 @@ const PostCard = ({ post, mutate }) => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="absolute right-0 top-8 bg-surface border border-soft-border shadow-lg rounded-xl p-1 z-10 min-w-[160px]"
                     >
-                        {isOwner && (
-                            <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg active:bg-red-50">
-                                <Trash2 size={14} /> <span>Delete Post</span>
+                        {isOwner ? (
+                            <>
+                                <button onClick={() => { setShowEditModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg active:bg-surface">
+                                    <Edit3 size={14} /> <span>Edit Post</span>
+                                </button>
+                                <button onClick={handleHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg active:bg-surface">
+                                    {post.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                                    <span>{post.hidden ? 'Unhide Post' : 'Hide Post'}</span>
+                                </button>
+                                <div className="h-px bg-soft-border my-1" />
+                                <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg active:bg-red-50">
+                                    <Trash2 size={14} /> <span>Delete Post</span>
+                                </button>
+                            </>
+                        ) : (
+                            <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text active:bg-background/80">
+                                <Flag size={14} /> <span>Report Content</span>
                             </button>
                         )}
-                        <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text active:bg-background/80">
-                            <Flag size={14} /> <span>Report Content</span>
-                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -809,6 +833,16 @@ const PostCard = ({ post, mutate }) => {
           confirmText={deleting ? 'Deleting...' : 'Delete'}
           isDanger={true}
       />
+
+      {/* Edit Modal */}
+      {isOwner && (
+          <EditPostModal
+              isOpen={showEditModal}
+              onClose={() => setShowEditModal(false)}
+              post={post}
+              mutate={mutate}
+          />
+      )}
 
       {/* Report Modal */}
       <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)}>

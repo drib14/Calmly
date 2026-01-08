@@ -5,6 +5,58 @@ const { protect } = require('../middleware/authMiddleware');
 const Post = require('../models/Post');
 const Identity = require('../models/Identity');
 const Report = require('../models/Report');
+// Edit Post
+router.put('/:id', protect, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Verify Ownership
+        const identity = await Identity.findOne({ _id: post.identity, user: req.user._id });
+        if (!identity) {
+            return res.status(403).json({ message: 'Not authorized to edit this post' });
+        }
+
+        // Update Fields
+        const { content, mood, visibility, title, tags, letterFields, style, media } = req.body;
+
+        if (content !== undefined) post.content = content;
+        if (mood !== undefined) post.mood = mood;
+        if (visibility !== undefined) post.visibility = visibility;
+        if (title !== undefined) post.title = title;
+        if (tags !== undefined) post.tags = tags;
+        if (letterFields !== undefined) post.letterFields = letterFields;
+        if (style !== undefined) post.style = style;
+        if (media !== undefined) post.media = media;
+
+        await post.save();
+        res.json(post);
+    } catch (error) {
+        console.error("Edit Post Error:", error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Hide Post (Owner only)
+router.put('/:id/hide', protect, async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Check Ownership
+        const identity = await Identity.findOne({ _id: post.identity, user: req.user._id });
+        if (!identity) {
+             return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        post.hidden = !post.hidden; // Toggle
+        await post.save();
+        res.json({ hidden: post.hidden });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Create a post
 router.post('/', protect, async (req, res) => {
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style, media } = req.body;
@@ -53,7 +105,8 @@ router.post('/', protect, async (req, res) => {
 // MOVED ABOVE /:id TO PREVENT ROUTE CONFLICT
 router.get('/feed', async (req, res) => {
   const { mood, type } = req.query;
-  let match = { visibility: 'public', deletedAt: null };
+  // Exclude hidden posts
+  let match = { visibility: 'public', deletedAt: null, hidden: { $ne: true } };
 
   if (mood) match.mood = mood;
   if (type) match.type = type;
