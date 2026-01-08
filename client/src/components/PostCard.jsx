@@ -490,9 +490,11 @@ const PostCard = ({ post, mutate }) => {
                     ))}
                   </div>
                   <span className="group-hover:underline decoration-slate-400 underline-offset-2">
-                      Liked by <span className="font-bold text-text">{reactorAvatars[0].name}</span>
-                      {reactorAvatars.length > 1 && (
-                          <> and <span className="font-bold text-text">{reactorAvatars.length - 1} others</span></>
+                      <span className="font-bold text-text">{reactorAvatars[0].name}</span>
+                      {reactorAvatars.length > 1 ? (
+                          <> and <span className="font-bold text-text">{reactorAvatars.length - 1} others</span> like this moment</>
+                      ) : (
+                          <> likes this moment</>
                       )}
                   </span>
               </button>

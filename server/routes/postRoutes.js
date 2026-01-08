@@ -116,7 +116,8 @@ router.get('/feed', async (req, res) => {
 
     // Populate the aggregation result
     await Post.populate(posts, [
-        { path: 'reposts.identity', select: 'name type handle avatar' }
+        { path: 'reposts.identity', select: 'name type handle avatar' },
+        { path: 'likes.identity', select: 'name type handle avatar' }
     ]);
 
     res.json(posts);
@@ -140,6 +141,7 @@ router.get('/:id', async (req, res) => {
                 populate: { path: 'user', select: 'settings' } // Need settings for interaction checks
             })
             .populate('reposts.identity', 'name type handle avatar')
+            .populate('likes.identity', 'name type handle avatar')
             .lean(); // Use lean for performance if we don't need document methods
 
         if (!post) return res.status(404).json({ message: 'Post not found' });
@@ -179,6 +181,9 @@ router.put('/:id/like', protect, async (req, res) => {
             post.likes.push({ user: req.user._id, identity: identity._id });
         }
         await post.save();
+
+        // Populate the identity for the response
+        await post.populate('likes.identity', 'name type handle avatar');
         res.json(post.likes);
     } catch (error) {
         res.status(500).json({ message: error.message });
