@@ -194,13 +194,13 @@ const Messages = () => {
           <div
                 onClick={() => navigate(`/post/${post._id}`)}
                 className={clsx(
-                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group backdrop-blur-md",
-                    isMe ? "bg-white/10 border-white/20" : "bg-surface/30 border-white/20 hover:shadow-md"
+                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group",
+                    isMe ? "bg-accent border-transparent text-white" : "bg-surface border-soft-border text-text hover:shadow-md"
                 )}
           >
               <div className="flex flex-col h-full relative">
                   {/* Top Left: Avatar + Name */}
-                  <div className={clsx("p-3 flex items-center space-x-2 border-b z-10 relative", isMe ? "border-white/10" : "border-white/10")}>
+                  <div className={clsx("p-3 flex items-center space-x-2 border-b z-10 relative", isMe ? "border-white/20" : "border-soft-border")}>
                       <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
                            <Avatar identity={post.identity} size="xs" />
                       </div>
@@ -231,7 +231,7 @@ const Messages = () => {
                               {/* Caption Below Media */}
                               {textContent && (
                                   <div className="p-3 pt-2">
-                                      <p className="text-xs text-text/90 font-serif leading-relaxed line-clamp-2">
+                                      <p className={clsx("text-xs font-serif leading-relaxed line-clamp-2", isMe ? "text-white/90" : "text-text/90")}>
                                           {truncatedText}
                                       </p>
                                   </div>
@@ -240,7 +240,7 @@ const Messages = () => {
                       ) : (
                           // Text Only Mode
                           <div className="p-4 py-6 flex items-center justify-center min-h-[120px]">
-                              <p className="font-serif text-sm text-text text-center italic leading-relaxed line-clamp-6">
+                              <p className={clsx("font-serif text-sm text-center italic leading-relaxed line-clamp-6", isMe ? "text-white" : "text-text")}>
                                   "{textContent}"
                               </p>
                           </div>
@@ -248,11 +248,11 @@ const Messages = () => {
                   </div>
 
                   {/* Bottom Left: Logo */}
-                  <div className={clsx("mt-auto p-3 border-t flex items-center space-x-2 opacity-80", isMe ? "border-white/10" : "border-white/10")}>
+                  <div className={clsx("mt-auto p-3 border-t flex items-center space-x-2 opacity-80", isMe ? "border-white/20" : "border-soft-border")}>
                       <div className="w-4 h-4 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
                           <img src="/favicon.png" className="w-3 h-3 object-contain" alt="Logo" />
                       </div>
-                      <span className={clsx("text-[9px] font-bold uppercase tracking-wider", isMe ? "text-white/70" : "text-secondary")}>
+                      <span className={clsx("text-[9px] font-bold uppercase tracking-wider", isMe ? "text-white/80" : "text-secondary")}>
                           Calmly
                       </span>
                   </div>
