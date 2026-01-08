@@ -53,7 +53,9 @@ const Landing = () => {
 
       <nav className="relative z-10 container mx-auto px-6 py-8 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-slate-900 dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-slate-900 font-serif font-bold">C</div>
+              <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center shadow-md border border-soft-border overflow-hidden p-1">
+                  <img src="/favicon.png" alt="Logo" className="w-full h-full object-contain" />
+              </div>
               <span className="font-serif font-bold text-xl text-text">Calmly</span>
           </div>
           <div className="flex items-center space-x-6">

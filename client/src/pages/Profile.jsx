@@ -321,27 +321,27 @@ const Profile = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-soft-border mb-6">
+      <div className="flex border-b border-soft-border mb-6 sticky top-0 bg-background/95 backdrop-blur z-20">
           <button
             onClick={() => setActiveTab('moments')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Grid size={16} />
-              <span>Moments</span>
+              <span className="hidden md:inline">Moments</span>
           </button>
           <button
             onClick={() => setActiveTab('media')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <ImageIcon size={16} />
-              <span>Media</span>
+              <span className="hidden md:inline">Media</span>
           </button>
           <button
             onClick={() => setActiveTab('reposts')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Repeat size={16} />
-              <span>Reposts</span>
+              <span className="hidden md:inline">Reposts</span>
           </button>
       </div>
 
@@ -426,6 +426,23 @@ const Profile = () => {
                         <p className="font-serif text-lg text-text">{quote.content}</p>
                         <span className="text-2xl text-slate-300 absolute bottom-2 right-2">"</span>
                      </div>
+                 )}
+                 {quote && (
+                    <div className="flex flex-wrap justify-center gap-3 text-xs text-secondary uppercase tracking-wide">
+                        <div>
+                            Posted: <span className="font-bold text-text">{new Date(quote.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        {quote.audience && (
+                             <div>
+                                Audience: <span className="font-bold text-text capitalize">{quote.audience === 'me' ? 'Only Me' : quote.audience}</span>
+                            </div>
+                        )}
+                        {quote.expireAt && (
+                             <div>
+                                Expires: <span className="font-bold text-text">{new Date(quote.expireAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                        )}
+                    </div>
                  )}
                  <div className="grid grid-cols-2 gap-3 pt-4">
                      <button

@@ -67,8 +67,29 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
                 </div>
             </div>
 
-            <div className={`p-4 rounded-xl text-sm border ${moodColors[quote.mood] || moodColors['Neutral']} ${quote.font} mb-4`}>
+            <div className={`p-4 rounded-xl text-sm border ${moodColors[quote.mood] || moodColors['Neutral']} ${quote.font} mb-2 relative`}>
                 {quote.content}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 text-[10px] text-secondary uppercase tracking-wide mb-4 px-1">
+                 <div className="flex items-center space-x-1">
+                     <span>Uploaded:</span>
+                     <span className="font-bold text-text">{new Date(quote.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                 </div>
+                 {quote.audience && (
+                    <div className="flex items-center space-x-1">
+                         <span>Audience:</span>
+                         <span className="font-bold text-text capitalize">{quote.audience === 'me' ? 'Only Me' : quote.audience}</span>
+                    </div>
+                 )}
+                 {quote.expireAt && (
+                    <div className="flex items-center space-x-1">
+                         <span>Expires:</span>
+                         <span className="font-bold text-text">
+                            {new Date(quote.expireAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </span>
+                    </div>
+                 )}
             </div>
 
             <textarea

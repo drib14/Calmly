@@ -28,17 +28,28 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
   const [content, setContent] = useState('');
   const [mood, setMood] = useState('Neutral');
   const [font, setFont] = useState('font-serif');
+  const [audience, setAudience] = useState('public');
+  const [duration, setDuration] = useState(24);
+  const [customDuration, setCustomDuration] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleCreate = async () => {
       if (!content.trim()) return;
+
+      const finalDuration = duration === 'custom' ? Number(customDuration) : duration;
+      if (!finalDuration || isNaN(finalDuration) || finalDuration <= 0) {
+          return toast.error("Invalid duration");
+      }
+
       setSubmitting(true);
       try {
           await axios.post('/quotes', {
               content,
               mood,
               font,
-              identityId
+              identityId,
+              audience,
+              duration: finalDuration
           });
           toast.success("Quote posted");
           mutate('/quotes/feed');
@@ -50,6 +61,8 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
           onClose();
           setContent('');
           setMood('Neutral');
+          setAudience('public');
+          setDuration(24);
       } catch (err) {
           toast.error("Failed to post quote");
       } finally {
@@ -57,12 +70,26 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
       }
   };
 
+  const durationOptions = [
+      { value: 24, label: '24 Hours' },
+      { value: 12, label: '12 Hours' },
+      { value: 6, label: '6 Hours' },
+      { value: 3, label: '3 Hours' },
+      { value: 'custom', label: 'Custom' },
+  ];
+
+  const audienceOptions = [
+      { value: 'public', label: 'Public' },
+      { value: 'followers', label: 'Followers' },
+      { value: 'me', label: 'Only Me' },
+  ];
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
         <div className="space-y-6">
             <div className="text-center">
                 <h3 className="text-lg font-bold font-serif">New Note</h3>
-                <p className="text-xs text-secondary">Share a thought for 24 hours.</p>
+                <p className="text-xs text-secondary">Share a thought with your world.</p>
             </div>
 
             <div className="flex justify-center py-4">
@@ -99,6 +126,48 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
                     columns={2}
                     layout="grid"
                 />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="text-xs font-bold text-secondary uppercase mb-2 block">Audience</label>
+                    <PillSelection
+                        options={audienceOptions}
+                        value={audience}
+                        onChange={setAudience}
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-secondary uppercase mb-2 block">Duration</label>
+                    <div className="flex flex-col space-y-2">
+                        <select
+                            className="w-full bg-background border border-soft-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-text"
+                            value={duration}
+                            onChange={(e) => {
+                                const val = e.target.value === 'custom' ? 'custom' : Number(e.target.value);
+                                setDuration(val);
+                            }}
+                        >
+                            {durationOptions.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                        {duration === 'custom' && (
+                             <div className="flex items-center space-x-2">
+                                <input
+                                    type="number"
+                                    className="w-full bg-background border border-soft-border rounded-xl px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-text"
+                                    placeholder="Hours"
+                                    min="1"
+                                    max="168"
+                                    value={customDuration}
+                                    onChange={(e) => setCustomDuration(e.target.value)}
+                                />
+                                <span className="text-xs text-secondary">hrs</span>
+                             </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             <button
