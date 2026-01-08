@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema({
   settings: {
     // Account
     loginHistory: [{ date: Date, ip: String, device: String }],
+    hasGivenFeedback: { type: Boolean, default: false },
 
     // Identity & Privacy
     defaultIdentityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' },

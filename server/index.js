@@ -51,5 +51,7 @@ connectDB().then(() => {
     });
 }).catch(err => {
     console.error('Failed to connect to database:', err);
+    // Ensure we exit if the database connection fails at startup
+    // to prevent "buffering timed out" errors for users hitting a zombie server
     process.exit(1);
 });

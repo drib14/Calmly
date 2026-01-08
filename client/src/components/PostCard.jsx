@@ -288,6 +288,12 @@ const PostCard = ({ post, mutate }) => {
       ?.map(l => l.identity)
       .filter((id, index, self) => id && self.findIndex(i => i?._id === id._id) === index) || [];
 
+  // Logic:
+  // <= 3: Show actual count (1, 2, or 3)
+  // > 3: Show 3 avatars + 1 indicator (Total 4 circles)
+  const displayReactors = reactorAvatars.length > 3 ? reactorAvatars.slice(0, 3) : reactorAvatars;
+  const extraCount = reactorAvatars.length > 3 ? reactorAvatars.length - 3 : 0;
+
   return (
     <motion.div
         layout
@@ -454,24 +460,24 @@ const PostCard = ({ post, mutate }) => {
                               )}
                           </AnimatePresence>
 
-                          {/* Single Media: Flexible Height */}
+                          {/* Single Media: Dynamic Height (No Background Spacing) */}
                           {post.media.length === 1 ? (
-                              <div className="w-full max-h-[70vh] flex items-center justify-center bg-black/5 dark:bg-black/40 overflow-hidden">
+                              <div className="w-full flex justify-center">
                                    {post.media[0].type === 'video' ? (
-                                        <div className="w-full">
+                                        <div className="w-full max-h-[70vh]">
                                             <MediaPlayer src={post.media[0].url} />
                                         </div>
                                    ) : (
                                        <img
                                            src={post.media[0].url}
-                                           className="max-w-full max-h-[70vh] w-full object-contain cursor-pointer"
+                                           className="max-w-full max-h-[70vh] w-auto h-auto object-contain cursor-pointer rounded-lg"
                                            onClick={(e) => { handleTap(post.media[0].url); }}
                                        />
                                    )}
                               </div>
                           ) : (
-                              /* Multi-Media Carousel: Fixed Ratio */
-                              <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center">
+                              /* Multi-Media Carousel: Fixed Max Width */
+                              <div className="overflow-hidden relative bg-black aspect-[4/5] flex items-center justify-center w-full">
                                   {/* Main Content */}
                                   <div className="w-full h-full flex items-center justify-center">
                                       <AnimatePresence mode="wait">
@@ -565,11 +571,16 @@ const PostCard = ({ post, mutate }) => {
                   className="flex items-center mb-3 text-xs text-secondary hover:text-text transition-colors text-left group"
               >
                   <div className="flex -space-x-1.5 mr-2">
-                    {reactorAvatars.slice(0, 3).map((identity) => (
+                    {displayReactors.map((identity) => (
                         <div key={identity._id} className="w-5 h-5 rounded-full ring-2 ring-surface z-0 relative">
                             <Avatar identity={identity} size="xs" />
                         </div>
                     ))}
+                    {extraCount > 0 && (
+                        <div className="w-5 h-5 rounded-full bg-surface border border-soft-border flex items-center justify-center text-[9px] font-bold text-secondary z-0 relative ring-2 ring-surface">
+                            +{extraCount}
+                        </div>
+                    )}
                   </div>
                   <span className="group-hover:underline decoration-slate-400 underline-offset-2">
                       <span className="font-bold text-text">{reactorAvatars[0].name}</span>

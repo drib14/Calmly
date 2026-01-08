@@ -218,6 +218,16 @@ const Profile = () => {
   });
   const allMedia = Array.from(uniqueMediaMap.values());
 
+  // Sort Oldest to Newest ("FIFO stack" based on user request)
+  // Note: 'posts' are Newest First. 'postMediaItems' respects that.
+  // So 'allMedia' is currently roughly Newest First (because map iterates in order).
+  // We need to reverse it or sort by date if we had date attached.
+  // Since we stripped date in 'postMediaItems', we can rely on index if we reverse it?
+  // No, let's attach date in postMediaItems to be safe.
+  // Actually, 'posts' is Newest First. So postMediaItems is Newest First.
+  // To get Oldest First, we just reverse the array.
+  allMedia.reverse();
+
   return (
     <div className="max-w-2xl mx-auto pb-20">
       {/* Header Card */}
