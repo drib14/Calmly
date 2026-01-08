@@ -73,7 +73,6 @@ const Navbar = () => {
 
   // Ensure Navbar is hidden if user is not logged in OR if on Landing page
   // The layout controls rendering, but double check here.
-  const location = useLocation();
   if (!user || location.pathname === '/') return null;
 
   const navItems = [
