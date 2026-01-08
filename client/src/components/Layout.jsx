@@ -19,12 +19,9 @@ const Layout = ({ children }) => {
   // MobileTopBar should likely follow the same rule or be specific to Feed/Search on mobile.
   // Actually, MobileTopBar is "Favicon + Search". Only relevant if logged in.
 
+  // Hide sidebar on Auth pages and Landing page (regardless of login status)
+  // Replaced buttons on Landing page will handle navigation if logged in.
   const showNav = !isAuthPage && !isLanding;
-  // Wait, if user IS logged in and goes to Landing, should they see Nav?
-  // User said "remove it if the user isn't logged in". Implies if logged in, it CAN be there?
-  // But typically Landing is for non-auth.
-  // Let's assume Nav shows if User is logged in, regardless of page, unless it's an Auth page.
-  // Navbar.jsx already returns null if !user.
 
   const themeClass = settings?.theme === 'dark' ? 'dark bg-slate-900 text-white' :
                      settings?.theme === 'sage' ? 'bg-[#f0f4f0] text-slate-800' :
