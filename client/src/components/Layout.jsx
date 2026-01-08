@@ -32,10 +32,10 @@ const Layout = ({ children }) => {
   const contrastClass = settings?.highContrast ? 'contrast-125' : '';
 
   return (
-    <div className={clsx("flex flex-col md:flex-row min-h-screen transition-colors duration-300", themeClass, fontClass, contrastClass)}>
-      {user && !isAuthPage && <MobileTopBar />}
-      <Navbar />
-      <main className="flex-1 transition-all duration-300 min-w-0">
+    <div className={clsx("flex flex-col md:flex-row min-h-screen transition-colors duration-300", themeClass, fontClass)}>
+      {user && !isAuthPage && <MobileTopBar highContrast={settings?.highContrast} />}
+      <Navbar highContrast={settings?.highContrast} />
+      <main className={clsx("flex-1 transition-all duration-300 min-w-0", contrastClass)}>
         <div className={`container mx-auto p-4 md:p-8 ${user && !isAuthPage ? 'mt-16 md:mt-0 mb-16 md:mb-0' : ''}`}>
             {children}
         </div>

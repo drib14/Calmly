@@ -28,6 +28,7 @@ const PostCard = ({ post, mutate }) => {
   const [showReactorsModal, setShowReactorsModal] = useState(false);
   const [isReposting, setIsReposting] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
 
   // Image Viewer
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -48,6 +49,10 @@ const PostCard = ({ post, mutate }) => {
   const [reportReason, setReportReason] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
+
+  // Touch State
+  const touchStartRef = useRef(null);
+  const lastTapRef = useRef(0);
 
   const optionsRef = useRef(null);
   const shareRef = useRef(null);
@@ -88,6 +93,11 @@ const PostCard = ({ post, mutate }) => {
 
   const handleLike = async () => {
       if (!currentIdentity) return toast.error("Select an identity first");
+
+      // Visual feedback immediately
+      setShowHeartAnimation(true);
+      setTimeout(() => setShowHeartAnimation(false), 1000);
+
       try {
           await axios.put(`/posts/${post._id}/like`, { identityId: currentIdentity._id });
           mutate(); // Update post data
@@ -225,7 +235,51 @@ const PostCard = ({ post, mutate }) => {
       }
   };
 
-  // Get reactor avatars (deduplicated by ID)
+  // Touch Handlers
+  const handleTouchStart = (e) => {
+      touchStartRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+      if (!touchStartRef.current) return;
+
+      const touchEnd = e.changedTouches[0].clientX;
+      const diff = touchStartRef.current - touchEnd;
+
+      // Swipe Threshold
+      if (Math.abs(diff) > 50) {
+          if (diff > 0) {
+              // Swipe Left -> Next
+              setCurrentMediaIndex((prev) => (prev === post.media.length - 1 ? 0 : prev + 1));
+          } else {
+              // Swipe Right -> Prev
+              setCurrentMediaIndex((prev) => (prev === 0 ? post.media.length - 1 : prev - 1));
+          }
+      }
+
+      touchStartRef.current = null;
+  };
+
+  const handleTap = (src) => {
+      const now = Date.now();
+      const DOUBLE_TAP_DELAY = 300;
+
+      if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+          // Double Tap Detected
+          handleLike();
+          lastTapRef.current = 0; // Reset
+      } else {
+          // Single Tap - Wait to confirm it's not a double tap?
+          // For UI responsiveness, we might trigger viewer, or just ignore since we have a dedicated viewer logic?
+          // Since existing logic uses onClick to open viewer, we let that propagate if not caught?
+          // Actually, we should probably just open viewer on single tap (via onClick) and like on double.
+          // But opening viewer on double tap is annoying.
+          // We'll let onClick handle the viewer.
+          lastTapRef.current = now;
+      }
+  };
+
+  // Get reactor avatars
   const reactorAvatars = post.likes
       ?.map(l => l.identity)
       .filter((id, index, self) => id && self.findIndex(i => i?._id === id._id) === index) || [];
@@ -371,7 +425,25 @@ const PostCard = ({ post, mutate }) => {
 
                   {/* Media Display */}
                   {post.media && post.media.length > 0 && (
-                      <div className="relative mb-4 group -mx-5 md:-mx-6">
+                      <div
+                          className="relative mb-4 group -mx-5 md:-mx-6"
+                          onTouchStart={handleTouchStart}
+                          onTouchEnd={handleTouchEnd}
+                      >
+                          {/* Heart Animation Overlay */}
+                          <AnimatePresence>
+                              {showHeartAnimation && (
+                                  <motion.div
+                                      initial={{ opacity: 0, scale: 0 }}
+                                      animate={{ opacity: 1, scale: 1.5 }}
+                                      exit={{ opacity: 0, scale: 0 }}
+                                      className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+                                  >
+                                      <Heart className="w-24 h-24 text-white fill-white drop-shadow-lg" />
+                                  </motion.div>
+                              )}
+                          </AnimatePresence>
+
                           {/* Single Media: Flexible Height */}
                           {post.media.length === 1 ? (
                               <div className="w-full max-h-[70vh] flex items-center justify-center bg-black/5 dark:bg-black/40 overflow-hidden">
@@ -383,7 +455,7 @@ const PostCard = ({ post, mutate }) => {
                                        <img
                                            src={post.media[0].url}
                                            className="max-w-full max-h-[70vh] w-full object-contain cursor-pointer"
-                                           onClick={() => openViewer(post.media[0].url)}
+                                           onClick={(e) => { handleTap(); openViewer(post.media[0].url); }}
                                        />
                                    )}
                               </div>
@@ -409,7 +481,7 @@ const PostCard = ({ post, mutate }) => {
                                                   <img
                                                       src={post.media[currentMediaIndex].url}
                                                       className="w-full h-full object-contain cursor-pointer"
-                                                      onClick={() => openViewer(post.media[currentMediaIndex].url)}
+                                                      onClick={(e) => { handleTap(); openViewer(post.media[currentMediaIndex].url); }}
                                                   />
                                               )}
                                           </motion.div>

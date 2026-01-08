@@ -9,7 +9,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const Navbar = () => {
+const Navbar = ({ highContrast }) => {
   const { user, logout } = useAuth();
   const { currentIdentity } = useIdentity();
   const location = useLocation();
@@ -86,7 +86,7 @@ const Navbar = () => {
   return (
     <>
     {/* Bottom Bar (Mobile) */}
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe">
+    <nav className={clsx("md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe", highContrast && "contrast-125")}>
         {navItems.filter(i => !i.mobileHidden).map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -165,7 +165,8 @@ const Navbar = () => {
     <nav
       className={clsx(
         "hidden md:flex sticky top-0 h-screen border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300 flex-shrink-0",
-        isExpanded ? "w-64" : "w-20"
+        isExpanded ? "w-64" : "w-20",
+        highContrast && "contrast-125"
       )}
     >
 
