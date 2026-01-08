@@ -69,7 +69,16 @@ const PostCard = ({ post, mutate }) => {
       { refreshInterval: 3000 }
   );
 
-  const isLiked = post.likes?.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
+  useEffect(() => {
+    if (post.likes) {
+        setIsLiked(post.likes.some(l => l.identity === currentIdentity?._id || l.identity?._id === currentIdentity?._id));
+        setLikeCount(post.likes.length);
+    }
+  }, [post.likes, currentIdentity]);
+
   const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
   const isOwner = post.identity._id === currentIdentity?._id;
 
@@ -95,14 +104,28 @@ const PostCard = ({ post, mutate }) => {
   const handleLike = async () => {
       if (!currentIdentity) return toast.error("Select an identity first");
 
-      // Visual feedback immediately
-      setShowHeartAnimation(true);
-      setTimeout(() => setShowHeartAnimation(false), 1000);
+      // Optimistic Update
+      const previousLiked = isLiked;
+      const previousCount = likeCount;
+
+      setIsLiked(!previousLiked);
+      setLikeCount(previousLiked ? previousCount - 1 : previousCount + 1);
+
+      if (!previousLiked) {
+          setShowHeartAnimation(true);
+          setTimeout(() => setShowHeartAnimation(false), 1000);
+      }
 
       try {
           await axios.put(`/posts/${post._id}/like`, { identityId: currentIdentity._id });
-          mutate(); // Update post data
-      } catch (err) { console.error(err); }
+          mutate(); // Sync with server
+      } catch (err) {
+          // Revert on error
+          console.error(err);
+          setIsLiked(previousLiked);
+          setLikeCount(previousCount);
+          toast.error("Failed to update like");
+      }
   };
 
   const interactionsEnabled = post.identity?.user?.settings?.enableReactions !== false;
@@ -604,7 +627,7 @@ const PostCard = ({ post, mutate }) => {
                       )}
                     >
                         <Heart size={20} className={clsx("transition-transform group-active:scale-90", isLiked && "fill-current")} />
-                        <span className="text-xs font-bold">{post.likes?.length || 0}</span>
+                        <span className="text-xs font-bold">{likeCount}</span>
                     </button>
                 )}
 

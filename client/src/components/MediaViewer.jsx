@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { X, Download, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MediaPlayer from './MediaPlayer';
@@ -108,7 +109,7 @@ const MediaViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
 
   if (!isOpen || !currentMedia.url) return null;
 
-  return (
+  return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -203,7 +204,8 @@ const MediaViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
             )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

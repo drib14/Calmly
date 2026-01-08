@@ -67,15 +67,11 @@ router.get('/:handle', protect, async (req, res) => {
 
     // Match Criteria
     // Owner sees all non-deleted posts. Visitors see public posts.
-    // Note: 'sensitive' isn't a visibility level, it's content.
-    // But if 'Safe Mode' hides posts from the feed API, it shouldn't hide them from the Profile API for the owner.
-    // Standard visibility: public, unlisted, private.
-    // If Owner: { identity: identity._id, deletedAt: null }
-    // If Visitor: { identity: identity._id, visibility: 'public', deletedAt: null }
+    // Ensure we are matching strictly by identity._id to avoid any population artifacts
 
     const postMatch = isOwner
-        ? { identity: identity._id, deletedAt: null }
-        : { identity: identity._id, visibility: 'public', deletedAt: null };
+        ? { identity: new mongoose.Types.ObjectId(identity._id), deletedAt: null }
+        : { identity: new mongoose.Types.ObjectId(identity._id), visibility: 'public', deletedAt: null };
 
     // Get Authored Posts
     const authoredPosts = await fetchWithComments(postMatch);
