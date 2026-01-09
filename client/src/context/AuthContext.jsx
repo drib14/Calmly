@@ -59,12 +59,25 @@ export const AuthProvider = ({ children }) => {
     const checkUser = async () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        // Here we would ideally validate the token or fetch user profile
-        // For simplicity, we assume token means logged in, but we need user data.
-        // Let's assume we stored user data in localStorage too, or fetch it.
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        // Attempt to fetch fresh user data
+        try {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            const res = await axios.get('/auth/me');
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data)); // Update local storage
+        } catch (err) {
+            console.error("Failed to fetch user profile", err);
+            // Fallback to local storage if network fails (but token is technically valid?)
+            // Or if 401, logout is handled by interceptor ideally.
+            // If strictly 401/403, we should clear user.
+            const storedUser = localStorage.getItem('user');
+            if (storedUser && err.response?.status !== 401) {
+                setUser(JSON.parse(storedUser));
+            } else {
+                 localStorage.removeItem('accessToken');
+                 localStorage.removeItem('user');
+                 setUser(null);
+            }
         }
       }
       setLoading(false);
