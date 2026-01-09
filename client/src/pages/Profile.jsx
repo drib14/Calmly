@@ -467,56 +467,14 @@ const Profile = () => {
         identityId={currentIdentity?._id}
       />
 
-      {/* My Quote Options Modal */}
-      <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
-             <div className="text-center space-y-4">
-                 <h3 className="text-lg font-bold text-text">Your Quote</h3>
-                 {quote && (
-                     <div className="py-4 px-6 bg-surface rounded-2xl border border-soft-border italic text-secondary relative mb-4">
-                        <span className="text-2xl text-slate-300 absolute top-2 left-2">"</span>
-                        <p className="font-serif text-lg text-text">{quote.content}</p>
-                        <span className="text-2xl text-slate-300 absolute bottom-2 right-2">"</span>
-                     </div>
-                 )}
-                 {quote && (
-                    <div className="flex flex-wrap justify-center gap-3 text-xs text-secondary uppercase tracking-wide">
-                        <div>
-                            Posted: <span className="font-bold text-text">{new Date(quote.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        {quote.audience && (
-                             <div>
-                                Audience: <span className="font-bold text-text capitalize">{quote.audience === 'me' ? 'Only Me' : quote.audience}</span>
-                            </div>
-                        )}
-                        {quote.expireAt && (
-                             <div>
-                                Expires: <span className="font-bold text-text">{new Date(quote.expireAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            </div>
-                        )}
-                    </div>
-                 )}
-                 <div className="grid grid-cols-2 gap-3 pt-4">
-                     <button
-                        onClick={() => { setShowMyQuoteOptions(false); setShowQuoteModal(true); }}
-                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
-                     >
-                         New quote
-                     </button>
-                     <button
-                        onClick={handleDeleteQuote}
-                        disabled={deletingQuote}
-                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50"
-                     >
-                         {deletingQuote ? 'Deleting...' : 'Delete'}
-                     </button>
-                 </div>
-             </div>
-      </Modal>
-
-      {/* Reply Modal */}
+      {/* Unified Reply/View Modal */}
       <ReplyQuoteModal
-        quote={replyQuote}
-        onClose={() => setReplyQuote(null)}
+        quote={showMyQuoteOptions ? quote : replyQuote}
+        onClose={() => {
+            setShowMyQuoteOptions(false);
+            setReplyQuote(null);
+        }}
+        isOwner={!!showMyQuoteOptions}
       />
 
       {/* Edit Profile Modal */}

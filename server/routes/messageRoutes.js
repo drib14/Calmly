@@ -4,6 +4,7 @@ const { protect } = require('../middleware/authMiddleware');
 const Message = require('../models/Message');
 const Identity = require('../models/Identity');
 const { upload } = require('../utils/cloudinary');
+const pusher = require('../utils/pusher');
 
 router.post('/', protect, upload.array('media', 4), async (req, res) => {
   try {
@@ -72,6 +73,16 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
 
       // Populate for immediate return (so frontend can render cards)
       await message.populate('sharedPost');
+
+      // Real-time trigger via Pusher
+      try {
+          if (recipient.user) {
+              const channel = `user-${recipient.user._id}`;
+              await pusher.trigger(channel, 'new_message', message);
+          }
+      } catch (pusherErr) {
+          console.error("Pusher Trigger Error:", pusherErr);
+      }
 
       res.status(201).json(message);
   } catch (error) {

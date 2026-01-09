@@ -67,20 +67,20 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
     <Modal isOpen={!!quote} onClose={onClose}>
         <div className="relative pt-2 pb-2">
             {/* Header: User Info Top Left + Audience Icon */}
-            <div className="flex items-start justify-between mb-8">
-                <div className="flex items-center space-x-3">
-                    <Avatar identity={quote.identity} size="md" />
-                    <div>
-                        <h3 className="text-sm font-bold text-text">{quote.identity.name}</h3>
-                        <p className="text-xs text-secondary font-medium">{formatShortTime(quote.createdAt)}</p>
+            <div className="flex items-start space-x-3 mb-8">
+                <Avatar identity={quote.identity} size="md" />
+                <div>
+                    <h3 className="text-sm font-bold text-text">{quote.identity.name}</h3>
+                    <div className="flex items-center text-xs text-secondary font-medium space-x-1">
+                        <span>{formatShortTime(quote.createdAt)}</span>
+                        <span>•</span>
+                        {/* Audience Icon Inline */}
+                        <div title={`Audience: ${quote.audience}`}>
+                            {quote.audience === 'public' && <Globe size={12} />}
+                            {quote.audience === 'followers' && <Users size={12} />}
+                            {quote.audience === 'me' && <Lock size={12} />}
+                        </div>
                     </div>
-                </div>
-
-                {/* Audience Icon */}
-                <div className="text-secondary" title={`Audience: ${quote.audience}`}>
-                    {quote.audience === 'public' && <Globe size={16} />}
-                    {quote.audience === 'followers' && <Users size={16} />}
-                    {quote.audience === 'me' && <Lock size={16} />}
                 </div>
             </div>
 
