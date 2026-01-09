@@ -96,33 +96,8 @@ const CreatePost = () => {
       if (settings) {
           if (settings.defaultPostType) setType(settings.defaultPostType);
           if (settings.defaultMood) setMood(settings.defaultMood);
-
-          // Load Draft
-          if (settings.enableDrafts) {
-              const savedDraft = localStorage.getItem('post_draft');
-              if (savedDraft) {
-                  const draft = JSON.parse(savedDraft);
-                  if (draft.content) setContent(draft.content);
-                  if (draft.title) setTitle(draft.title);
-                  if (draft.type) setType(draft.type);
-                  if (draft.mood) setMood(draft.mood);
-              }
-          }
       }
   }, [settings]);
-
-  // Save Draft
-  useEffect(() => {
-      if (settings?.enableDrafts) {
-          const timeoutId = setTimeout(() => {
-              const draft = { content, title, type, mood };
-              if (content || title) {
-                localStorage.setItem('post_draft', JSON.stringify(draft));
-              }
-          }, 1000);
-          return () => clearTimeout(timeoutId);
-      }
-  }, [content, title, type, mood, settings]);
 
   const handleFileChange = (e) => {
       const selectedFiles = Array.from(e.target.files);
@@ -148,16 +123,14 @@ const CreatePost = () => {
   };
 
   const checkFeedbackEligibility = () => {
-      if (localStorage.getItem('calmly_feedback_given') === 'true') return false;
+      // Check user settings directly
+      if (settings?.hasGivenFeedback) return false;
 
-      const postsCount = parseInt(localStorage.getItem('calmly_posts_count') || '0', 10) + 1;
-      localStorage.setItem('calmly_posts_count', postsCount.toString());
+      // Removed local counting logic. Could check post count from identity if needed,
+      // but for now we simply don't force the modal based on local storage counts.
+      // Maybe show it occasionally or on first post if we tracked it in DB.
+      // For now, disabling the automatic popup to rely on settings.
 
-      // Trigger on 1st, then every 3rd (1, 4, 7, 10...)
-      if (postsCount === 1 || (postsCount - 1) % 3 === 0) {
-          setShowFeedbackModal(true);
-          return true;
-      }
       return false;
   };
 
@@ -235,8 +208,6 @@ const CreatePost = () => {
             };
 
             await axios.post('/posts', postData); // JSON Request
-
-            localStorage.removeItem('post_draft'); // Clear draft
 
             const needsFeedback = checkFeedbackEligibility();
             if (!needsFeedback) {

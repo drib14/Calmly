@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
                 } catch (refreshError) {
                     // If refresh fails (403/401), clear everything and redirect
                     localStorage.removeItem('accessToken');
-                    localStorage.removeItem('user');
                     setUser(null);
                     return Promise.reject(refreshError);
                 }
@@ -64,20 +63,11 @@ export const AuthProvider = ({ children }) => {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             const res = await axios.get('/auth/me');
             setUser(res.data);
-            localStorage.setItem('user', JSON.stringify(res.data)); // Update local storage
         } catch (err) {
             console.error("Failed to fetch user profile", err);
-            // Fallback to local storage if network fails (but token is technically valid?)
-            // Or if 401, logout is handled by interceptor ideally.
-            // If strictly 401/403, we should clear user.
-            const storedUser = localStorage.getItem('user');
-            if (storedUser && err.response?.status !== 401) {
-                setUser(JSON.parse(storedUser));
-            } else {
-                 localStorage.removeItem('accessToken');
-                 localStorage.removeItem('user');
-                 setUser(null);
-            }
+            // If failed, do NOT fallback to local storage. Clear session.
+            localStorage.removeItem('accessToken');
+            setUser(null);
         }
       }
       setLoading(false);
@@ -90,7 +80,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.post('/auth/login', { email, password });
       const { accessToken, ...userData } = res.data;
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Do NOT store user object in local storage
       setUser(userData);
       return { success: true };
     } catch (error) {
@@ -117,7 +107,6 @@ export const AuthProvider = ({ children }) => {
       console.error(err);
     }
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
     setUser(null);
   };
 

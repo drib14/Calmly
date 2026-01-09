@@ -14,7 +14,8 @@ const FeedbackModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await axios.post('/stats/feedback', { rating, comment });
-      localStorage.setItem('calmly_feedback_given', 'true');
+      // Backend should update user.settings.hasGivenFeedback
+      // We can optimistically update SWR if needed, but for now just removing local storage usage.
       toast.success('Thank you for your feedback!');
       onClose();
     } catch (error) {
