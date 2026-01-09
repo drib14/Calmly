@@ -17,8 +17,14 @@ router.get('/:handle', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check Ownership
-    const isOwner = identity.user.toString() === req.user._id.toString();
+    // Robust Ownership Check (Handle orphaned identities)
+    const isOwner = identity.user && identity.user.toString() === req.user._id.toString();
+
+    // If orphaned identity (no user), return 404 or treat as unavailable
+    if (!identity.user) {
+         console.warn(`Orphaned Identity Accessed: ${handle} (ID: ${identity._id})`);
+         return res.status(404).json({ message: 'User not active' });
+    }
 
     if (identity.type === 'anonymous' && !isOwner) {
         return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
