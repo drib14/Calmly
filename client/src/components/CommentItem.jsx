@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import { MoreHorizontal, Trash2, Flag, Edit3, EyeOff, X, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useIdentity } from '../context/IdentityContext';
 import { useAuth } from '../context/AuthContext';
+import { useClickOutside } from '../hooks/useClickOutside';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
 import { formatShortTime } from '../utils/dateUtils';
@@ -17,6 +18,9 @@ const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isO
     const [showOptions, setShowOptions] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
+
+    const optionsRef = useRef(null);
+    useClickOutside(optionsRef, () => setShowOptions(false));
 
     // Check if the current user owns this comment or is Admin
     const isCommentOwner = identities?.some(id => String(id._id) === String(comment.identity._id));
@@ -119,54 +123,55 @@ const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isO
                     )}
 
                     {/* 3 Dots Trigger */}
-                    <button
-                        onClick={() => setShowOptions(true)}
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-secondary hover:text-text"
-                    >
-                        <MoreHorizontal size={14} />
-                    </button>
+                    <div ref={optionsRef}>
+                        <button
+                            onClick={() => setShowOptions(!showOptions)}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-secondary hover:text-text"
+                        >
+                            <MoreHorizontal size={14} />
+                        </button>
 
-                    {/* Desktop Options Menu (Popover) - Hidden on Mobile */}
-                    <div className="hidden md:block">
-                        <AnimatePresence>
-                            {showOptions && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    className="absolute right-0 top-6 z-10 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]"
-                                    onMouseLeave={() => setShowOptions(false)}
-                                >
-                                    <button onClick={handleCopy} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                        <Copy size={12} /> <span>Copy Text</span>
-                                    </button>
-
-                                    {isCommentOwner && (
-                                        <button onClick={() => { setIsEditing(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                            <Edit3 size={12} /> <span>Edit</span>
+                        {/* Desktop Options Menu (Popover) - Hidden on Mobile */}
+                        <div className="hidden md:block">
+                            <AnimatePresence>
+                                {showOptions && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        className="absolute right-0 top-6 z-10 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]"
+                                    >
+                                        <button onClick={handleCopy} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                            <Copy size={12} /> <span>Copy Text</span>
                                         </button>
-                                    )}
 
-                                    {canHide && (
-                                        <button onClick={() => { handleHide(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                            <EyeOff size={12} /> <span>{comment.hidden ? 'Unhide' : 'Hide'}</span>
-                                        </button>
-                                    )}
+                                        {isCommentOwner && (
+                                            <button onClick={() => { setIsEditing(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                                <Edit3 size={12} /> <span>Edit</span>
+                                            </button>
+                                        )}
 
-                                    {canDelete && (
-                                        <button onClick={() => { handleDelete(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
-                                            <Trash2 size={12} /> <span>Delete</span>
-                                        </button>
-                                    )}
+                                        {canHide && (
+                                            <button onClick={() => { handleHide(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                                <EyeOff size={12} /> <span>{comment.hidden ? 'Unhide' : 'Hide'}</span>
+                                            </button>
+                                        )}
 
-                                    {!isCommentOwner && (
-                                        <button onClick={() => { handleReport('Inappropriate'); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
-                                            <Flag size={12} /> <span>Report</span>
-                                        </button>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                        {canDelete && (
+                                            <button onClick={() => { handleDelete(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
+                                                <Trash2 size={12} /> <span>Delete</span>
+                                            </button>
+                                        )}
+
+                                        {!isCommentOwner && (
+                                            <button onClick={() => { handleReport('Inappropriate'); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
+                                                <Flag size={12} /> <span>Report</span>
+                                            </button>
+                                        )}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
 

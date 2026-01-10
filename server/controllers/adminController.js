@@ -5,6 +5,7 @@ const Support = require('../models/Support');
 const Comment = require('../models/Comment');
 const Identity = require('../models/Identity');
 const SystemLog = require('../models/SystemLog');
+const SystemSetting = require('../models/SystemSetting');
 
 // Helper to log
 const logAction = async (adminId, action, target, details) => {
@@ -20,9 +21,9 @@ const logAction = async (adminId, action, target, details) => {
     }
 };
 
+// ... (Previous stats/logs/users functions remain)
+
 // @desc    Get Admin Stats
-// @route   GET /api/admin/stats
-// @access  Admin
 const getStats = async (req, res) => {
     try {
         const userCount = await User.countDocuments();
@@ -41,9 +42,6 @@ const getStats = async (req, res) => {
     }
 };
 
-// @desc    Get Admin Logs
-// @route   GET /api/admin/logs
-// @access  Admin
 const getLogs = async (req, res) => {
     try {
         const logs = await SystemLog.find()
@@ -56,24 +54,18 @@ const getLogs = async (req, res) => {
     }
 };
 
-// @desc    Get All Users
-// @route   GET /api/admin/users
-// @access  Admin
 const getUsers = async (req, res) => {
     try {
         const users = await User.find()
             .select('-password')
             .sort({ createdAt: -1 })
-            .limit(100); // Pagination in future
+            .limit(100);
         res.json(users);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// @desc    Ban/Unban User
-// @route   PUT /api/admin/users/:id/ban
-// @access  Admin
 const toggleBanUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -94,18 +86,14 @@ const toggleBanUser = async (req, res) => {
     }
 };
 
-// @desc    Toggle Restriction
-// @route   PUT /api/admin/users/:id/restrict
-// @access  Admin
 const toggleRestriction = async (req, res) => {
-    const { type } = req.body; // 'post' or 'comment'
+    const { type } = req.body;
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (!user.restrictions) user.restrictions = {};
 
-        // Toggle specific restriction
         user.restrictions[type] = !user.restrictions[type];
         await user.save();
 
@@ -117,9 +105,8 @@ const toggleRestriction = async (req, res) => {
     }
 };
 
-// @desc    Get Reports
-// @route   GET /api/admin/reports
-// @access  Admin
+// ... (Reports and Support remain)
+
 const getReports = async (req, res) => {
     try {
         const reports = await Report.find()
@@ -141,9 +128,6 @@ const getReports = async (req, res) => {
     }
 };
 
-// @desc    Resolve Report
-// @route   PUT /api/admin/reports/:id
-// @access  Admin
 const resolveReport = async (req, res) => {
     try {
         if (!req.params.id || req.params.id.length !== 24) {
@@ -158,7 +142,6 @@ const resolveReport = async (req, res) => {
         report.resolvedBy = req.user._id;
         await report.save();
 
-        // Safely log
         try {
             await logAction(req.user._id, 'RESOLVE_REPORT', `Report: ${report._id}`, { status: newStatus, reason: report.reason });
         } catch (logErr) {
@@ -172,9 +155,6 @@ const resolveReport = async (req, res) => {
     }
 };
 
-// @desc    Get Support Tickets
-// @route   GET /api/admin/support
-// @access  Admin
 const getSupportTickets = async (req, res) => {
     try {
         const tickets = await Support.find()
@@ -186,9 +166,6 @@ const getSupportTickets = async (req, res) => {
     }
 };
 
-// @desc    Reply to Support Ticket
-// @route   POST /api/admin/support/:id/reply
-// @access  Admin
 const replySupportTicket = async (req, res) => {
     try {
         const ticket = await Support.findById(req.params.id);
@@ -216,6 +193,77 @@ const replySupportTicket = async (req, res) => {
     }
 };
 
+// --- NEW FEATURES ---
+
+// @desc Get All Posts (Admin)
+const getAllPosts = async (req, res) => {
+    try {
+        const posts = await Post.find()
+            .populate('identity', 'name handle')
+            .sort({ createdAt: -1 })
+            .limit(100);
+        res.json(posts);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc Delete Post (Admin)
+const deletePost = async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+        if (!post) return res.status(404).json({ message: 'Post not found' });
+
+        // Hard delete for admin cleanup? Or soft? Soft is safer.
+        post.deletedAt = new Date();
+        await post.save();
+
+        await logAction(req.user._id, 'DELETE_POST_ADMIN', `Post: ${post._id}`, {});
+        res.json({ message: 'Post deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc Get System Settings
+const getSystemSettings = async (req, res) => {
+    try {
+        const settings = await SystemSetting.find();
+        // Convert array to object
+        const settingsObj = settings.reduce((acc, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+        }, {});
+        res.json(settingsObj);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc Update System Setting
+const updateSystemSetting = async (req, res) => {
+    const { key, value } = req.body;
+    try {
+        let setting = await SystemSetting.findOne({ key });
+        if (setting) {
+            setting.value = value;
+            setting.updatedBy = req.user._id;
+            setting.updatedAt = Date.now();
+        } else {
+            setting = new SystemSetting({
+                key,
+                value,
+                updatedBy: req.user._id
+            });
+        }
+        await setting.save();
+        await logAction(req.user._id, 'UPDATE_SETTING', `Setting: ${key}`, { value });
+        res.json(setting);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
     getStats,
     getLogs,
@@ -225,5 +273,9 @@ module.exports = {
     getReports,
     resolveReport,
     getSupportTickets,
-    replySupportTicket
+    replySupportTicket,
+    getAllPosts,
+    deletePost,
+    getSystemSettings,
+    updateSystemSetting
 };

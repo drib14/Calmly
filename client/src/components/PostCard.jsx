@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
+import { useClickOutside } from '../hooks/useClickOutside';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
 import MediaViewer from './MediaViewer';
@@ -91,18 +92,8 @@ const PostCard = ({ post, mutate }) => {
   const shouldBlur = settings?.enableSafeMode && isTriggering && !isRevealed && !isOwner;
 
   // Close options/share on outside click
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (optionsRef.current && !optionsRef.current.contains(event.target)) {
-        setShowOptions(false);
-      }
-      if (shareRef.current && !shareRef.current.contains(event.target)) {
-        setShowShareMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(optionsRef, () => setShowOptions(false));
+  useClickOutside(shareRef, () => setShowShareMenu(false));
 
   const handleLike = async () => {
       if (!currentIdentity) return toast.error("Select an identity first");

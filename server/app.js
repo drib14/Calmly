@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
+const checkMaintenanceMode = require('./middleware/maintenanceMiddleware');
 
 // Load env vars
 dotenv.config();
@@ -30,6 +31,10 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+// Apply maintenance check to subsequent routes (except admin/auth which are handled inside or via order)
+// Actually middleware logic handles the path check.
+app.use(checkMaintenanceMode);
+
 app.use('/api/identities', require('./routes/identityRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));

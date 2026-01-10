@@ -30,6 +30,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
 import ReportManagement from './pages/admin/ReportManagement';
 import SupportInbox from './pages/admin/SupportInbox';
+import ContentManagement from './pages/admin/ContentManagement';
+import AdminSettings from './pages/admin/AdminSettings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -65,8 +67,10 @@ function App() {
                 }>
                     <Route index element={<AdminDashboard />} />
                     <Route path="users" element={<UserManagement />} />
+                    <Route path="posts" element={<ContentManagement />} />
                     <Route path="reports" element={<ReportManagement />} />
                     <Route path="support" element={<SupportInbox />} />
+                    <Route path="settings" element={<AdminSettings />} />
                 </Route>
 
                 {/* Main App Routes */}

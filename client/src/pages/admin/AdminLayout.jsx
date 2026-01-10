@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Flag, MessageSquare, LogOut, ArrowLeft, Activity } from 'lucide-react';
+import { LayoutDashboard, Users, Flag, MessageSquare, LogOut, ArrowLeft, Activity, FileText } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 
@@ -12,8 +12,10 @@ const AdminLayout = () => {
     const navItems = [
         { path: '/admin', icon: LayoutDashboard, label: 'Overview', exact: true },
         { path: '/admin/users', icon: Users, label: 'Users' },
+        { path: '/admin/posts', icon: FileText, label: 'Content' },
         { path: '/admin/reports', icon: Flag, label: 'Reports' },
         { path: '/admin/support', icon: MessageSquare, label: 'Support Inbox' },
+        { path: '/admin/settings', icon: Activity, label: 'Settings' },
     ];
 
     return (

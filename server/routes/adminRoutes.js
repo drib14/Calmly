@@ -10,7 +10,11 @@ const {
     getReports,
     resolveReport,
     getSupportTickets,
-    replySupportTicket
+    replySupportTicket,
+    getAllPosts,
+    deletePost,
+    getSystemSettings,
+    updateSystemSetting
 } = require('../controllers/adminController');
 
 router.use(protect);
@@ -25,5 +29,11 @@ router.get('/reports', getReports);
 router.put('/reports/:id', resolveReport);
 router.get('/support', getSupportTickets);
 router.post('/support/:id/reply', replySupportTicket);
+
+// New Routes
+router.get('/posts', getAllPosts);
+router.delete('/posts/:id', deletePost);
+router.get('/settings', getSystemSettings);
+router.put('/settings', updateSystemSetting);
 
 module.exports = router;

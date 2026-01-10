@@ -3,6 +3,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useClickOutside } from '../hooks/useClickOutside';
 import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy, Unlock, Flag } from 'lucide-react';
 import ReportMessageModal from '../components/ReportMessageModal';
 import { formatShortTime } from '../utils/dateUtils';
@@ -40,6 +41,10 @@ const Messages = () => {
   const [messageToReport, setMessageToReport] = useState(null);
   const [replyToMessage, setReplyToMessage] = useState(null); // Local state for replying
   const scrollRef = useRef();
+
+  // Click outside refs
+  const headerMenuRef = useRef(null);
+  useClickOutside(headerMenuRef, () => setShowConversationMenu(false));
 
   // Mobile View State ('list' or 'chat')
   const [view, setView] = useState('list');
@@ -432,7 +437,7 @@ const Messages = () => {
                               <p className="text-xs text-secondary uppercase tracking-wide">{activeConversation.type}</p>
                           </div>
                       </div>
-                      <div className="ml-auto relative">
+                      <div className="ml-auto relative" ref={headerMenuRef}>
                           <button onClick={() => setShowConversationMenu(!showConversationMenu)} className="p-2 text-secondary hover:text-text rounded-full hover:bg-background transition"><MoreVertical size={20} /></button>
                           <AnimatePresence>
                               {showConversationMenu && (
