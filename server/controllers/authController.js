@@ -73,6 +73,7 @@ const registerUser = async (req, res) => {
       res.status(201).json({
           _id: user._id,
           email: user.email,
+          role: user.role,
           message: 'Registration successful! Welcome.',
       });
 
@@ -129,6 +130,7 @@ const loginUser = async (req, res) => {
       res.json({
         _id: user._id,
         email: user.email,
+        role: user.role,
         accessToken,
       });
     } else {
@@ -274,7 +276,8 @@ const getUserProfile = async (req, res) => {
             res.json({
                 _id: user._id,
                 email: user.email,
-                isAdmin: user.isAdmin,
+                role: user.role, // Explicitly include role
+                isAdmin: user.role === 'admin', // Keep legacy if needed
                 settings: user.settings,
                 // Add any other user fields needed
             });
