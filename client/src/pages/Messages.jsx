@@ -40,6 +40,17 @@ const Messages = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [messageToReport, setMessageToReport] = useState(null);
   const [replyToMessage, setReplyToMessage] = useState(null); // Local state for replying
+
+  // Forward & Edit & Delete States
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [messageToForward, setMessageToForward] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editContent, setEditContent] = useState('');
+  const [showDeleteOptionsModal, setShowDeleteOptionsModal] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState(null);
+  const [deleteMode, setDeleteMode] = useState(null); // 'me' or 'everyone'
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+
   const scrollRef = useRef();
 
   // Click outside refs
