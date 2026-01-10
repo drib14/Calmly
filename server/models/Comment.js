@@ -31,6 +31,14 @@ const commentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Comment'
   }],
+  hidden: {
+    type: Boolean,
+    default: false
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now,

@@ -14,7 +14,8 @@ const {
   downloadUserData,
   blockUser,
   muteUser,
-  hidePost
+  hidePost,
+  createSupportTicket
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -33,6 +34,7 @@ router.post('/mute-user', muteUser);
 router.post('/hide-post', hidePost);
 
 router.get('/download-data', downloadUserData);
+router.post('/support', createSupportTicket);
 
 // Journal Lock Routes
 router.put('/journal-lock', toggleJournalLock);

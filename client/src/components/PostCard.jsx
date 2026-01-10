@@ -11,6 +11,7 @@ import { useSettings } from '../hooks/useSettings';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
 import MediaViewer from './MediaViewer';
+import CommentItem from './CommentItem';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
@@ -758,49 +759,18 @@ const PostCard = ({ post, mutate }) => {
                           ) : comments.length === 0 ? (
                               <div className="text-center py-4 text-secondary text-xs">No comments yet. Be the first.</div>
                           ) : (
-                              comments.map(c => {
-                                  const isCommentLiked = c.likes?.some(id => id === currentIdentity?._id);
-                                  return (
-                                    <div key={c._id} className={clsx("flex space-x-3", c.parentComment && "ml-8")}>
-                                        <Avatar identity={c.identity} size="sm" />
-                                        <div className="flex-1">
-                                            <div className="bg-surface p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-soft-border inline-block max-w-full">
-                                                <span className="font-bold text-text text-xs block mb-1">{c.identity.name}</span>
-                                                {c.content && <span className="text-secondary block whitespace-pre-wrap">{c.content}</span>}
-                                                {c.media && c.media.length > 0 && (
-                                                    <div className="mt-2 rounded-lg overflow-hidden max-w-[200px]">
-                                                        {c.media[0].type === 'video' ? (
-                                                            <MediaPlayer src={c.media[0].url} />
-                                                        ) : (
-                                                            <img
-                                                                src={c.media[0].url}
-                                                                className="w-full h-full object-cover cursor-pointer"
-                                                                onClick={() => openViewer(c.media[0].url)}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center space-x-4 mt-1 ml-2 text-[10px] text-secondary">
-                                                <span>{formatShortTime(c.createdAt)}</span>
-                                                <button
-                                                    onClick={() => handleCommentLike(c._id)}
-                                                    className={clsx("font-bold hover:text-red-500 transition flex items-center space-x-1", isCommentLiked && "text-red-500")}
-                                                >
-                                                    <Heart size={10} className={clsx(isCommentLiked && "fill-current")} />
-                                                    <span>{c.likes?.length || 0}</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setReplyTo({ id: c._id, name: c.identity.name })}
-                                                    className="font-bold hover:text-blue-500 transition"
-                                                >
-                                                    Reply
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                  );
-                              })
+                              comments.map(c => (
+                                <CommentItem
+                                    key={c._id}
+                                    comment={c}
+                                    postId={post._id}
+                                    onReply={(comment) => setReplyTo({ id: comment._id, name: comment.identity.name })}
+                                    openViewer={openViewer}
+                                    mutateComments={mutateComments}
+                                    isOwner={isOwner}
+                                    identities={identities}
+                                />
+                              ))
                           )}
                       </div>
 

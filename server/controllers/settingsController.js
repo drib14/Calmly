@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const Support = require('../models/Support');
 
 // @desc    Get user settings
 // @route   GET /api/settings
@@ -315,6 +316,32 @@ const downloadUserData = async (req, res) => {
   }
 };
 
+// @desc    Create Support Ticket
+// @route   POST /api/settings/support
+// @access  Private
+const createSupportTicket = async (req, res) => {
+    try {
+        const { email, subject, message } = req.body;
+        const user = req.user;
+
+        const ticket = await Support.create({
+            user: user._id,
+            email: email || user.email,
+            subject: subject || 'Support Request',
+            message
+        });
+
+        // Simulate Email to Admin
+        console.log(`[EMAIL SENT] To: support@calmly.app`);
+        console.log(`[EMAIL SUBJECT] New Support Ticket: ${subject}`);
+        console.log(`[EMAIL BODY] From: ${ticket.email}\nMessage: ${message}`);
+
+        res.status(201).json(ticket);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -328,5 +355,6 @@ module.exports = {
   downloadUserData,
   blockUser,
   muteUser,
-  hidePost
+  hidePost,
+  createSupportTicket
 };

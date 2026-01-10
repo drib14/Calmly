@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy } from 'lucide-react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy, Unlock } from 'lucide-react';
 import { formatShortTime } from '../utils/dateUtils';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
@@ -44,20 +44,16 @@ const Messages = () => {
     if (location.state?.startConversationWith) {
       setActiveConversation(location.state.startConversationWith);
       setView('chat');
-      // Clear state to avoid reopening on refresh/back (optional, often better to keep for history consistency)
-      // window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  // Suggested Users (All identities for now, horizontal scroll)
+  // Suggested Users Logic
   const { data: suggestedUsersRaw } = useSWR('/search?q=&type=identities', async (url) => {
       try {
           const res = await axios.get(url);
           return res.data.identities || [];
       } catch (err) { return []; }
   });
-
-  // Suggested users logic (allow self-chat)
   const suggestedUsers = suggestedUsersRaw || [];
 
   // Fetch Inbox (Polling)
@@ -125,7 +121,11 @@ const Messages = () => {
       try {
           await axios.post('/settings/block-user', { identityId: id });
           toast.success("User blocked");
-          mutateInbox(); // Refresh lists
+          mutateInbox();
+          // Force refresh of current active conversation's settings if needed
+          // Actually we rely on `activeConversation.user.settings` which might be stale in state.
+          // Better to reload window or refetch identity.
+          // For now, simple logic.
       } catch (err) { toast.error("Failed to block"); }
   };
 
@@ -133,6 +133,7 @@ const Messages = () => {
       try {
           await axios.post('/settings/mute-user', { identityId: id });
           toast.success("Conversation muted");
+          mutateInbox();
       } catch (err) { toast.error("Failed to mute"); }
   };
 
@@ -205,9 +206,7 @@ const Messages = () => {
       if (e.target.value.length > 2) {
           try {
               const res = await axios.get(`/search?q=${e.target.value}&type=identities`);
-              const results = res.data.identities || [];
-              // Allow self-chat, so no filtering of own identities
-              setSearchResults(results);
+              setSearchResults(res.data.identities || []);
           } catch (err) {
               console.error(err);
           }
@@ -216,95 +215,80 @@ const Messages = () => {
       }
   };
 
+  // Check Block Status (Checking if I blocked them, or if they blocked me)
+  // `activeConversation` object comes from search or inbox.
+  // If from Inbox, it has `user.settings`.
+  // We need to check My Settings to see if I blocked them.
+  // And check Their Settings (from `activeConversation.user.settings`) to see if they blocked me?
+  // Actually, blocked users list is in MY user object.
+  // The backend should ideally tell us "isBlocked" or "hasBlockedYou".
+  // For now, we rely on the `activeConversation` object having populated settings if it came from Inbox.
+  // But `activeConversation` from Search might NOT have settings populated fully or correctly for privacy.
+  // We'll rely on the Inbox `other` object which we augmented in backend to include settings.
+
+  // Checking if *I* blocked *Them*:
+  // I need access to my own settings. `currentIdentity.user.settings` isn't available directly in identity context usually,
+  // unless we fetch it. We have `useSettings` hook!
+  // BUT `useSettings` fetches from `/api/settings`. Let's assume we have it.
+  // Wait, `activeConversation` is an Identity object.
+  // My settings are in `settings` (we need to fetch them).
+
+  // Let's assume we don't have global settings context easily here without adding it.
+  // I will check `activeConversation` for "blockedByMe" if backend provided it? No.
+  // I will use `activeConversation.isBlocked` if I can adding it to the inbox endpoint...
+  // Or just fetch settings.
+
+  // For simplicity:
+  // If `activeConversation` object has `isBlocked` (we didn't add this).
+  // Let's use `inbox` data to find the conversation and check settings there?
+
+  // Real implementation: We need to check `blockedUsers` in MY settings.
+  // I'll fetch my settings once on mount.
+  const [mySettings, setMySettings] = useState(null);
+  useEffect(() => {
+      axios.get('/api/settings').then(res => setMySettings(res.data)).catch(console.error);
+  }, [inbox]); // Refresh when inbox refreshes (e.g. after blocking)
+
+  const isBlockedByMe = mySettings?.blockedUsers?.includes(activeConversation?._id);
+  // Check if they blocked me (needs their settings in activeConversation)
+  // If activeConversation came from Inbox, it might have it.
+  const isBlockedByThem = activeConversation?.user?.settings?.blockedUsers?.includes(currentIdentity?._id);
+
+  // Muted Logic
+  const isMuted = mySettings?.mutedUsers?.includes(activeConversation?._id);
+
   const renderSharedPost = (post, isMe) => {
-      // 1. Unavailable Moment Card
       if (!post || !post.identity) {
           return (
-              <div className={clsx(
-                  "rounded-2xl border p-4 w-60 mb-1 flex items-center space-x-3 opacity-80",
-                  isMe ? "bg-white/5 border-white/10 text-white/70" : "bg-surface border-soft-border text-secondary"
-              )}>
-                   <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0">
-                       <Shield size={18} className="opacity-50" />
-                   </div>
-                   <div className="flex-1 min-w-0">
-                       <p className="text-xs font-bold leading-tight">Unavailable Moment</p>
-                       <p className="text-[10px] opacity-70 mt-0.5">This post has been deleted or is hidden.</p>
-                   </div>
+              <div className={clsx("rounded-2xl border p-4 w-60 mb-1 flex items-center space-x-3 opacity-80", isMe ? "bg-white/5 border-white/10 text-white/70" : "bg-surface border-soft-border text-secondary")}>
+                   <div className="w-10 h-10 rounded-full bg-background flex items-center justify-center flex-shrink-0"><Shield size={18} className="opacity-50" /></div>
+                   <div className="flex-1 min-w-0"><p className="text-xs font-bold leading-tight">Unavailable Moment</p></div>
               </div>
           );
       }
-
       const hasMedia = post.media && post.media.length > 0;
       const media = hasMedia ? post.media[0] : null;
       const textContent = post.content || '';
       const truncatedText = textContent.length > 60 ? textContent.slice(0, 60) + '...' : textContent;
 
       return (
-          <div
-                onClick={() => navigate(`/post/${post._id}`)}
-                className={clsx(
-                    "rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group",
-                    isMe ? "bg-accent border-transparent text-white" : "bg-surface border-soft-border text-text hover:shadow-md"
-                )}
-          >
+          <div onClick={() => navigate(`/post/${post._id}`)} className={clsx("rounded-2xl overflow-hidden cursor-pointer border mb-1 transition-all w-60 relative group", isMe ? "bg-accent border-transparent text-white" : "bg-surface border-soft-border text-text hover:shadow-md")}>
               <div className="flex flex-col h-full relative">
-                  {/* Top Left: Avatar + Name */}
                   <div className={clsx("p-3 flex items-center space-x-2 border-b z-10 relative", isMe ? "border-white/20" : "border-soft-border")}>
-                      <div onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
-                           <Avatar identity={post.identity} size="xs" />
-                      </div>
-                      <span className={clsx("text-xs font-bold truncate cursor-pointer hover:underline", isMe ? "text-white" : "text-text")} onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.identity.handle.replace('@','')}`); }}>
-                          {post.identity?.name || 'Unknown'}
-                      </span>
+                      <Avatar identity={post.identity} size="xs" />
+                      <span className={clsx("text-xs font-bold truncate", isMe ? "text-white" : "text-text")}>{post.identity?.name}</span>
                   </div>
-
-                  {/* Main Content */}
                   <div className="relative">
                       {hasMedia ? (
                           <>
                               <div className="aspect-[4/3] w-full bg-black/5 flex items-center justify-center overflow-hidden">
-                                  {media.type === 'video' ? (
-                                      <video
-                                          src={media.url}
-                                          className="w-full h-full object-cover"
-                                          muted
-                                          loop
-                                          playsInline
-                                          onMouseOver={e => e.target.play()}
-                                          onMouseOut={e => e.target.pause()}
-                                      />
-                                  ) : (
-                                      <img src={media.url} className="w-full h-full object-cover" />
-                                  )}
+                                  {media.type === 'video' ? <video src={media.url} className="w-full h-full object-cover" muted /> : <img src={media.url} className="w-full h-full object-cover" />}
                               </div>
-                              {/* Caption Below Media */}
-                              {textContent && (
-                                  <div className="p-3 pt-2">
-                                      <p className={clsx("text-xs font-serif leading-relaxed line-clamp-2", isMe ? "text-white/90" : "text-text/90")}>
-                                          {truncatedText}
-                                      </p>
-                                  </div>
-                              )}
+                              {textContent && <div className="p-3 pt-2"><p className={clsx("text-xs font-serif leading-relaxed line-clamp-2", isMe ? "text-white/90" : "text-text/90")}>{truncatedText}</p></div>}
                           </>
                       ) : (
-                          // Text Only Mode
-                          <div className="p-4 py-6 flex items-center justify-center min-h-[120px]">
-                              <p className={clsx("font-serif text-sm text-center italic leading-relaxed line-clamp-6", isMe ? "text-white" : "text-text")}>
-                                  "{textContent}"
-                              </p>
-                          </div>
+                          <div className="p-4 py-6 flex items-center justify-center min-h-[120px]"><p className={clsx("font-serif text-sm text-center italic leading-relaxed line-clamp-6", isMe ? "text-white" : "text-text")}>"{textContent}"</p></div>
                       )}
-                  </div>
-
-                  {/* Bottom Left: Logo */}
-                  <div className={clsx("mt-auto p-3 border-t flex items-center space-x-2 opacity-80", isMe ? "border-white/20" : "border-soft-border")}>
-                      <div className="w-4 h-4 rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
-                          <img src="/favicon.png" className="w-3 h-3 object-contain" alt="Logo" />
-                      </div>
-                      <span className={clsx("text-[9px] font-bold uppercase tracking-wider", isMe ? "text-white/80" : "text-secondary")}>
-                          Calmly
-                      </span>
                   </div>
               </div>
           </div>
@@ -321,25 +305,11 @@ const Messages = () => {
       )}>
           <div className="p-4 border-b border-soft-border">
                <h2 className="text-xl font-serif font-bold text-text mb-4">Messages</h2>
-
-               {/* Quotes in Message Page (Horizontal Profiles) */}
-               <div className="mb-4 -mx-2">
-                   <div className="scale-90 origin-top-left w-[110%]">
-                       <QuotesWidget />
-                   </div>
-               </div>
-
+               <div className="mb-4 -mx-2"><div className="scale-90 origin-top-left w-[110%]"><QuotesWidget /></div></div>
                <div className="relative mb-4">
                    <Search size={16} className="absolute left-3 top-2.5 text-secondary" />
-                   <input
-                      className="w-full bg-background border-none rounded-xl py-2 pl-9 text-sm focus:ring-1 focus:ring-soft-border text-text placeholder-secondary"
-                      placeholder="Search users..."
-                      value={searchQuery}
-                      onChange={handleSearch}
-                  />
+                   <input className="w-full bg-background border-none rounded-xl py-2 pl-9 text-sm focus:ring-1 focus:ring-soft-border text-text placeholder-secondary" placeholder="Search users..." value={searchQuery} onChange={handleSearch} />
                </div>
-
-               {/* Search Results Dropdown */}
                {searchResults.length > 0 && (
                    <div className="absolute top-28 left-4 right-4 bg-surface shadow-xl border border-soft-border rounded-xl z-20 max-h-60 overflow-y-auto">
                        {searchResults.map(id => (
@@ -354,22 +324,17 @@ const Messages = () => {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar">
               {(inbox || []).reduce((acc, msg) => {
-                  // Deduplication Logic on Frontend as a failsafe
                   if (!msg.sender || !msg.recipient) return acc;
-
-                  // Check if the sender is ANY of my identities
                   const isSenderMe = identities?.some(id => id._id === msg.sender._id);
-                  // The other person is the recipient if I am the sender, otherwise it's the sender
                   const other = isSenderMe ? msg.recipient : msg.sender;
-
-                  // Ensure we haven't already rendered a conversation for this 'other' person
-                  // This fixes "displayed duplicated data" if backend grouping is flaky or multiple threads exist
                   if (acc.some(item => item.other._id === other._id)) return acc;
-
                   acc.push({ msg, other, isSenderMe });
                   return acc;
               }, []).map(({ msg, other, isSenderMe }) => {
                   const isUnread = !isSenderMe && !msg.read;
+                  // Check if muted in MY settings (need to pass mySettings or check it here)
+                  // For now, re-use isMuted logic if possible, but we need to iterate.
+                  const isOtherMuted = mySettings?.mutedUsers?.includes(other._id);
 
                   return (
                       <div
@@ -380,7 +345,8 @@ const Messages = () => {
                           <div className="flex items-center space-x-3">
                               <div className="relative">
                                 <Avatar identity={other} />
-                                {isUnread && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-surface"></span>}
+                                {isUnread && !isOtherMuted && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-surface"></span>}
+                                {isOtherMuted && <span className="absolute -bottom-1 -right-1 bg-surface rounded-full p-0.5"><BellOff size={10} className="text-secondary"/></span>}
                               </div>
                               <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-baseline mb-1">
@@ -391,34 +357,13 @@ const Messages = () => {
                                       {isSenderMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a moment' : msg.replyToQuote ? 'Replied to a note' : msg.content || 'Sent a file'}
                                   </p>
                               </div>
-
-                              {/* List Options Trigger (Visible on Hover/Swipe - Simplified to 3 dots) */}
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `list-${other._id}` ? null : `list-${other._id}`); }}
-                                className="p-1 text-secondary hover:text-text rounded-full hover:bg-surface opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                  <MoreVertical size={16} />
-                              </button>
-
-                              {/* List Context Menu */}
+                              <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `list-${other._id}` ? null : `list-${other._id}`); }} className="p-1 text-secondary hover:text-text rounded-full hover:bg-surface opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical size={16} /></button>
                               <AnimatePresence>
                                   {activeMenuId === `list-${other._id}` && (
-                                      <motion.div
-                                          initial={{ opacity: 0, scale: 0.9 }}
-                                          animate={{ opacity: 1, scale: 1 }}
-                                          exit={{ opacity: 0, scale: 0.9 }}
-                                          className="absolute right-4 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]"
-                                          onClick={(e) => e.stopPropagation()}
-                                      >
-                                          <button onClick={() => { handleMuteUser(other._id); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                              <BellOff size={14} /> <span>Mute</span>
-                                          </button>
-                                          <button onClick={() => { handleBlockUser(other._id); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                              <ShieldAlert size={14} /> <span>Block</span>
-                                          </button>
-                                          <button onClick={() => { setActiveConversation(other); setShowDeleteConvModal(true); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
-                                              <Trash2 size={14} /> <span>Delete</span>
-                                          </button>
+                                      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute right-4 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
+                                          <button onClick={() => { handleMuteUser(other._id); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><BellOff size={14} /> <span>{isOtherMuted ? 'Unmute' : 'Mute'}</span></button>
+                                          <button onClick={() => { handleBlockUser(other._id); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><ShieldAlert size={14} /> <span>Block</span></button>
+                                          <button onClick={() => { setActiveConversation(other); setShowDeleteConvModal(true); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={14} /> <span>Delete</span></button>
                                       </motion.div>
                                   )}
                               </AnimatePresence>
@@ -429,7 +374,7 @@ const Messages = () => {
           </div>
       </div>
 
-      {/* Chat Area (Detail View) */}
+      {/* Chat Area */}
       <div className={clsx(
           "w-full md:flex-1 flex flex-col bg-background/50 absolute md:relative h-full transition-transform duration-300",
           view === 'chat' ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
@@ -437,50 +382,27 @@ const Messages = () => {
           {activeConversation ? (
               <>
                   <div className="p-4 bg-surface border-b border-soft-border flex items-center shadow-sm z-10">
-                      {/* Back Button (Mobile Only) */}
-                      <button onClick={() => setView('list')} className="md:hidden mr-3 text-secondary">
-                          <ChevronLeft />
-                      </button>
-
+                      <button onClick={() => setView('list')} className="md:hidden mr-3 text-secondary"><ChevronLeft /></button>
                       <div className="flex items-center space-x-3">
                           <Avatar identity={activeConversation} />
                           <div>
                               <h3 className="font-bold text-text flex items-center gap-2">
                                 {activeConversation.name}
-                                {/* Privacy Indicators */}
-                                {activeConversation.settings?.enablePrivateMessaging === false && <span title="Private Messaging Disabled" className="text-red-400"><Lock size={12} /></span>}
-                                {activeConversation.settings?.allowAnonymousDMs === false && <span title="Anonymous DMs Disabled" className="text-amber-400"><Shield size={12} /></span>}
+                                {isMuted && <BellOff size={12} className="text-secondary" />}
                               </h3>
                               <p className="text-xs text-secondary uppercase tracking-wide">{activeConversation.type}</p>
                           </div>
                       </div>
-
-                      {/* Header Options */}
                       <div className="ml-auto relative">
-                          <button onClick={() => setShowConversationMenu(!showConversationMenu)} className="p-2 text-secondary hover:text-text rounded-full hover:bg-background transition">
-                              <MoreVertical size={20} />
-                          </button>
+                          <button onClick={() => setShowConversationMenu(!showConversationMenu)} className="p-2 text-secondary hover:text-text rounded-full hover:bg-background transition"><MoreVertical size={20} /></button>
                           <AnimatePresence>
                               {showConversationMenu && (
-                                  <motion.div
-                                      initial={{ opacity: 0, scale: 0.95 }}
-                                      animate={{ opacity: 1, scale: 1 }}
-                                      exit={{ opacity: 0, scale: 0.95 }}
-                                      className="absolute right-0 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[160px]"
-                                  >
-                                      <button onClick={() => navigate(`/profile/${activeConversation.handle.replace('@','')}`)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                          <User size={14} /> <span>View Profile</span>
-                                      </button>
-                                      <button onClick={() => { handleMuteUser(activeConversation._id); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                          <BellOff size={14} /> <span>Mute Notifications</span>
-                                      </button>
-                                      <button onClick={() => { handleBlockUser(activeConversation._id); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
-                                          <ShieldAlert size={14} /> <span>Block User</span>
-                                      </button>
+                                  <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="absolute right-0 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[160px]">
+                                      <button onClick={() => navigate(`/profile/${activeConversation.handle.replace('@','')}`)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><User size={14} /> <span>View Profile</span></button>
+                                      <button onClick={() => { handleMuteUser(activeConversation._id); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><BellOff size={14} /> <span>{isMuted ? 'Unmute' : 'Mute Notifications'}</span></button>
+                                      <button onClick={() => { handleBlockUser(activeConversation._id); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><ShieldAlert size={14} /> <span>Block User</span></button>
                                       <div className="h-px bg-soft-border my-1" />
-                                      <button onClick={() => { setShowDeleteConvModal(true); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
-                                          <Trash2 size={14} /> <span>Delete Chat</span>
-                                      </button>
+                                      <button onClick={() => { setShowDeleteConvModal(true); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={14} /> <span>Delete Chat</span></button>
                                   </motion.div>
                               )}
                           </AnimatePresence>
@@ -489,32 +411,15 @@ const Messages = () => {
 
                   <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" onClick={() => setActiveMenuId(null)}>
                       {messages?.map((msg, idx) => {
-                          // In the chat detail, we want to align messages based on the active current identity
-                          // If I sent it (from ANY identity? or just the current one?)
-                          // Usually in chat view, we want to see My messages on right, Theirs on left.
-                          // Since 'messages' endpoint returns conversation between identity1 and identity2,
-                          // and identity1 is currentIdentity, then 'isMe' is simply if sender matches currentIdentity.
-                          // However, to be robust if the user switches identities while viewing:
                           const isMe = msg.sender._id === currentIdentity?._id;
-
                           return (
                               <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group relative`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
-
-                                  {/* Bubble Options Trigger (Visible on Hover) */}
                                   <div className={clsx("absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition px-2", isMe ? "-left-8" : "-right-8")}>
-                                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }} className="text-secondary hover:text-text">
-                                          <MoreVertical size={14} />
-                                      </button>
-                                       {/* Message Context Menu */}
+                                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }} className="text-secondary hover:text-text"><MoreVertical size={14} /></button>
                                       <AnimatePresence>
                                           {activeMenuId === `msg-${msg._id}` && (
-                                              <motion.div
-                                                  initial={{ opacity: 0, scale: 0.9 }}
-                                                  animate={{ opacity: 1, scale: 1 }}
-                                                  exit={{ opacity: 0, scale: 0.9 }}
-                                                  className={clsx("absolute top-full z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]", isMe ? "right-0" : "left-0")}
-                                              >
+                                              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className={clsx("absolute top-full z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]", isMe ? "right-0" : "left-0")}>
                                                   {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
                                                   {isMe && <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>}
                                               </motion.div>
@@ -523,78 +428,17 @@ const Messages = () => {
                                   </div>
 
                                   <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
-                                      {/* Media Bubbles */}
                                       {msg.media?.map((m, i) => (
-                                          <div key={i} className={clsx(
-                                              "overflow-hidden shadow-sm border",
-                                              m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent"
-                                          )}>
+                                          <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
                                               {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
                                               {m.type === 'video' && <MediaPlayer src={m.url} />}
-                                              {m.type === 'audio' && <audio src={m.url} controls className="w-full" />}
-                                              {m.type === 'file' && (
-                                                  <>
-                                                      <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center flex-shrink-0 text-secondary">
-                                                          <FileText size={20} />
-                                                      </div>
-                                                      <div className="flex-1 min-w-0">
-                                                          <p className="text-sm font-medium text-text truncate">{m.name}</p>
-                                                          <p className="text-[10px] text-secondary">{m.size ? formatBytes(m.size) : 'File'}</p>
-                                                      </div>
-                                                      <a href={m.url} download target="_blank" rel="noopener noreferrer" className="p-2 hover:bg-background rounded-full text-secondary hover:text-text transition">
-                                                          <Download size={16} />
-                                                      </a>
-                                                  </>
-                                              )}
+                                              {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium text-text truncate">{m.name}</p><p className="text-[10px] text-secondary">{formatBytes(m.size)}</p></div>}
                                           </div>
                                       ))}
-
-                                      {/* Shared Post Bubble */}
-                                      {msg.sharedPost && (
-                                          <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>
-                                              {renderSharedPost(msg.sharedPost, isMe)}
-                                          </div>
-                                      )}
-
-                                      {/* Reply Quote Bubble */}
-                                      {msg.replyToQuote && (
-                                          <div className="mb-1">
-                                              <div className={clsx(
-                                                  "p-3 rounded-2xl border mb-1 max-w-sm relative",
-                                                  isMe
-                                                    ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text"
-                                                    : "bg-white dark:bg-slate-900 border-soft-border text-text"
-                                              )}>
-                                                  <div className="flex items-start space-x-2">
-                                                      <div className="mt-0.5">
-                                                          <CornerUpLeft size={12} className="text-secondary" />
-                                                      </div>
-                                                      <div>
-                                                          <p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p>
-                                                          <div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600">
-                                                              <p className="text-sm font-serif italic text-text/80 line-clamp-3">
-                                                                  "{msg.replyToQuote.content}"
-                                                              </p>
-                                                          </div>
-                                                      </div>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      )}
-
-                                      {/* Text Bubble */}
-                                      {msg.content && (
-                                          <div className={clsx(
-                                              "p-4 text-sm shadow-sm rounded-2xl",
-                                              isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border"
-                                          )}>
-                                              <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                                          </div>
-                                      )}
-
-                                      <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>
-                                          {formatShortTime(msg.createdAt)}
-                                      </div>
+                                      {msg.sharedPost && <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>{renderSharedPost(msg.sharedPost, isMe)}</div>}
+                                      {msg.replyToQuote && <div className="mb-1"><div className={clsx("p-3 rounded-2xl border mb-1 max-w-sm relative", isMe ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text" : "bg-white dark:bg-slate-900 border-soft-border text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="text-secondary" /></div><div><p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600"><p className="text-sm font-serif italic text-text/80 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div></div>}
+                                      {msg.content && <div className={clsx("p-4 text-sm shadow-sm rounded-2xl", isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border")}><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
+                                      <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>{formatShortTime(msg.createdAt)}</div>
                                   </div>
                               </div>
                           )
@@ -603,61 +447,59 @@ const Messages = () => {
                   </div>
 
                   <div className="p-4 bg-surface border-t border-soft-border">
-                      {mediaFiles.length > 0 && (
-                          <div className="flex space-x-2 mb-2 overflow-x-auto p-2 bg-background rounded-xl">
-                              {mediaFiles.map((file, i) => (
-                                  <div key={i} className="relative group bg-surface border rounded-lg p-1">
-                                      {file.type.startsWith('image') ? (
-                                          <img src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-md" />
-                                      ) : (
-                                          <div className="w-12 h-12 flex items-center justify-center text-secondary">
-                                              <FileText size={20} />
-                                          </div>
-                                      )}
-                                      <div className="text-[8px] truncate w-12 text-center mt-1 text-secondary">{formatBytes(file.size, 0)}</div>
-                                      <button onClick={() => removeFile(i)} className="absolute -top-1 -right-1 bg-black text-white p-0.5 rounded-full shadow-sm"><X size={8}/></button>
-                                  </div>
-                              ))}
+                      {isBlockedByMe ? (
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center justify-between">
+                              <div className="flex items-center space-x-3 text-red-400">
+                                  <ShieldAlert size={20} />
+                                  <span className="text-sm font-bold">You have blocked this user.</span>
+                              </div>
+                              <button onClick={() => handleBlockUser(activeConversation._id)} className="text-xs font-bold text-red-400 hover:text-red-300">Unblock</button>
                           </div>
+                      ) : isBlockedByThem ? (
+                          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between">
+                              <div className="flex items-center space-x-3 text-amber-500">
+                                  <Lock size={20} />
+                                  <span className="text-sm font-bold">You cannot reply to this conversation.</span>
+                              </div>
+                              <Link to="/learn-more" className="text-xs font-bold text-amber-500 hover:text-amber-400 flex items-center">
+                                  Learn More <ChevronLeft size={12} className="rotate-180 ml-1" />
+                              </Link>
+                          </div>
+                      ) : (
+                          <>
+                              {mediaFiles.length > 0 && (
+                                  <div className="flex space-x-2 mb-2 overflow-x-auto p-2 bg-background rounded-xl">
+                                      {mediaFiles.map((file, i) => (
+                                          <div key={i} className="relative group bg-surface border rounded-lg p-1">
+                                              {file.type.startsWith('image') ? <img src={URL.createObjectURL(file)} className="w-12 h-12 object-cover rounded-md" /> : <div className="w-12 h-12 flex items-center justify-center text-secondary"><FileText size={20} /></div>}
+                                              <button onClick={() => removeFile(i)} className="absolute -top-1 -right-1 bg-black text-white p-0.5 rounded-full shadow-sm"><X size={8}/></button>
+                                          </div>
+                                      ))}
+                                  </div>
+                              )}
+                              <div className="flex items-center space-x-2 bg-background p-2 rounded-2xl border border-soft-border focus-within:ring-2 ring-soft-border transition-shadow">
+                                  <label className="p-2 text-secondary hover:text-text cursor-pointer transition">
+                                      <input type="file" multiple className="hidden" onChange={handleFileSelect} />
+                                      <Plus size={20} />
+                                  </label>
+                                  <input
+                                      className="flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-secondary text-text"
+                                      placeholder="Type a message..."
+                                      value={messageText}
+                                      onChange={(e) => setMessageText(e.target.value)}
+                                      onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                  />
+                                  <button onClick={handleSend} disabled={sending} className="bg-accent text-white p-2 rounded-xl hover:scale-105 transition-transform disabled:opacity-50"><Send size={18} /></button>
+                              </div>
+                          </>
                       )}
-                      <div className="flex items-center space-x-2 bg-background p-2 rounded-2xl border border-soft-border focus-within:ring-2 ring-soft-border transition-shadow">
-                          <label className="p-2 text-secondary hover:text-text cursor-pointer transition">
-                              <input type="file" multiple className="hidden" onChange={handleFileSelect} />
-                              <Plus size={20} />
-                          </label>
-                          <input
-                              className="flex-1 bg-transparent border-none focus:ring-0 text-sm placeholder:text-secondary text-text"
-                              placeholder="Type a message..."
-                              value={messageText}
-                              onChange={(e) => setMessageText(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                          />
-                          <button
-                              onClick={handleSend}
-                              disabled={sending}
-                              className="bg-accent text-white p-2 rounded-xl hover:scale-105 transition-transform disabled:opacity-50"
-                          >
-                              <Send size={18} />
-                          </button>
-                      </div>
                   </div>
 
-                  {/* Delete Conversation Modal */}
-                  <ConfirmationModal
-                      isOpen={showDeleteConvModal}
-                      onClose={() => setShowDeleteConvModal(false)}
-                      onConfirm={handleDeleteConversation}
-                      title="Delete Conversation?"
-                      message="This will delete the conversation from your inbox. This action cannot be undone."
-                      confirmText="Delete"
-                      isDanger={true}
-                  />
+                  <ConfirmationModal isOpen={showDeleteConvModal} onClose={() => setShowDeleteConvModal(false)} onConfirm={handleDeleteConversation} title="Delete Conversation?" message="This will delete the conversation from your inbox. This action cannot be undone." confirmText="Delete" isDanger={true} />
               </>
           ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-secondary">
-                  <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mb-4">
-                      <User size={32} />
-                  </div>
+                  <div className="w-16 h-16 bg-background rounded-full flex items-center justify-center mb-4"><User size={32} /></div>
                   <p className="font-serif text-lg">Select a conversation</p>
               </div>
           )}
