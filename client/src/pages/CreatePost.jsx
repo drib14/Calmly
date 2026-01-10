@@ -3,7 +3,8 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight, ShieldAlert } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import SelectionCard from '../components/SelectionCard';
 import PillSelection from '../components/PillSelection';
@@ -136,6 +137,10 @@ const CreatePost = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (currentIdentity?.user?.restrictions?.post) {
+        return toast.error("Account restricted from posting");
+    }
 
     if (!content.trim() && files.length === 0) {
         return toast.error("Please add text or media to your post.");
@@ -487,13 +492,21 @@ const CreatePost = () => {
                  )}
              </div>
 
-             <button
-                type="submit"
-                disabled={uploading}
-                className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2 font-medium"
-             >
-                 {uploading ? <span>Publishing...</span> : <span>Post</span>}
-             </button>
+             {currentIdentity?.user?.restrictions?.post ? (
+                 <div className="bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-lg flex items-center gap-2 text-sm text-red-400 font-bold">
+                     <ShieldAlert size={16} />
+                     <span>Restricted</span>
+                     <Link to="/learn-more" className="text-xs font-normal underline ml-1">Why?</Link>
+                 </div>
+             ) : (
+                 <button
+                    type="submit"
+                    disabled={uploading}
+                    className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2 font-medium"
+                 >
+                     {uploading ? <span>Publishing...</span> : <span>Post</span>}
+                 </button>
+             )}
         </div>
       </form>
 

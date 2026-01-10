@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  restrictions: {
+    post: { type: Boolean, default: false },
+    comment: { type: Boolean, default: false }
+  },
   verificationToken: String,
   resetPasswordToken: String,
   resetPasswordExpire: Date,

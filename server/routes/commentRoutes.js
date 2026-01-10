@@ -21,6 +21,10 @@ router.get('/:postId', async (req, res) => {
 
 // Create a comment (Supports Media)
 router.post('/:postId', protect, upload.array('media', 2), async (req, res) => {
+  if (req.user.restrictions?.comment) {
+      return res.status(403).json({ message: 'Your account is restricted from commenting.' });
+  }
+
   const { content, identityId, parentCommentId } = req.body;
   let media = [];
 

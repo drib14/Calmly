@@ -157,6 +157,10 @@ const PostCard = ({ post, mutate }) => {
       if (!newComment.trim() && !commentMedia) return;
       if (!currentIdentity) return toast.error("Select an identity first");
 
+      if (currentIdentity.user?.restrictions?.comment) {
+          return toast.error("Account restricted from commenting");
+      }
+
       setSubmittingComment(true);
       try {
           const formData = new FormData();
@@ -778,26 +782,36 @@ const PostCard = ({ post, mutate }) => {
                           </div>
                       )}
 
-                      <div className="flex items-center space-x-2 bg-surface p-1.5 pl-2 rounded-full border border-soft-border focus-within:ring-2 ring-slate-100 dark:ring-slate-700 transition-shadow">
-                          <label className="p-2 cursor-pointer text-secondary hover:text-text transition rounded-full hover:bg-background active:scale-95">
-                              <input type="file" className="hidden" accept="image/*,video/*" onChange={handleCommentFile} />
-                              <ImageIcon size={18} />
-                          </label>
-                          <input
-                            className="flex-1 text-sm bg-transparent outline-none placeholder:text-secondary text-text"
-                            placeholder={replyTo ? "Write a reply..." : "Send a supportive message..."}
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && submitComment()}
-                          />
-                          <button
-                            onClick={submitComment}
-                            disabled={submittingComment}
-                            className="w-8 h-8 bg-slate-900 dark:bg-slate-100 rounded-full flex items-center justify-center text-white dark:text-slate-900 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 active:scale-95"
-                          >
-                              <Send size={14} className="-ml-0.5 mt-0.5 text-white dark:text-slate-900" />
-                          </button>
-                      </div>
+                      {currentIdentity?.user?.restrictions?.comment ? (
+                          <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-center">
+                              <p className="text-xs font-bold text-red-400 flex items-center justify-center gap-2">
+                                  <ShieldAlert size={14} />
+                                  You are restricted from commenting.
+                              </p>
+                              <Link to="/learn-more" className="text-[10px] text-red-300 hover:underline mt-1 block">Learn More</Link>
+                          </div>
+                      ) : (
+                          <div className="flex items-center space-x-2 bg-surface p-1.5 pl-2 rounded-full border border-soft-border focus-within:ring-2 ring-slate-100 dark:ring-slate-700 transition-shadow">
+                              <label className="p-2 cursor-pointer text-secondary hover:text-text transition rounded-full hover:bg-background active:scale-95">
+                                  <input type="file" className="hidden" accept="image/*,video/*" onChange={handleCommentFile} />
+                                  <ImageIcon size={18} />
+                              </label>
+                              <input
+                                className="flex-1 text-sm bg-transparent outline-none placeholder:text-secondary text-text"
+                                placeholder={replyTo ? "Write a reply..." : "Send a supportive message..."}
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && submitComment()}
+                              />
+                              <button
+                                onClick={submitComment}
+                                disabled={submittingComment}
+                                className="w-8 h-8 bg-slate-900 dark:bg-slate-100 rounded-full flex items-center justify-center text-white dark:text-slate-900 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 active:scale-95"
+                              >
+                                  <Send size={14} className="-ml-0.5 mt-0.5 text-white dark:text-slate-900" />
+                              </button>
+                          </div>
+                      )}
                   </div>
               </motion.div>
           )}

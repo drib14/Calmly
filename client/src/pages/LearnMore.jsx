@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, BookOpen, ArrowLeft } from 'lucide-react';
+import { Shield, BookOpen, ArrowLeft, AlertCircle, Lock } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const LearnMore = () => {
@@ -17,10 +17,26 @@ const LearnMore = () => {
                     <Shield size={40} className="text-accent" />
                 </div>
                 <h1 className="text-3xl font-serif font-bold text-text mb-4">Safety & Privacy</h1>
-                <p className="text-secondary">Understanding how blocking and muting works on Calmly.</p>
+                <p className="text-secondary">Understanding policies and tools on Calmly.</p>
             </div>
 
             <div className="space-y-6">
+                <div className="bg-surface p-6 rounded-2xl border border-soft-border">
+                    <h2 className="text-xl font-bold text-text mb-3 flex items-center gap-2">
+                        <AlertCircle size={20} className="text-red-500" />
+                        Account Restrictions
+                    </h2>
+                    <p className="text-secondary leading-relaxed mb-4">
+                        If your account has been restricted:
+                    </p>
+                    <ul className="list-disc list-inside text-secondary space-y-2 ml-2">
+                        <li>You may be temporarily blocked from creating new posts.</li>
+                        <li>You may be unable to comment on other users' content.</li>
+                        <li>This usually happens if your content was reported and found to violate our guidelines.</li>
+                        <li>Contact support if you believe this is an error.</li>
+                    </ul>
+                </div>
+
                 <div className="bg-surface p-6 rounded-2xl border border-soft-border">
                     <h2 className="text-xl font-bold text-text mb-3 flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-red-500"></span>
@@ -56,10 +72,15 @@ const LearnMore = () => {
                         <BookOpen size={20} />
                         Community Guidelines
                     </h2>
-                    <p className="text-secondary leading-relaxed">
-                        Calmly is a space for authentic expression. We do not tolerate harassment, hate speech, or abuse.
-                        If you encounter such behavior, please report the content immediately using the 3-dot menu on any post or comment.
+                    <p className="text-secondary leading-relaxed mb-4">
+                        Calmly is a space for authentic expression. We value kindness and respect.
                     </p>
+                    <ul className="list-disc list-inside text-secondary space-y-2 ml-2">
+                        <li>No hate speech or harassment.</li>
+                        <li>Respect privacy and consent.</li>
+                        <li>Avoid graphic violence or illegal content.</li>
+                        <li>Be supportive. This is a calm space.</li>
+                    </ul>
                 </div>
             </div>
         </div>

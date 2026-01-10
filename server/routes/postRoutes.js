@@ -59,6 +59,10 @@ router.put('/:id/hide', protect, async (req, res) => {
 
 // Create a post
 router.post('/', protect, async (req, res) => {
+  if (req.user.restrictions?.post) {
+      return res.status(403).json({ message: 'Your account is restricted from posting.' });
+  }
+
   const { identityId, type, content, mood, visibility, title, tags, letterFields, style, media } = req.body;
 
   // media matches [{ url, type }] schema if sent from frontend

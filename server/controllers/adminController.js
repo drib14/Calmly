@@ -4,6 +4,21 @@ const Report = require('../models/Report');
 const Support = require('../models/Support');
 const Comment = require('../models/Comment');
 const Identity = require('../models/Identity');
+const SystemLog = require('../models/SystemLog');
+
+// Helper to log
+const logAction = async (adminId, action, target, details) => {
+    try {
+        await SystemLog.create({
+            admin: adminId,
+            action,
+            target,
+            details
+        });
+    } catch (e) {
+        console.error("Failed to log action:", e);
+    }
+};
 
 // @desc    Get Admin Stats
 // @route   GET /api/admin/stats
@@ -21,6 +36,21 @@ const getStats = async (req, res) => {
             pendingReports: reportCount,
             openTickets: supportCount
         });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc    Get Admin Logs
+// @route   GET /api/admin/logs
+// @access  Admin
+const getLogs = async (req, res) => {
+    try {
+        const logs = await SystemLog.find()
+            .populate('admin', 'email')
+            .sort({ createdAt: -1 })
+            .limit(50);
+        res.json(logs);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -55,7 +85,33 @@ const toggleBanUser = async (req, res) => {
 
         user.isBanned = !user.isBanned;
         await user.save();
+
+        await logAction(req.user._id, user.isBanned ? 'BAN_USER' : 'UNBAN_USER', `User: ${user._id}`, { email: user.email });
+
         res.json({ message: user.isBanned ? 'User banned' : 'User unbanned', isBanned: user.isBanned });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc    Toggle Restriction
+// @route   PUT /api/admin/users/:id/restrict
+// @access  Admin
+const toggleRestriction = async (req, res) => {
+    const { type } = req.body; // 'post' or 'comment'
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (!user.restrictions) user.restrictions = {};
+
+        // Toggle specific restriction
+        user.restrictions[type] = !user.restrictions[type];
+        await user.save();
+
+        await logAction(req.user._id, 'RESTRICT_USER', `User: ${user._id}`, { type, status: user.restrictions[type] });
+
+        res.json({ message: `User ${type} restriction updated`, restrictions: user.restrictions });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -68,14 +124,9 @@ const getReports = async (req, res) => {
     try {
         const reports = await Report.find()
             .populate('reporter', 'email')
-            .populate('post') // Dynamically populate based on targetType if possible, or just fetch all
-            // Mongoose dynamic population is tricky with single path.
-            // We will fetch and let frontend handle nulls, or do manual population.
-            // For now, simple find.
+            .populate('post')
             .sort({ createdAt: -1 });
 
-        // Manual population for target based on type
-        // This is expensive but okay for admin panel with low volume
         const populatedReports = await Promise.all(reports.map(async (report) => {
             const r = report.toObject();
             if (report.targetType === 'Post') r.target = await Post.findById(report.post).populate('identity');
@@ -98,15 +149,16 @@ const resolveReport = async (req, res) => {
         const report = await Report.findById(req.params.id);
         if (!report) return res.status(404).json({ message: 'Report not found' });
 
-        report.status = req.body.status || 'resolved';
+        const newStatus = req.body.status || 'resolved';
+        report.status = newStatus;
         report.resolvedBy = req.user._id;
         await report.save();
 
-        // Email Notification Logic (Simulated)
-        console.log(`[EMAIL] Report ${report._id} status updated to ${report.status}. Notifying reporter ${report.reporter}.`);
+        await logAction(req.user._id, 'RESOLVE_REPORT', `Report: ${report._id}`, { status: newStatus, reason: report.reason });
 
         res.json(report);
     } catch (err) {
+        console.error("Resolve Report Error:", err);
         res.status(500).json({ message: err.message });
     }
 };
@@ -147,10 +199,7 @@ const replySupportTicket = async (req, res) => {
 
         await ticket.save();
 
-        // Simulate Email
-        console.log(`[EMAIL SENT] To: ${ticket.email}`);
-        console.log(`[EMAIL SUBJECT] Re: ${ticket.subject}`);
-        console.log(`[EMAIL BODY] ${message}`);
+        await logAction(req.user._id, 'REPLY_TICKET', `Ticket: ${ticket._id}`, { close: req.body.close });
 
         res.json(ticket);
     } catch (err) {
@@ -160,8 +209,10 @@ const replySupportTicket = async (req, res) => {
 
 module.exports = {
     getStats,
+    getLogs,
     getUsers,
     toggleBanUser,
+    toggleRestriction,
     getReports,
     resolveReport,
     getSupportTickets,

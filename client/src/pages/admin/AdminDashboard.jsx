@@ -1,7 +1,8 @@
 import React from 'react';
 import useSWR from 'swr';
 import axios from 'axios';
-import { Users, FileText, AlertTriangle, LifeBuoy, ArrowUpRight } from 'lucide-react';
+import { Users, FileText, AlertTriangle, LifeBuoy, ArrowUpRight, Activity } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -22,6 +23,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 
 const AdminDashboard = () => {
     const { data: stats } = useSWR('/admin/stats', fetcher, { refreshInterval: 10000 });
+    const { data: logs } = useSWR('/admin/logs', fetcher, { refreshInterval: 5000 });
 
     if (!stats) return <div className="text-white">Loading stats...</div>;
 
@@ -59,13 +61,34 @@ const AdminDashboard = () => {
                 />
             </div>
 
-            {/* Placeholder for charts or recent activity */}
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-[#1a1d24] border border-white/5 rounded-2xl p-6 h-64 flex items-center justify-center text-gray-500">
-                    Activity Chart Placeholder
-                </div>
-                <div className="bg-[#1a1d24] border border-white/5 rounded-2xl p-6 h-64 flex items-center justify-center text-gray-500">
-                    Recent Logs Placeholder
+            <div className="mt-8">
+                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Activity size={20} className="text-blue-400" />
+                    System Activity
+                </h3>
+                <div className="bg-[#1a1d24] border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                        {logs?.length > 0 ? (
+                            logs.map((log) => (
+                                <div key={log._id} className="p-4 border-b border-white/5 hover:bg-white/5 transition flex items-start justify-between">
+                                    <div>
+                                        <p className="text-white font-medium text-sm">
+                                            <span className="text-blue-400 font-bold uppercase mr-2">{log.action.replace('_', ' ')}</span>
+                                            <span className="text-gray-400">{log.target}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Admin: {log.admin?.email || 'System'}
+                                        </p>
+                                    </div>
+                                    <span className="text-xs text-gray-600">
+                                        {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-gray-500">No activity logs found.</div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

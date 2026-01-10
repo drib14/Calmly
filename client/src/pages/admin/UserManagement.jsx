@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { Search, Ban, CheckCircle, MoreHorizontal } from 'lucide-react';
+import { Search, Ban, CheckCircle, MoreHorizontal, ShieldOff, MessageSquare, PenTool } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const fetcher = url => axios.get(url).then(res => res.data);
@@ -23,6 +23,16 @@ const UserManagement = () => {
             toast.success("User status updated");
         } catch (err) {
             toast.error("Failed to update status");
+        }
+    };
+
+    const toggleRestriction = async (id, type) => {
+        try {
+            await axios.put(`/admin/users/${id}/restrict`, { type });
+            mutate();
+            toast.success(`${type} restriction updated`);
+        } catch (err) {
+            toast.error("Failed to restrict user");
         }
     };
 
@@ -51,6 +61,7 @@ const UserManagement = () => {
                             <th className="p-4 font-medium">User Info</th>
                             <th className="p-4 font-medium">Role</th>
                             <th className="p-4 font-medium">Status</th>
+                            <th className="p-4 font-medium">Restrictions</th>
                             <th className="p-4 font-medium">Joined</th>
                             <th className="p-4 font-medium text-right">Actions</th>
                         </tr>
@@ -80,17 +91,41 @@ const UserManagement = () => {
                                         </span>
                                     )}
                                 </td>
+                                <td className="p-4">
+                                    <div className="flex gap-2">
+                                        {user.restrictions?.post && <span title="Posting Restricted" className="p-1 bg-red-500/20 text-red-400 rounded"><PenTool size={14}/></span>}
+                                        {user.restrictions?.comment && <span title="Commenting Restricted" className="p-1 bg-red-500/20 text-red-400 rounded"><MessageSquare size={14}/></span>}
+                                        {!user.restrictions?.post && !user.restrictions?.comment && <span className="text-gray-600 text-xs">None</span>}
+                                    </div>
+                                </td>
                                 <td className="p-4 text-gray-400 text-sm">
                                     {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}
                                 </td>
                                 <td className="p-4 text-right">
                                     {user.role !== 'admin' && (
-                                        <button
-                                            onClick={() => toggleBan(user._id)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${user.isBanned ? 'bg-green-500/10 text-green-400 hover:bg-green-500/20' : 'bg-red-500/10 text-red-400 hover:bg-red-500/20'}`}
-                                        >
-                                            {user.isBanned ? 'Unban' : 'Ban Access'}
-                                        </button>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => toggleRestriction(user._id, 'post')}
+                                                className={`p-2 rounded-lg transition ${user.restrictions?.post ? 'bg-red-500/20 text-red-400' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                                                title="Toggle Posting Restriction"
+                                            >
+                                                <PenTool size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => toggleRestriction(user._id, 'comment')}
+                                                className={`p-2 rounded-lg transition ${user.restrictions?.comment ? 'bg-red-500/20 text-red-400' : 'bg-white/5 text-gray-400 hover:text-white'}`}
+                                                title="Toggle Comment Restriction"
+                                            >
+                                                <MessageSquare size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => toggleBan(user._id)}
+                                                className={`p-2 rounded-lg transition ${user.isBanned ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}
+                                                title={user.isBanned ? 'Unban' : 'Ban'}
+                                            >
+                                                <Ban size={16} />
+                                            </button>
+                                        </div>
                                     )}
                                 </td>
                             </tr>

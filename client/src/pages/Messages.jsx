@@ -129,13 +129,6 @@ const Messages = () => {
       } catch (err) { toast.error("Failed to block"); }
   };
 
-  const handleMuteUser = async (id) => {
-      try {
-          await axios.post('/settings/mute-user', { identityId: id });
-          toast.success("Conversation muted");
-          mutateInbox();
-      } catch (err) { toast.error("Failed to mute"); }
-  };
 
   const handleDeleteMessage = async (msgId) => {
       try {
@@ -256,6 +249,17 @@ const Messages = () => {
 
   // Muted Logic
   const isMuted = mySettings?.mutedUsers?.includes(activeConversation?._id);
+
+  const handleMuteUser = async (id) => {
+      try {
+          await axios.post('/settings/mute-user', { identityId: id });
+          toast.success("Conversation updated");
+          // Refresh settings to update UI
+          const res = await axios.get('/settings');
+          setMySettings(res.data);
+          mutateInbox();
+      } catch (err) { toast.error("Failed to mute"); }
+  };
 
   const renderSharedPost = (post, isMe) => {
       if (!post || !post.identity) {

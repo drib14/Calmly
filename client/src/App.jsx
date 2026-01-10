@@ -35,6 +35,10 @@ const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" />;
+  // Prevent admin from accessing user feed, redirect to admin panel
+  if (user.role === 'admin' && !window.location.pathname.startsWith('/admin')) {
+      return <Navigate to="/admin" />;
+  }
   return children;
 };
 
