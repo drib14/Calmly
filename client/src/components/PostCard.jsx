@@ -21,6 +21,7 @@ import ShareModal from './ShareModal';
 import ReactorsModal from './ReactorsModal';
 import EditPostModal from './EditPostModal';
 import { Share2, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import ReactDOM from 'react-dom';
 
 const PostCard = ({ post, mutate }) => {
   const { currentIdentity, identities } = useIdentity();
@@ -697,27 +698,31 @@ const PostCard = ({ post, mutate }) => {
       {/* Comments Area - Mobile Drawer */}
       <div className="md:hidden">
             <AnimatePresence>
-                {expanded && (
+                {expanded && ReactDOM.createPortal(
                     <>
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setExpanded(false)}
-                            className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+                            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ y: '100%' }}
                             animate={{ y: 0 }}
                             exit={{ y: '100%' }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 top-[20vh] bg-surface rounded-t-3xl z-50 border-t border-soft-border shadow-2xl flex flex-col"
+                            className="fixed bottom-0 left-0 right-0 top-0 bg-surface z-[70] border-t border-soft-border shadow-2xl flex flex-col"
                         >
-                            {/* Drag Handle */}
-                            <div className="w-12 h-1.5 bg-soft-border rounded-full mx-auto mt-4 mb-2 flex-shrink-0" />
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-soft-border">
+                                <h3 className="font-bold text-lg text-text">Comments</h3>
+                                <button onClick={() => setExpanded(false)} className="p-2 bg-background rounded-full hover:bg-soft-border transition">
+                                    <X size={20} className="text-text" />
+                                </button>
+                            </div>
 
-                            <div className="flex-1 overflow-hidden p-4 pt-0 flex flex-col">
-                                <h3 className="text-center font-bold text-lg text-text mb-4 flex-shrink-0">Comments</h3>
+                            <div className="flex-1 overflow-hidden p-4 pt-0 flex flex-col mt-4">
                                 <div className="flex-1 overflow-hidden">
                                     <CommentsSection
                                         comments={comments}
@@ -731,7 +736,8 @@ const PostCard = ({ post, mutate }) => {
                                 </div>
                             </div>
                         </motion.div>
-                    </>
+                    </>,
+                    document.body
                 )}
             </AnimatePresence>
       </div>

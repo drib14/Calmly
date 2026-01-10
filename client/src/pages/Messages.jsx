@@ -164,6 +164,55 @@ const Messages = () => {
       setActiveMenuId(null);
   };
 
+  const initiateDeleteMessage = (msg) => {
+      setMessageToDelete(msg);
+      setActiveMenuId(null);
+      if (msg.sender._id === currentIdentity._id) {
+          setShowDeleteOptionsModal(true);
+      } else {
+          setDeleteMode('me');
+          setShowConfirmDeleteModal(true);
+      }
+  };
+
+  const handleDeleteOptionSelect = (mode) => {
+      setDeleteMode(mode);
+      setShowDeleteOptionsModal(false);
+      setShowConfirmDeleteModal(true);
+  };
+
+  const confirmDeleteMessage = async () => {
+      if (!messageToDelete) return;
+      try {
+          await axios.delete(`/messages/${messageToDelete._id}?mode=${deleteMode}`);
+          mutateMessages();
+          toast.success("Message deleted");
+      } catch (err) { toast.error("Failed to delete message"); }
+      setShowConfirmDeleteModal(false);
+      setMessageToDelete(null);
+  };
+
+  const handleForward = (msg) => {
+      setMessageToForward(msg);
+      setShowForwardModal(true);
+      setActiveMenuId(null);
+  };
+
+  const handleEdit = (msg) => {
+      setEditingMessageId(msg._id);
+      setEditContent(msg.content);
+      setActiveMenuId(null);
+  };
+
+  const saveEdit = async (id) => {
+      try {
+          await axios.put(`/messages/${id}`, { content: editContent });
+          setEditingMessageId(null);
+          mutateMessages();
+          toast.success("Message edited");
+      } catch (err) { toast.error("Failed to edit"); }
+  };
+
   const handleReportTrigger = (msg) => {
       setMessageToReport(msg._id);
       setShowReportModal(true);
@@ -567,7 +616,37 @@ const Messages = () => {
                   </div>
 
                   <ConfirmationModal isOpen={showDeleteConvModal} onClose={() => setShowDeleteConvModal(false)} onConfirm={handleDeleteConversation} title="Delete Conversation?" message="This will delete the conversation from your inbox. This action cannot be undone." confirmText="Delete" isDanger={true} />
+
+                  {/* Modals */}
                   <ReportMessageModal isOpen={showReportModal} onClose={() => setShowReportModal(false)} messageId={messageToReport} />
+
+                  {showForwardModal && (
+                      <ForwardModal
+                          isOpen={showForwardModal}
+                          onClose={() => setShowForwardModal(false)}
+                          message={messageToForward}
+                          currentIdentity={currentIdentity}
+                      />
+                  )}
+
+                  {showDeleteOptionsModal && (
+                      <DeleteMessageOptionsModal
+                          isOpen={showDeleteOptionsModal}
+                          onClose={() => setShowDeleteOptionsModal(false)}
+                          onDelete={handleDeleteOptionSelect}
+                          isOwner={true}
+                      />
+                  )}
+
+                  <ConfirmationModal
+                      isOpen={showConfirmDeleteModal}
+                      onClose={() => setShowConfirmDeleteModal(false)}
+                      onConfirm={confirmDeleteMessage}
+                      title={deleteMode === 'everyone' ? "Unsend Message?" : "Delete Message?"}
+                      message={deleteMode === 'everyone' ? "This will remove the message for everyone in the chat." : "This will remove the message from your view only."}
+                      confirmText={deleteMode === 'everyone' ? "Unsend" : "Delete"}
+                      isDanger={true}
+                  />
               </>
           ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-secondary">

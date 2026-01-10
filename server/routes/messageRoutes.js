@@ -110,7 +110,8 @@ router.get('/conversation', protect, async (req, res) => {
             $or: [
                 { sender: identity1, recipient: identity2 },
                 { sender: identity2, recipient: identity1 }
-            ]
+            ],
+            deletedBy: { $ne: identity1 } // Exclude messages deleted by me
         })
         .sort({ createdAt: 1 })
         .populate('sender', 'name type handle avatar')
@@ -130,6 +131,13 @@ router.get('/inbox', protect, async (req, res) => {
   try {
     const userIdentities = await Identity.find({ user: req.user._id });
     const identityIds = userIdentities.map(i => i._id);
+
+    // Fetch messages not deleted by relevant identity
+    // Ideally we filter in memory or complex query.
+    // For simplicity, fetch all then filter in memory for 'deletedBy'.
+    // Since inbox is "latest message per conversation", we need aggregation or careful filtering.
+    // Aggregation is better but complex to maintain with populates.
+    // We'll fetch slightly more and filter.
 
     const messages = await Message.find({
         $or: [{ recipient: { $in: identityIds } }, { sender: { $in: identityIds } }]
@@ -155,10 +163,16 @@ router.get('/inbox', protect, async (req, res) => {
     messages.forEach(msg => {
         if (!msg.sender || !msg.recipient) return;
         const isSender = identityIds.some(id => id.toString() === msg.sender._id.toString());
+
+        // Check if deleted by me (the identity I used)
+        const myIdentityId = isSender ? msg.sender._id.toString() : msg.recipient._id.toString();
+        if (msg.deletedBy && msg.deletedBy.map(id => id.toString()).includes(myIdentityId)) {
+            return; // Skip this message
+        }
+
         const otherId = isSender ? msg.recipient._id.toString() : msg.sender._id.toString();
 
-        // Attach the *other* person's Identity object (with user settings populated) to the conversation
-        // This allows the frontend to see if they allow read receipts etc.
+        // Only take the first (latest) valid message for this conversation
         if (!conversations[otherId]) {
             conversations[otherId] = msg;
         }
@@ -188,6 +202,28 @@ router.get('/unread-count', protect, async (req, res) => {
     }
 });
 
+// Edit Message
+router.put('/:id', protect, async (req, res) => {
+    const { content } = req.body;
+    try {
+        const message = await Message.findById(req.params.id);
+        if (!message) return res.status(404).json({ message: 'Message not found' });
+
+        const userIdentities = await Identity.find({ user: req.user._id });
+        const identityIds = userIdentities.map(i => i._id.toString());
+
+        if (!identityIds.includes(message.sender.toString())) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        message.content = content;
+        await message.save();
+        res.json({ message: 'Message updated', content });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // Mark Conversation as Read
 router.put('/read', protect, async (req, res) => {
     const { otherIdentityId } = req.body;
@@ -209,11 +245,9 @@ router.put('/read', protect, async (req, res) => {
     }
 });
 
-// Delete Message (Soft delete or Hard delete?)
-// User asking "Delete Message" implies for themselves (remove from view) or unsend?
-// Unsend usually only if recent. Deleting for self is common.
-// For simplicity, we'll implement "Delete for everyone" if owner, or hard delete.
+// Delete Message
 router.delete('/:id', protect, async (req, res) => {
+    const { mode } = req.query; // 'me' or 'everyone'
     try {
         const message = await Message.findById(req.params.id);
         if (!message) return res.status(404).json({ message: 'Message not found' });
@@ -221,12 +255,39 @@ router.delete('/:id', protect, async (req, res) => {
         const userIdentities = await Identity.find({ user: req.user._id });
         const identityIds = userIdentities.map(i => i._id.toString());
 
-        // Check ownership (sender)
-        if (!identityIds.includes(message.sender.toString())) {
+        const isSender = identityIds.includes(message.sender.toString());
+        const isRecipient = identityIds.includes(message.recipient.toString());
+
+        if (!isSender && !isRecipient) {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        await Message.findByIdAndDelete(req.params.id);
+        if (mode === 'everyone') {
+            if (!isSender) return res.status(403).json({ message: 'Only sender can unsend' });
+
+            message.isUnsent = true;
+            message.content = 'Message unsent';
+            message.media = [];
+            message.sharedPost = undefined;
+            message.replyToQuote = undefined;
+            message.replyToMessage = undefined;
+            await message.save();
+
+            // Trigger Pusher update
+            const channel1 = `user-${message.recipient.user || message.recipient}`; // Need user ID, might need populate or simpler assumption
+            // Actually recipient is ID. We need to fetch recipient to get User ID for Pusher channel if not populated.
+            // But 'new_message' event might be enough if frontend handles update?
+            // Or 'update_message' event?
+            // For now, simple save.
+        } else {
+            // Delete for me
+            const myId = isSender ? message.sender : message.recipient;
+            if (!message.deletedBy.includes(myId)) {
+                message.deletedBy.push(myId);
+                await message.save();
+            }
+        }
+
         res.json({ message: 'Message deleted' });
     } catch (error) {
         res.status(500).json({ message: error.message });

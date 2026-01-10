@@ -44,6 +44,14 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  deletedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Identity'
+  }],
+  isUnsent: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now,
