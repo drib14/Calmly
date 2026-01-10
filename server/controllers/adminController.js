@@ -146,6 +146,10 @@ const getReports = async (req, res) => {
 // @access  Admin
 const resolveReport = async (req, res) => {
     try {
+        if (!req.params.id || req.params.id.length !== 24) {
+             return res.status(400).json({ message: 'Invalid Report ID' });
+        }
+
         const report = await Report.findById(req.params.id);
         if (!report) return res.status(404).json({ message: 'Report not found' });
 
@@ -154,7 +158,12 @@ const resolveReport = async (req, res) => {
         report.resolvedBy = req.user._id;
         await report.save();
 
-        await logAction(req.user._id, 'RESOLVE_REPORT', `Report: ${report._id}`, { status: newStatus, reason: report.reason });
+        // Safely log
+        try {
+            await logAction(req.user._id, 'RESOLVE_REPORT', `Report: ${report._id}`, { status: newStatus, reason: report.reason });
+        } catch (logErr) {
+            console.error("Log Error:", logErr);
+        }
 
         res.json(report);
     } catch (err) {

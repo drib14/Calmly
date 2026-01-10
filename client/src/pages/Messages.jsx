@@ -239,7 +239,7 @@ const Messages = () => {
   // I'll fetch my settings once on mount.
   const [mySettings, setMySettings] = useState(null);
   useEffect(() => {
-      axios.get('/api/settings').then(res => setMySettings(res.data)).catch(console.error);
+      axios.get('/settings').then(res => setMySettings(res.data)).catch(console.error);
   }, [inbox]); // Refresh when inbox refreshes (e.g. after blocking)
 
   const isBlockedByMe = mySettings?.blockedUsers?.includes(activeConversation?._id);
