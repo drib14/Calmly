@@ -5,6 +5,7 @@ import { PenTool } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import PillSelection from '../components/PillSelection';
 import QuotesWidget from '../components/QuotesWidget';
+import AnnouncementModal from '../components/AnnouncementModal';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -19,6 +20,7 @@ const Feed = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
+      <AnnouncementModal />
       {/* Main Feed */}
       <div className="lg:col-span-8 lg:col-start-2 max-w-[470px] mx-auto w-full">
 

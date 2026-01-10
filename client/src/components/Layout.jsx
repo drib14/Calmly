@@ -5,14 +5,11 @@ import MobileTopBar from './MobileTopBar';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../hooks/useSettings';
 import clsx from 'clsx';
-import useSWR from 'swr';
-import axios from 'axios';
 
 const Layout = ({ children }) => {
   const { user } = useAuth();
   const { settings } = useSettings();
   const location = useLocation();
-  const { data: announcement } = useSWR('/settings/system', url => axios.get(url).then(res => res.data));
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/forgot-password' || location.pathname.startsWith('/verify-email');
   const isLanding = location.pathname === '/';
 
@@ -36,11 +33,6 @@ const Layout = ({ children }) => {
 
   return (
     <div className={clsx("flex flex-col md:flex-row min-h-screen transition-colors duration-300", themeClass, fontClass)}>
-      {announcement?.active && announcement?.text && (
-          <div className="bg-indigo-600 text-white px-4 py-2 text-center text-sm font-bold z-50 shadow-md">
-              {announcement.text}
-          </div>
-      )}
       {user && !isAuthPage && <MobileTopBar highContrast={settings?.highContrast} />}
       <Navbar highContrast={settings?.highContrast} />
       <main className={clsx("flex-1 transition-all duration-300 min-w-0", contrastClass)}>

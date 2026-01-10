@@ -5,6 +5,7 @@ import Avatar from './Avatar';
 import { Send, Globe, Users, Lock, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useIdentity } from '../context/IdentityContext';
+import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 
 const moodColors = {
@@ -24,7 +25,7 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
   const { currentIdentity, identities } = useIdentity();
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
-  const navigate = require('react-router-dom').useNavigate();
+  const navigate = useNavigate();
 
   const isOwner = identities?.some(id => id._id === quote?.identity?._id);
 
