@@ -697,49 +697,51 @@ const PostCard = ({ post, mutate }) => {
 
       {/* Comments Area - Mobile Drawer */}
       <div className="md:hidden">
-            <AnimatePresence>
-                {expanded && ReactDOM.createPortal(
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setExpanded(false)}
-                            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ y: '100%' }}
-                            animate={{ y: 0 }}
-                            exit={{ y: '100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 top-0 bg-surface z-[70] border-t border-soft-border shadow-2xl flex flex-col"
-                        >
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-4 border-b border-soft-border">
-                                <h3 className="font-bold text-lg text-text">Comments</h3>
-                                <button onClick={() => setExpanded(false)} className="p-2 bg-background rounded-full hover:bg-soft-border transition">
-                                    <X size={20} className="text-text" />
-                                </button>
-                            </div>
-
-                            <div className="flex-1 overflow-hidden p-4 pt-0 flex flex-col mt-4">
-                                <div className="flex-1 overflow-hidden">
-                                    <CommentsSection
-                                        comments={comments}
-                                        postId={post._id}
-                                        mutateComments={mutateComments}
-                                        isOwner={isOwner}
-                                        identities={identities}
-                                        currentIdentity={currentIdentity}
-                                        openViewer={openViewer}
-                                    />
+            {ReactDOM.createPortal(
+                <AnimatePresence>
+                    {expanded && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setExpanded(false)}
+                                className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
+                            />
+                            <motion.div
+                                initial={{ y: '100%' }}
+                                animate={{ y: 0 }}
+                                exit={{ y: '100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="fixed bottom-0 left-0 right-0 top-0 bg-surface z-[70] border-t border-soft-border shadow-2xl flex flex-col"
+                            >
+                                {/* Header */}
+                                <div className="flex items-center justify-between p-4 border-b border-soft-border">
+                                    <h3 className="font-bold text-lg text-text">Comments</h3>
+                                    <button onClick={() => setExpanded(false)} className="p-2 bg-background rounded-full hover:bg-soft-border transition">
+                                        <X size={20} className="text-text" />
+                                    </button>
                                 </div>
-                            </div>
-                        </motion.div>
-                    </>,
-                    document.body
-                )}
-            </AnimatePresence>
+
+                                <div className="flex-1 overflow-hidden p-4 pt-0 flex flex-col mt-4">
+                                    <div className="flex-1 overflow-hidden">
+                                        <CommentsSection
+                                            comments={comments}
+                                            postId={post._id}
+                                            mutateComments={mutateComments}
+                                            isOwner={isOwner}
+                                            identities={identities}
+                                            currentIdentity={currentIdentity}
+                                            openViewer={openViewer}
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
       </div>
 
       {/* Anon Error Modal */}
