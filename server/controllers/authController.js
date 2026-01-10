@@ -5,6 +5,24 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 const { welcomeEmail, passwordResetEmail } = require('../utils/emailTemplates');
+const pusher = require('../utils/pusher');
+
+const pusherAuth = async (req, res) => {
+    const socketId = req.body.socket_id;
+    const channel = req.body.channel_name;
+    const presenceData = {
+        user_id: req.user._id.toString(),
+        user_info: {
+            name: req.user.email,
+        }
+    };
+    try {
+        const auth = pusher.authenticate(socketId, channel, presenceData);
+        res.send(auth);
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+};
 
 const registerUser = async (req, res) => {
   const { email, password, realName } = req.body;
@@ -268,4 +286,4 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-module.exports = { registerUser, loginUser, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword, getUserProfile };
+module.exports = { registerUser, loginUser, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword, getUserProfile, pusherAuth };
