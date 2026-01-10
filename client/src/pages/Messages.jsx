@@ -3,7 +3,8 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy, Unlock } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy, Unlock, Flag } from 'lucide-react';
+import ReportMessageModal from '../components/ReportMessageModal';
 import { formatShortTime } from '../utils/dateUtils';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
@@ -35,6 +36,9 @@ const Messages = () => {
   const [showDeleteConvModal, setShowDeleteConvModal] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState(null); // For context menus (bubble or list)
   const [showConversationMenu, setShowConversationMenu] = useState(false); // Header menu
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [messageToReport, setMessageToReport] = useState(null);
+  const [replyToMessage, setReplyToMessage] = useState(null); // Local state for replying
   const scrollRef = useRef();
 
   // Mobile View State ('list' or 'chat')
@@ -145,6 +149,21 @@ const Messages = () => {
       setActiveMenuId(null);
   };
 
+  const handleReply = (msg) => {
+      setReplyToMessage({
+          id: msg._id,
+          content: msg.content || (msg.media?.length ? '[Media]' : '[Content]'),
+          sender: msg.sender.name
+      });
+      setActiveMenuId(null);
+  };
+
+  const handleReportTrigger = (msg) => {
+      setMessageToReport(msg._id);
+      setShowReportModal(true);
+      setActiveMenuId(null);
+  };
+
   const handleSend = async () => {
       if ((!messageText.trim() && mediaFiles.length === 0) || !activeConversation || !currentIdentity) return;
 
@@ -153,6 +172,9 @@ const Messages = () => {
       formData.append('senderIdentityId', currentIdentity._id);
       formData.append('recipientIdentityId', activeConversation._id);
       formData.append('content', messageText);
+      if (replyToMessage) {
+          formData.append('replyToMessage', JSON.stringify(replyToMessage));
+      }
       mediaFiles.forEach(file => formData.append('media', file));
 
       try {
@@ -162,6 +184,7 @@ const Messages = () => {
           setMessageText('');
           setMediaFiles([]);
           setPreviews([]);
+          setReplyToMessage(null); // Clear reply
           mutateMessages();
           mutateInbox();
       } catch (err) {
@@ -424,14 +447,34 @@ const Messages = () => {
                                       <AnimatePresence>
                                           {activeMenuId === `msg-${msg._id}` && (
                                               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className={clsx("absolute top-full z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]", isMe ? "right-0" : "left-0")}>
+                                                  <button onClick={() => handleReply(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Reply size={12} /> <span>Reply</span></button>
                                                   {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
-                                                  {isMe && <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>}
+                                                  {isMe ? (
+                                                      <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>
+                                                  ) : (
+                                                      <button onClick={() => handleReportTrigger(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Flag size={12} /> <span>Report</span></button>
+                                                  )}
                                               </motion.div>
                                           )}
                                       </AnimatePresence>
                                   </div>
 
                                   <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
+                                      {/* Reply Context Bubble */}
+                                      {msg.replyToMessage && (
+                                          <div className="mb-1 opacity-70">
+                                              <div className={clsx(
+                                                  "p-2 rounded-xl border text-xs relative flex items-center space-x-2",
+                                                  isMe ? "bg-black/10 border-black/5 text-text" : "bg-surface border-soft-border text-text"
+                                              )}>
+                                                  <CornerUpLeft size={10} />
+                                                  <div className="truncate">
+                                                      <span className="font-bold mr-1">{msg.replyToMessage.sender}:</span>
+                                                      <span>{msg.replyToMessage.content}</span>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      )}
                                       {msg.media?.map((m, i) => (
                                           <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
                                               {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
@@ -451,6 +494,18 @@ const Messages = () => {
                   </div>
 
                   <div className="p-4 bg-surface border-t border-soft-border">
+                      {/* Reply Context Preview */}
+                      {replyToMessage && (
+                          <div className="flex items-center justify-between bg-background p-2 px-3 rounded-lg mb-2 text-xs border border-soft-border">
+                              <div className="flex items-center space-x-2 truncate">
+                                  <CornerUpLeft size={12} className="text-secondary" />
+                                  <span className="font-bold text-text">{replyToMessage.sender}:</span>
+                                  <span className="text-secondary truncate">{replyToMessage.content}</span>
+                              </div>
+                              <button onClick={() => setReplyToMessage(null)} className="text-secondary hover:text-text"><X size={12}/></button>
+                          </div>
+                      )}
+
                       {isBlockedByMe ? (
                           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center justify-between">
                               <div className="flex items-center space-x-3 text-red-400">
@@ -500,6 +555,7 @@ const Messages = () => {
                   </div>
 
                   <ConfirmationModal isOpen={showDeleteConvModal} onClose={() => setShowDeleteConvModal(false)} onConfirm={handleDeleteConversation} title="Delete Conversation?" message="This will delete the conversation from your inbox. This action cannot be undone." confirmText="Delete" isDanger={true} />
+                  <ReportMessageModal isOpen={showReportModal} onClose={() => setShowReportModal(false)} messageId={messageToReport} />
               </>
           ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-secondary">

@@ -29,6 +29,12 @@ const messageSchema = new mongoose.Schema({
         avatar: String
     }
   },
+  // Added replyToMessage for chat replies
+  replyToMessage: {
+      id: String,
+      content: String,
+      sender: String // Name of original sender
+  },
   media: [{
     url: String,
     type: { type: String, enum: ['image', 'video', 'audio', 'file'] },
