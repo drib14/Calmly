@@ -123,14 +123,15 @@ const Messages = () => {
 
   const handleBlockUser = async (id) => {
       try {
-          await axios.post('/settings/block-user', { identityId: id });
-          toast.success("User blocked");
+          const res = await axios.post('/settings/block-user', { identityId: id });
+          toast.success(res.data.message);
+
+          // Refresh settings locally to update UI immediately
+          const settingsRes = await axios.get('/settings');
+          setMySettings(settingsRes.data);
+
           mutateInbox();
-          // Force refresh of current active conversation's settings if needed
-          // Actually we rely on `activeConversation.user.settings` which might be stale in state.
-          // Better to reload window or refetch identity.
-          // For now, simple logic.
-      } catch (err) { toast.error("Failed to block"); }
+      } catch (err) { toast.error("Failed to update block status"); }
   };
 
 
@@ -266,9 +267,20 @@ const Messages = () => {
   }, [inbox]); // Refresh when inbox refreshes (e.g. after blocking)
 
   const isBlockedByMe = mySettings?.blockedUsers?.includes(activeConversation?._id);
-  // Check if they blocked me (needs their settings in activeConversation)
-  // If activeConversation came from Inbox, it might have it.
-  const isBlockedByThem = activeConversation?.user?.settings?.blockedUsers?.includes(currentIdentity?._id);
+  // Check if they blocked me
+  // We try to find the up-to-date partner object from the inbox list which has populated settings
+  // If not found (e.g. search result), we rely on activeConversation but it might be stale.
+  // Ideally, we'd fetch the specific profile or rely on an error when sending.
+  // For UI, we prefer the inbox data.
+  const inboxPartner = inbox?.find(msg => {
+      const p = msg.sender._id === currentIdentity?._id ? msg.recipient : msg.sender;
+      return p._id === activeConversation?._id;
+  });
+
+  // Use inboxPartner if available, else activeConversation (which might lack settings)
+  const partnerUser = inboxPartner ? (inboxPartner.sender._id === currentIdentity?._id ? inboxPartner.recipient : inboxPartner.sender) : activeConversation;
+
+  const isBlockedByThem = partnerUser?.user?.settings?.blockedUsers?.includes(currentIdentity?._id);
 
   // Muted Logic
   const isMuted = mySettings?.mutedUsers?.includes(activeConversation?._id);

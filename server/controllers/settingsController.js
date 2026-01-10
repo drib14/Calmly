@@ -42,13 +42,23 @@ const blockUser = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Assuming we block the *User* associated with the identity, or just the identity?
-    // Schema says `blockedUsers` refs `Identity`.
-    if (!user.settings.blockedUsers.includes(identityId)) {
+    if (!user.settings.blockedUsers) user.settings.blockedUsers = [];
+
+    const index = user.settings.blockedUsers.indexOf(identityId);
+    let blocked = false;
+
+    if (index > -1) {
+        // Unblock
+        user.settings.blockedUsers.splice(index, 1);
+        blocked = false;
+    } else {
+        // Block
         user.settings.blockedUsers.push(identityId);
-        await user.save();
+        blocked = true;
     }
-    res.json({ message: 'User blocked' });
+
+    await user.save();
+    res.json({ message: blocked ? 'User blocked' : 'User unblocked', blocked });
 };
 
 // @desc    Mute User/Conversation
