@@ -3,13 +3,15 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy } from 'lucide-react';
 import { formatShortTime } from '../utils/dateUtils';
 import clsx from 'clsx';
 import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import QuotesWidget from '../components/QuotesWidget';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // Utility to format bytes
 const formatBytes = (bytes, decimals = 2) => {
@@ -30,6 +32,9 @@ const Messages = () => {
   const [mediaFiles, setMediaFiles] = useState([]);
   const [previews, setPreviews] = useState([]);
   const [sending, setSending] = useState(false);
+  const [showDeleteConvModal, setShowDeleteConvModal] = useState(false);
+  const [activeMenuId, setActiveMenuId] = useState(null); // For context menus (bubble or list)
+  const [showConversationMenu, setShowConversationMenu] = useState(false); // Header menu
   const scrollRef = useRef();
 
   // Mobile View State ('list' or 'chat')
@@ -99,6 +104,51 @@ const Messages = () => {
   const handleConversationClick = (identity) => {
       setActiveConversation(identity);
       setView('chat');
+      setShowConversationMenu(false);
+  };
+
+  const handleDeleteConversation = async () => {
+      if (!activeConversation) return;
+      try {
+          await axios.delete(`/messages/conversation/${activeConversation._id}`);
+          mutateInbox();
+          setActiveConversation(null);
+          setView('list');
+          toast.success("Conversation deleted");
+      } catch (err) {
+          toast.error("Failed to delete conversation");
+      }
+      setShowDeleteConvModal(false);
+  };
+
+  const handleBlockUser = async (id) => {
+      try {
+          await axios.post('/settings/block-user', { identityId: id });
+          toast.success("User blocked");
+          mutateInbox(); // Refresh lists
+      } catch (err) { toast.error("Failed to block"); }
+  };
+
+  const handleMuteUser = async (id) => {
+      try {
+          await axios.post('/settings/mute-user', { identityId: id });
+          toast.success("Conversation muted");
+      } catch (err) { toast.error("Failed to mute"); }
+  };
+
+  const handleDeleteMessage = async (msgId) => {
+      try {
+          await axios.delete(`/messages/${msgId}`);
+          mutateMessages();
+          toast.success("Message deleted");
+      } catch (err) { toast.error("Failed to delete message"); }
+      setActiveMenuId(null);
+  };
+
+  const handleCopy = (text) => {
+      navigator.clipboard.writeText(text);
+      toast.success("Copied");
+      setActiveMenuId(null);
   };
 
   const handleSend = async () => {
@@ -324,8 +374,8 @@ const Messages = () => {
                   return (
                       <div
                         key={msg._id}
+                        className={`p-4 border-b border-soft-border cursor-pointer hover:bg-background transition relative group ${activeConversation?._id === other._id ? 'bg-background' : ''}`}
                         onClick={() => handleConversationClick(other)}
-                        className={`p-4 border-b border-soft-border cursor-pointer hover:bg-background transition ${activeConversation?._id === other._id ? 'bg-background' : ''}`}
                       >
                           <div className="flex items-center space-x-3">
                               <div className="relative">
@@ -341,6 +391,37 @@ const Messages = () => {
                                       {isSenderMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a moment' : msg.replyToQuote ? 'Replied to a note' : msg.content || 'Sent a file'}
                                   </p>
                               </div>
+
+                              {/* List Options Trigger (Visible on Hover/Swipe - Simplified to 3 dots) */}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `list-${other._id}` ? null : `list-${other._id}`); }}
+                                className="p-1 text-secondary hover:text-text rounded-full hover:bg-surface opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                  <MoreVertical size={16} />
+                              </button>
+
+                              {/* List Context Menu */}
+                              <AnimatePresence>
+                                  {activeMenuId === `list-${other._id}` && (
+                                      <motion.div
+                                          initial={{ opacity: 0, scale: 0.9 }}
+                                          animate={{ opacity: 1, scale: 1 }}
+                                          exit={{ opacity: 0, scale: 0.9 }}
+                                          className="absolute right-4 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]"
+                                          onClick={(e) => e.stopPropagation()}
+                                      >
+                                          <button onClick={() => { handleMuteUser(other._id); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                              <BellOff size={14} /> <span>Mute</span>
+                                          </button>
+                                          <button onClick={() => { handleBlockUser(other._id); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                              <ShieldAlert size={14} /> <span>Block</span>
+                                          </button>
+                                          <button onClick={() => { setActiveConversation(other); setShowDeleteConvModal(true); setActiveMenuId(null); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
+                                              <Trash2 size={14} /> <span>Delete</span>
+                                          </button>
+                                      </motion.div>
+                                  )}
+                              </AnimatePresence>
                           </div>
                       </div>
                   )
@@ -373,9 +454,40 @@ const Messages = () => {
                               <p className="text-xs text-secondary uppercase tracking-wide">{activeConversation.type}</p>
                           </div>
                       </div>
+
+                      {/* Header Options */}
+                      <div className="ml-auto relative">
+                          <button onClick={() => setShowConversationMenu(!showConversationMenu)} className="p-2 text-secondary hover:text-text rounded-full hover:bg-background transition">
+                              <MoreVertical size={20} />
+                          </button>
+                          <AnimatePresence>
+                              {showConversationMenu && (
+                                  <motion.div
+                                      initial={{ opacity: 0, scale: 0.95 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0.95 }}
+                                      className="absolute right-0 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[160px]"
+                                  >
+                                      <button onClick={() => navigate(`/profile/${activeConversation.handle.replace('@','')}`)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                          <User size={14} /> <span>View Profile</span>
+                                      </button>
+                                      <button onClick={() => { handleMuteUser(activeConversation._id); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                          <BellOff size={14} /> <span>Mute Notifications</span>
+                                      </button>
+                                      <button onClick={() => { handleBlockUser(activeConversation._id); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                          <ShieldAlert size={14} /> <span>Block User</span>
+                                      </button>
+                                      <div className="h-px bg-soft-border my-1" />
+                                      <button onClick={() => { setShowDeleteConvModal(true); setShowConversationMenu(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
+                                          <Trash2 size={14} /> <span>Delete Chat</span>
+                                      </button>
+                                  </motion.div>
+                              )}
+                          </AnimatePresence>
+                      </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" onClick={() => setActiveMenuId(null)}>
                       {messages?.map((msg, idx) => {
                           // In the chat detail, we want to align messages based on the active current identity
                           // If I sent it (from ANY identity? or just the current one?)
@@ -386,8 +498,30 @@ const Messages = () => {
                           const isMe = msg.sender._id === currentIdentity?._id;
 
                           return (
-                              <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                              <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group relative`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
+
+                                  {/* Bubble Options Trigger (Visible on Hover) */}
+                                  <div className={clsx("absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition px-2", isMe ? "-left-8" : "-right-8")}>
+                                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }} className="text-secondary hover:text-text">
+                                          <MoreVertical size={14} />
+                                      </button>
+                                       {/* Message Context Menu */}
+                                      <AnimatePresence>
+                                          {activeMenuId === `msg-${msg._id}` && (
+                                              <motion.div
+                                                  initial={{ opacity: 0, scale: 0.9 }}
+                                                  animate={{ opacity: 1, scale: 1 }}
+                                                  exit={{ opacity: 0, scale: 0.9 }}
+                                                  className={clsx("absolute top-full z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]", isMe ? "right-0" : "left-0")}
+                                              >
+                                                  {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
+                                                  {isMe && <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>}
+                                              </motion.div>
+                                          )}
+                                      </AnimatePresence>
+                                  </div>
+
                                   <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
                                       {/* Media Bubbles */}
                                       {msg.media?.map((m, i) => (
@@ -507,6 +641,17 @@ const Messages = () => {
                           </button>
                       </div>
                   </div>
+
+                  {/* Delete Conversation Modal */}
+                  <ConfirmationModal
+                      isOpen={showDeleteConvModal}
+                      onClose={() => setShowDeleteConvModal(false)}
+                      onConfirm={handleDeleteConversation}
+                      title="Delete Conversation?"
+                      message="This will delete the conversation from your inbox. This action cannot be undone."
+                      confirmText="Delete"
+                      isDanger={true}
+                  />
               </>
           ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-secondary">

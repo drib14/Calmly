@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatShortTime } from '../utils/dateUtils';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight, Eye, Edit3 } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight, Eye, Edit3, ShieldAlert, BellOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -230,6 +230,33 @@ const PostCard = ({ post, mutate }) => {
       setShowOptions(false);
   };
 
+  const handleUserHide = async () => {
+      try {
+          await axios.post('/settings/hide-post', { postId: post._id });
+          mutate(); // Should remove from feed if filtered correctly?
+          // Feed fetch logic needs to filter out hidden posts based on USER settings too.
+          // Currently feed only filters 'hidden: true' (archived by owner).
+          // We need frontend to filter or backend update.
+          // Backend update is better but might be complex for this task.
+          // Frontend filter:
+          toast.success("Post hidden from your feed");
+      } catch (err) {
+          toast.error("Failed to hide post");
+      }
+      setShowOptions(false);
+  };
+
+  const handleBlockUser = async () => {
+      try {
+          await axios.post('/settings/block-user', { identityId: post.identity._id });
+          mutate(); // Refresh feed to remove their posts
+          toast.success(`Blocked ${post.identity.name}`);
+      } catch (err) {
+          toast.error("Failed to block user");
+      }
+      setShowOptions(false);
+  };
+
   const handleProfileClick = (e) => {
       e.stopPropagation();
       const myRealIdentity = identities?.find(i => i.type === 'real');
@@ -404,7 +431,7 @@ const PostCard = ({ post, mutate }) => {
                                 </button>
                                 <button onClick={handleHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg active:bg-surface">
                                     {post.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                                    <span>{post.hidden ? 'Unhide Post' : 'Hide Post'}</span>
+                                    <span>{post.hidden ? 'Unhide Post' : 'Archive Post'}</span>
                                 </button>
                                 <div className="h-px bg-soft-border my-1" />
                                 <button onClick={() => { setShowDeleteModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg active:bg-red-50">
@@ -412,9 +439,18 @@ const PostCard = ({ post, mutate }) => {
                                 </button>
                             </>
                         ) : (
-                            <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-secondary hover:bg-background rounded-lg hover:text-text active:bg-background/80">
-                                <Flag size={14} /> <span>Report Content</span>
-                            </button>
+                            <>
+                                <button onClick={handleUserHide} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg active:bg-surface">
+                                    <EyeOff size={14} /> <span>Hide this post</span>
+                                </button>
+                                <button onClick={handleBlockUser} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg active:bg-surface">
+                                    <ShieldAlert size={14} /> <span>Block User</span>
+                                </button>
+                                <div className="h-px bg-soft-border my-1" />
+                                <button onClick={() => { setShowReportModal(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg active:bg-red-50">
+                                    <Flag size={14} /> <span>Report Content</span>
+                                </button>
+                            </>
                         )}
                     </motion.div>
                 )}

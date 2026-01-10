@@ -11,7 +11,10 @@ const {
   getSessions,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  blockUser,
+  muteUser,
+  hidePost
 } = require('../controllers/settingsController');
 
 // All routes are protected
@@ -24,6 +27,10 @@ router.put('/email', updateEmail);
 router.post('/logout-all', logoutAllDevices);
 router.get('/sessions', getSessions);
 router.delete('/account', deleteAccount);
+
+router.post('/block-user', blockUser);
+router.post('/mute-user', muteUser);
+router.post('/hide-post', hidePost);
 
 router.get('/download-data', downloadUserData);
 

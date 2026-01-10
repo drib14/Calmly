@@ -197,4 +197,49 @@ router.put('/read', protect, async (req, res) => {
     }
 });
 
+// Delete Message (Soft delete or Hard delete?)
+// User asking "Delete Message" implies for themselves (remove from view) or unsend?
+// Unsend usually only if recent. Deleting for self is common.
+// For simplicity, we'll implement "Delete for everyone" if owner, or hard delete.
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const message = await Message.findById(req.params.id);
+        if (!message) return res.status(404).json({ message: 'Message not found' });
+
+        const userIdentities = await Identity.find({ user: req.user._id });
+        const identityIds = userIdentities.map(i => i._id.toString());
+
+        // Check ownership (sender)
+        if (!identityIds.includes(message.sender.toString())) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        await Message.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Message deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Delete Conversation
+router.delete('/conversation/:identityId', protect, async (req, res) => {
+    try {
+        const otherId = req.params.identityId;
+        const userIdentities = await Identity.find({ user: req.user._id });
+        const identityIds = userIdentities.map(i => i._id);
+
+        // Delete all messages between My Identities AND Other Identity
+        await Message.deleteMany({
+            $or: [
+                { sender: { $in: identityIds }, recipient: otherId },
+                { sender: otherId, recipient: { $in: identityIds } }
+            ]
+        });
+
+        res.json({ message: 'Conversation deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;
