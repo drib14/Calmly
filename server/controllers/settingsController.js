@@ -1,6 +1,19 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const Support = require('../models/Support');
+const SystemSetting = require('../models/SystemSetting');
+
+// @desc    Get System Announcement
+// @route   GET /api/settings/system
+// @access  Public/Private
+const getSystemAnnouncement = async (req, res) => {
+    try {
+        const setting = await SystemSetting.findOne({ key: 'systemAnnouncement' });
+        res.json(setting ? setting.value : { active: false, text: '' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
 // @desc    Get user settings
 // @route   GET /api/settings
@@ -366,5 +379,6 @@ module.exports = {
   blockUser,
   muteUser,
   hidePost,
-  createSupportTicket
+  createSupportTicket,
+  getSystemAnnouncement
 };

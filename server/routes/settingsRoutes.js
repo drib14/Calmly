@@ -15,8 +15,11 @@ const {
   blockUser,
   muteUser,
   hidePost,
-  createSupportTicket
+  createSupportTicket,
+  getSystemAnnouncement
 } = require('../controllers/settingsController');
+
+router.get('/system', getSystemAnnouncement); // Public
 
 // All routes are protected
 router.use(protect);

@@ -67,13 +67,51 @@ const AdminSettings = () => {
                     </button>
                 </div>
 
-                {/* Other Placeholders */}
-                <div className="bg-[#1a1d24] border border-white/5 rounded-2xl p-6 opacity-50">
-                    <h3 className="text-xl font-bold text-white mb-1">System Announcements</h3>
-                    <p className="text-gray-400 text-sm mb-4">Broadcast a message to all users (Coming Soon).</p>
+                {/* System Announcements */}
+                <div className="bg-[#1a1d24] border border-white/5 rounded-2xl p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-white mb-1">System Announcements</h3>
+                            <p className="text-gray-400 text-sm">Broadcast a message to all users.</p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const current = settings.systemAnnouncement || { text: '', active: false };
+                                const newVal = { ...current, active: !current.active };
+                                mutate({ ...settings, systemAnnouncement: newVal }, false);
+                                axios.put('/admin/settings', { key: 'systemAnnouncement', value: newVal })
+                                    .then(() => toast.success("Status updated"))
+                                    .catch(() => toast.error("Failed to update"));
+                            }}
+                            className={`text-4xl transition-colors ${settings.systemAnnouncement?.active ? 'text-green-500' : 'text-gray-600'}`}
+                        >
+                             {settings.systemAnnouncement?.active ? <ToggleRight /> : <ToggleLeft />}
+                        </button>
+                    </div>
+
                     <div className="flex gap-2">
-                        <input className="bg-black/20 border border-white/10 rounded px-3 py-2 text-white flex-1" disabled placeholder="Announcement text..." />
-                        <button className="bg-blue-600 px-4 py-2 rounded text-white font-bold" disabled>Send</button>
+                         <input
+                            className="bg-black/20 border border-white/10 rounded px-3 py-2 text-white flex-1"
+                            placeholder="Announcement text..."
+                            defaultValue={settings.systemAnnouncement?.text || ''}
+                            id="announcementInput"
+                         />
+                         <button
+                            onClick={() => {
+                                const text = document.getElementById('announcementInput').value;
+                                const active = settings.systemAnnouncement?.active !== false; // Default true if undefined? No, explicit.
+                                // Logic: If clicking send, we update text. Active state handled by toggle?
+                                // Let's update both.
+                                const newVal = { text, active };
+                                mutate({ ...settings, systemAnnouncement: newVal }, false);
+                                axios.put('/admin/settings', { key: 'systemAnnouncement', value: newVal })
+                                    .then(() => toast.success("Announcement updated"))
+                                    .catch(() => toast.error("Failed to update"));
+                            }}
+                            className="bg-blue-600 px-4 py-2 rounded text-white font-bold hover:bg-blue-500 transition"
+                        >
+                            Update
+                        </button>
                     </div>
                 </div>
             </div>

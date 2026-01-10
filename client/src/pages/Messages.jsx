@@ -401,7 +401,7 @@ const Messages = () => {
                                       {isSenderMe ? 'You: ' : ''}{msg.sharedPost ? 'Shared a moment' : msg.replyToQuote ? 'Replied to a note' : msg.content || 'Sent a file'}
                                   </p>
                               </div>
-                              <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `list-${other._id}` ? null : `list-${other._id}`); }} className="p-1 text-secondary hover:text-text rounded-full hover:bg-surface opacity-0 group-hover:opacity-100 transition-opacity"><MoreVertical size={16} /></button>
+                              <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `list-${other._id}` ? null : `list-${other._id}`); }} className="p-1 text-secondary hover:text-text rounded-full hover:bg-surface md:opacity-0 md:group-hover:opacity-100 transition-opacity"><MoreVertical size={16} /></button>
                               <AnimatePresence>
                                   {activeMenuId === `list-${other._id}` && (
                                       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute right-4 top-10 z-20 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]" onClick={(e) => e.stopPropagation()}>
@@ -459,7 +459,7 @@ const Messages = () => {
                           return (
                               <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group relative`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
-                                  <div className={clsx("absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition px-2", isMe ? "-left-8" : "-right-8")}>
+                                  <div className={clsx("absolute top-1/2 -translate-y-1/2 px-2 md:opacity-0 md:group-hover:opacity-100 transition", isMe ? "-left-8" : "-right-8")}>
                                       <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }} className="text-secondary hover:text-text"><MoreVertical size={14} /></button>
                                       <AnimatePresence>
                                           {activeMenuId === `msg-${msg._id}` && (

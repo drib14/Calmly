@@ -11,10 +11,12 @@ import MediaPlayer from './MediaPlayer';
 import { formatShortTime } from '../utils/dateUtils';
 import { toast } from 'react-hot-toast';
 import Modal from './Modal';
+import { useNavigate } from 'react-router-dom';
 
 const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isOwner, identities }) => {
     const { currentIdentity } = useIdentity();
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [showOptions, setShowOptions] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
@@ -79,13 +81,23 @@ const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isO
 
     const isCommentLiked = comment.likes?.some(id => id === currentIdentity?._id);
 
+    const handleProfileClick = () => {
+        if (comment.identity.type === 'anonymous') return;
+        navigate(`/profile/${comment.identity.handle.replace('@', '')}`);
+    };
+
     return (
         <>
         <div className={clsx("flex space-x-3 mb-4", comment.parentComment && "ml-8")}>
-            <Avatar identity={comment.identity} size="sm" />
+            <div onClick={handleProfileClick} className={clsx("flex-shrink-0", comment.identity.type !== 'anonymous' && "cursor-pointer")}>
+                <Avatar identity={comment.identity} size="sm" />
+            </div>
             <div className="flex-1 min-w-0">
                 <div className="bg-surface p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-soft-border inline-block max-w-full relative group">
-                    <span className="font-bold text-text text-xs block mb-1">
+                    <span
+                        onClick={handleProfileClick}
+                        className={clsx("font-bold text-text text-xs block mb-1", comment.identity.type !== 'anonymous' && "cursor-pointer hover:underline decoration-slate-400")}
+                    >
                         {comment.identity.name}
                         {comment.hidden && <span className="ml-2 text-[10px] text-red-500 font-normal">(Hidden)</span>}
                     </span>
