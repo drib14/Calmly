@@ -1,22 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { MoreHorizontal, Trash2, Flag, Edit3, EyeOff, User, CornerUpLeft } from 'lucide-react';
+import { MoreHorizontal, Trash2, Flag, Edit3, EyeOff, X, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import { useIdentity } from '../context/IdentityContext';
+import { useAuth } from '../context/AuthContext';
 import Avatar from './Avatar';
 import MediaPlayer from './MediaPlayer';
 import { formatShortTime } from '../utils/dateUtils';
 import { toast } from 'react-hot-toast';
+import Modal from './Modal';
 
 const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isOwner, identities }) => {
     const { currentIdentity } = useIdentity();
+    const { user } = useAuth();
     const [showOptions, setShowOptions] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(comment.content);
 
-    // Check if the current user owns this comment
-    const isCommentOwner = identities?.some(id => id._id === comment.identity._id);
+    // Check if the current user owns this comment or is Admin
+    const isCommentOwner = identities?.some(id => String(id._id) === String(comment.identity._id));
+    const isAdmin = user?.role === 'admin';
+    const canDelete = isCommentOwner || isAdmin;
+    const canHide = isCommentOwner || isAdmin;
 
     const handleLike = async () => {
         if (!currentIdentity) return toast.error("Select an identity first");
@@ -59,11 +65,18 @@ const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isO
         } catch (err) { toast.error("Failed to report"); }
     };
 
-    if (comment.hidden && !isCommentOwner) return null;
+    const handleCopy = () => {
+        navigator.clipboard.writeText(comment.content);
+        toast.success("Copied to clipboard");
+        setShowOptions(false);
+    };
+
+    if (comment.hidden && !canHide) return null;
 
     const isCommentLiked = comment.likes?.some(id => id === currentIdentity?._id);
 
     return (
+        <>
         <div className={clsx("flex space-x-3 mb-4", comment.parentComment && "ml-8")}>
             <Avatar identity={comment.identity} size="sm" />
             <div className="flex-1 min-w-0">
@@ -107,44 +120,54 @@ const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isO
 
                     {/* 3 Dots Trigger */}
                     <button
-                        onClick={() => setShowOptions(!showOptions)}
+                        onClick={() => setShowOptions(true)}
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-secondary hover:text-text"
                     >
                         <MoreHorizontal size={14} />
                     </button>
 
-                    {/* Options Menu */}
-                    <AnimatePresence>
-                        {showOptions && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="absolute right-0 top-6 z-10 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]"
-                                onMouseLeave={() => setShowOptions(false)}
-                            >
-                                {isCommentOwner ? (
-                                    <>
+                    {/* Desktop Options Menu (Popover) - Hidden on Mobile */}
+                    <div className="hidden md:block">
+                        <AnimatePresence>
+                            {showOptions && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    className="absolute right-0 top-6 z-10 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[140px]"
+                                    onMouseLeave={() => setShowOptions(false)}
+                                >
+                                    <button onClick={handleCopy} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
+                                        <Copy size={12} /> <span>Copy Text</span>
+                                    </button>
+
+                                    {isCommentOwner && (
                                         <button onClick={() => { setIsEditing(true); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
                                             <Edit3 size={12} /> <span>Edit</span>
                                         </button>
+                                    )}
+
+                                    {canHide && (
                                         <button onClick={() => { handleHide(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left">
                                             <EyeOff size={12} /> <span>{comment.hidden ? 'Unhide' : 'Hide'}</span>
                                         </button>
+                                    )}
+
+                                    {canDelete && (
                                         <button onClick={() => { handleDelete(); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
                                             <Trash2 size={12} /> <span>Delete</span>
                                         </button>
-                                    </>
-                                ) : (
-                                    <>
+                                    )}
+
+                                    {!isCommentOwner && (
                                         <button onClick={() => { handleReport('Inappropriate'); setShowOptions(false); }} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left">
                                             <Flag size={12} /> <span>Report</span>
                                         </button>
-                                    </>
-                                )}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
 
                 <div className="flex items-center space-x-4 mt-1 ml-2 text-[10px] text-secondary">
@@ -153,31 +176,78 @@ const CommentItem = ({ comment, postId, onReply, openViewer, mutateComments, isO
                         onClick={handleLike}
                         className={clsx("font-bold hover:text-red-500 transition flex items-center space-x-1", isCommentLiked && "text-red-500")}
                     >
-                        {/* Heart Icon SVG or Component */}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill={isCommentLiked ? "currentColor" : "none"}
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        >
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill={isCommentLiked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                         <span>{comment.likes?.length || 0}</span>
                     </button>
-                    <button
-                        onClick={() => onReply(comment)}
-                        className="font-bold hover:text-blue-500 transition"
-                    >
-                        Reply
-                    </button>
+                    <button onClick={() => onReply(comment)} className="font-bold hover:text-blue-500 transition">Reply</button>
                 </div>
             </div>
         </div>
+
+        {/* Mobile Drawer for Options */}
+        <AnimatePresence>
+            {showOptions && (
+                <>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowOptions(false)}
+                        className="md:hidden fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+                    />
+                    <motion.div
+                        initial={{ y: '100%' }}
+                        animate={{ y: 0 }}
+                        exit={{ y: '100%' }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="md:hidden fixed bottom-0 left-0 right-0 bg-surface rounded-t-3xl z-50 border-t border-soft-border shadow-2xl p-6 pb-safe"
+                    >
+                        <div className="w-12 h-1.5 bg-soft-border rounded-full mx-auto mb-6" />
+                        <h3 className="text-center font-bold text-lg text-text mb-6">Comment Options</h3>
+
+                        <div className="space-y-2">
+                            <button onClick={handleCopy} className="w-full flex items-center space-x-3 p-4 bg-background rounded-2xl text-text font-medium active:scale-95 transition">
+                                <div className="p-2 bg-surface rounded-full border border-soft-border"><Copy size={20} /></div>
+                                <span>Copy Text</span>
+                            </button>
+
+                            {isCommentOwner && (
+                                <button onClick={() => { setIsEditing(true); setShowOptions(false); }} className="w-full flex items-center space-x-3 p-4 bg-background rounded-2xl text-text font-medium active:scale-95 transition">
+                                    <div className="p-2 bg-surface rounded-full border border-soft-border"><Edit3 size={20} /></div>
+                                    <span>Edit Comment</span>
+                                </button>
+                            )}
+
+                            {canHide && (
+                                <button onClick={() => { handleHide(); setShowOptions(false); }} className="w-full flex items-center space-x-3 p-4 bg-background rounded-2xl text-text font-medium active:scale-95 transition">
+                                    <div className="p-2 bg-surface rounded-full border border-soft-border"><EyeOff size={20} /></div>
+                                    <span>{comment.hidden ? 'Unhide Comment' : 'Hide Comment'}</span>
+                                </button>
+                            )}
+
+                            {!isCommentOwner && (
+                                <button onClick={() => { handleReport('Inappropriate'); setShowOptions(false); }} className="w-full flex items-center space-x-3 p-4 bg-background rounded-2xl text-red-500 font-medium active:scale-95 transition">
+                                    <div className="p-2 bg-red-50 rounded-full border border-red-100"><Flag size={20} /></div>
+                                    <span>Report Comment</span>
+                                </button>
+                            )}
+
+                            {canDelete && (
+                                <button onClick={() => { handleDelete(); setShowOptions(false); }} className="w-full flex items-center space-x-3 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl text-red-500 font-bold active:scale-95 transition mt-2">
+                                    <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full"><Trash2 size={20} /></div>
+                                    <span>Delete Comment</span>
+                                </button>
+                            )}
+                        </div>
+
+                        <button onClick={() => setShowOptions(false)} className="w-full mt-6 py-4 text-secondary font-bold text-sm active:opacity-70">
+                            Cancel
+                        </button>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+        </>
     );
 };
 

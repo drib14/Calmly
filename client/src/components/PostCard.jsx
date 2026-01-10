@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatShortTime } from '../utils/dateUtils';
-import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight, Eye, Edit3, ShieldAlert, BellOff } from 'lucide-react';
+import { MessageCircle, Heart, Repeat, MoreHorizontal, Send, Trash2, Flag, User, X, Globe, Lock, EyeOff, Image as ImageIcon, Reply, ChevronLeft, ChevronRight, Edit3, ShieldAlert, BellOff, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import useSWR from 'swr';
@@ -145,14 +145,6 @@ const PostCard = ({ post, mutate }) => {
       finally { setIsReposting(false); }
   };
 
-  const handleCommentLike = async (commentId) => {
-      if (!currentIdentity) return toast.error("Select an identity first");
-      try {
-          await axios.put(`/comments/${commentId}/like`, { identityId: currentIdentity._id });
-          mutateComments();
-      } catch (err) { console.error(err); }
-  };
-
   const handleCommentFile = (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -234,12 +226,7 @@ const PostCard = ({ post, mutate }) => {
   const handleUserHide = async () => {
       try {
           await axios.post('/settings/hide-post', { postId: post._id });
-          mutate(); // Should remove from feed if filtered correctly?
-          // Feed fetch logic needs to filter out hidden posts based on USER settings too.
-          // Currently feed only filters 'hidden: true' (archived by owner).
-          // We need frontend to filter or backend update.
-          // Backend update is better but might be complex for this task.
-          // Frontend filter:
+          mutate();
           toast.success("Post hidden from your feed");
       } catch (err) {
           toast.error("Failed to hide post");
@@ -250,7 +237,7 @@ const PostCard = ({ post, mutate }) => {
   const handleBlockUser = async () => {
       try {
           await axios.post('/settings/block-user', { identityId: post.identity._id });
-          mutate(); // Refresh feed to remove their posts
+          mutate();
           toast.success(`Blocked ${post.identity.name}`);
       } catch (err) {
           toast.error("Failed to block user");
@@ -311,13 +298,10 @@ const PostCard = ({ post, mutate }) => {
       const touchEnd = e.changedTouches[0].clientX;
       const diff = touchStartRef.current - touchEnd;
 
-      // Swipe Threshold
       if (Math.abs(diff) > 50) {
           if (diff > 0) {
-              // Swipe Left -> Next
               setCurrentMediaIndex((prev) => (prev === post.media.length - 1 ? 0 : prev + 1));
           } else {
-              // Swipe Right -> Prev
               setCurrentMediaIndex((prev) => (prev === 0 ? post.media.length - 1 : prev - 1));
           }
       }
@@ -330,20 +314,16 @@ const PostCard = ({ post, mutate }) => {
       const DOUBLE_TAP_DELAY = 300;
 
       if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-          // Double Tap Detected
-          if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current); // Cancel single tap action
+          if (tapTimeoutRef.current) clearTimeout(tapTimeoutRef.current);
           handleLike();
-          lastTapRef.current = 0; // Reset
+          lastTapRef.current = 0;
       } else {
-          // Single Tap - Wait to confirm it's not a double tap
           lastTapRef.current = now;
           if (urlToView) {
               tapTimeoutRef.current = setTimeout(() => {
                   openViewer(urlToView);
               }, DOUBLE_TAP_DELAY);
           }
-          // If no urlToView (text post), single tap does nothing or maybe expands?
-          // Currently we rely on "Show More" / click to expand logic if we had it.
       }
   };
 
@@ -352,9 +332,6 @@ const PostCard = ({ post, mutate }) => {
       ?.map(l => l.identity)
       .filter((id, index, self) => id && self.findIndex(i => i?._id === id._id) === index) || [];
 
-  // Logic:
-  // <= 3: Show actual count (1, 2, or 3)
-  // > 3: Show 3 avatars + 1 indicator (Total 4 circles)
   const displayReactors = reactorAvatars.length > 3 ? reactorAvatars.slice(0, 3) : reactorAvatars;
   const extraCount = reactorAvatars.length > 3 ? reactorAvatars.length - 3 : 0;
 
@@ -369,6 +346,8 @@ const PostCard = ({ post, mutate }) => {
             (showOptions || showShareMenu) ? "z-30" : "z-0"
         )}
     >
+      {/* ... (Existing Header, Content, Action Bar code remains unchanged) ... */}
+
       {/* Repost Indicator */}
       {post.reposts && post.reposts.length > 0 && post.reposts[0].identity && (
           <div className="flex items-center space-x-2 mb-3 text-xs text-secondary font-medium">
@@ -757,7 +736,14 @@ const PostCard = ({ post, mutate }) => {
                           {!comments ? (
                               <div className="text-center py-4 text-secondary text-xs">Loading comments...</div>
                           ) : comments.length === 0 ? (
-                              <div className="text-center py-4 text-secondary text-xs">No comments yet. Be the first.</div>
+                              // No Comments Banner (Desktop & Mobile styled)
+                              <div className="flex flex-col items-center justify-center py-8 opacity-60">
+                                  <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center mb-2 shadow-sm border border-soft-border">
+                                      <MessageSquare size={20} className="text-secondary" />
+                                  </div>
+                                  <p className="text-xs font-bold text-text">No comments yet</p>
+                                  <p className="text-[10px] text-secondary">Start the conversation nicely.</p>
+                              </div>
                           ) : (
                               comments.map(c => (
                                 <CommentItem

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User } from 'lucide-react';
+import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User, Shield } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useIdentity } from '../context/IdentityContext';
@@ -147,6 +147,15 @@ const Navbar = ({ highContrast }) => {
                         <Settings size={18} />
                         <span>Settings</span>
                     </button>
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={() => { navigate('/admin'); setShowProfileMenu(false); }}
+                            className="flex items-center space-x-3 w-full p-3 hover:bg-background rounded-xl text-sm text-text transition"
+                        >
+                            <Shield size={18} className="text-blue-500" />
+                            <span className="text-blue-500 font-bold">Admin Panel</span>
+                        </button>
+                    )}
                     <div className="h-px bg-soft-border my-1"></div>
                         <button
                             onClick={handleLogout}
@@ -303,6 +312,15 @@ const Navbar = ({ highContrast }) => {
                         <Settings size={18} />
                         <span>Settings</span>
                     </button>
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={() => { navigate('/admin'); setShowProfileMenu(false); }}
+                            className="flex items-center space-x-3 w-full p-2 hover:bg-background rounded-lg text-sm text-text transition"
+                        >
+                            <Shield size={18} className="text-blue-500" />
+                            <span className="text-blue-500 font-bold">Admin Panel</span>
+                        </button>
+                    )}
                     <div className="h-px bg-soft-border my-1"></div>
                     <button
                         onClick={handleLogout}
