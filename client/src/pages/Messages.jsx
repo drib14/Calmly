@@ -237,52 +237,18 @@ const Messages = () => {
       }
   };
 
-  // Check Block Status (Checking if I blocked them, or if they blocked me)
-  // `activeConversation` object comes from search or inbox.
-  // If from Inbox, it has `user.settings`.
-  // We need to check My Settings to see if I blocked them.
-  // And check Their Settings (from `activeConversation.user.settings`) to see if they blocked me?
-  // Actually, blocked users list is in MY user object.
-  // The backend should ideally tell us "isBlocked" or "hasBlockedYou".
-  // For now, we rely on the `activeConversation` object having populated settings if it came from Inbox.
-  // But `activeConversation` from Search might NOT have settings populated fully or correctly for privacy.
-  // We'll rely on the Inbox `other` object which we augmented in backend to include settings.
-
-  // Checking if *I* blocked *Them*:
-  // I need access to my own settings. `currentIdentity.user.settings` isn't available directly in identity context usually,
-  // unless we fetch it. We have `useSettings` hook!
-  // BUT `useSettings` fetches from `/api/settings`. Let's assume we have it.
-  // Wait, `activeConversation` is an Identity object.
-  // My settings are in `settings` (we need to fetch them).
-
-  // Let's assume we don't have global settings context easily here without adding it.
-  // I will check `activeConversation` for "blockedByMe" if backend provided it? No.
-  // I will use `activeConversation.isBlocked` if I can adding it to the inbox endpoint...
-  // Or just fetch settings.
-
-  // For simplicity:
-  // If `activeConversation` object has `isBlocked` (we didn't add this).
-  // Let's use `inbox` data to find the conversation and check settings there?
-
-  // Real implementation: We need to check `blockedUsers` in MY settings.
-  // I'll fetch my settings once on mount.
   const [mySettings, setMySettings] = useState(null);
   useEffect(() => {
       axios.get('/settings').then(res => setMySettings(res.data)).catch(console.error);
   }, [inbox]); // Refresh when inbox refreshes (e.g. after blocking)
 
   const isBlockedByMe = mySettings?.blockedUsers?.includes(activeConversation?._id);
-  // Check if they blocked me
-  // We try to find the up-to-date partner object from the inbox list which has populated settings
-  // If not found (e.g. search result), we rely on activeConversation but it might be stale.
-  // Ideally, we'd fetch the specific profile or rely on an error when sending.
-  // For UI, we prefer the inbox data.
+
   const inboxPartner = inbox?.find(msg => {
       const p = msg.sender._id === currentIdentity?._id ? msg.recipient : msg.sender;
       return p._id === activeConversation?._id;
   });
 
-  // Use inboxPartner if available, else activeConversation (which might lack settings)
   const partnerUser = inboxPartner ? (inboxPartner.sender._id === currentIdentity?._id ? inboxPartner.recipient : inboxPartner.sender) : activeConversation;
 
   const isBlockedByThem = partnerUser?.user?.settings?.blockedUsers?.includes(currentIdentity?._id);
@@ -376,8 +342,6 @@ const Messages = () => {
                   return acc;
               }, []).map(({ msg, other, isSenderMe }) => {
                   const isUnread = !isSenderMe && !msg.read;
-                  // Check if muted in MY settings (need to pass mySettings or check it here)
-                  // For now, re-use isMuted logic if possible, but we need to iterate.
                   const isOtherMuted = mySettings?.mutedUsers?.includes(other._id);
 
                   return (
@@ -457,52 +421,83 @@ const Messages = () => {
                       {messages?.map((msg, idx) => {
                           const isMe = msg.sender._id === currentIdentity?._id;
                           return (
-                              <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} group relative`}>
+                              <div key={idx} className={`flex mb-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                   {!isMe && <div className="mt-auto mr-2"><Avatar identity={msg.sender} size="xs" /></div>}
-                                  <div className={clsx("absolute top-1/2 -translate-y-1/2 px-2 md:opacity-0 md:group-hover:opacity-100 transition", isMe ? "-left-8" : "-right-8")}>
-                                      <button onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }} className="text-secondary hover:text-text"><MoreVertical size={14} /></button>
-                                      <AnimatePresence>
-                                          {activeMenuId === `msg-${msg._id}` && (
-                                              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className={clsx("absolute top-full z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]", isMe ? "right-0" : "left-0")}>
-                                                  <button onClick={() => handleReply(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Reply size={12} /> <span>Reply</span></button>
-                                                  {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
-                                                  {isMe ? (
-                                                      <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>
-                                                  ) : (
-                                                      <button onClick={() => handleReportTrigger(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Flag size={12} /> <span>Report</span></button>
-                                                  )}
-                                              </motion.div>
-                                          )}
-                                      </AnimatePresence>
-                                  </div>
 
-                                  <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
-                                      {/* Reply Context Bubble */}
-                                      {msg.replyToMessage && (
-                                          <div className="mb-1 opacity-70">
-                                              <div className={clsx(
-                                                  "p-2 rounded-xl border text-xs relative flex items-center space-x-2",
-                                                  isMe ? "bg-black/10 border-black/5 text-text" : "bg-surface border-soft-border text-text"
-                                              )}>
-                                                  <CornerUpLeft size={10} />
-                                                  <div className="truncate">
-                                                      <span className="font-bold mr-1">{msg.replyToMessage.sender}:</span>
-                                                      <span>{msg.replyToMessage.content}</span>
-                                                  </div>
-                                              </div>
+                                  <div className={clsx(
+                                      "flex items-center group max-w-[85%] md:max-w-[70%]",
+                                      isMe ? "flex-row" : "flex-row"
+                                  )}>
+                                      {/* Options - Left for Me, Right for Others */}
+                                      {isMe && (
+                                          <div className="relative mr-2 flex-shrink-0">
+                                              <button
+                                                  onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }}
+                                                  className="text-secondary hover:text-text p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                              >
+                                                  <MoreVertical size={14} />
+                                              </button>
+                                              <AnimatePresence>
+                                                  {activeMenuId === `msg-${msg._id}` && (
+                                                      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute top-full right-0 z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]">
+                                                          <button onClick={() => handleReply(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Reply size={12} /> <span>Reply</span></button>
+                                                          {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
+                                                          <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>
+                                                      </motion.div>
+                                                  )}
+                                              </AnimatePresence>
                                           </div>
                                       )}
-                                      {msg.media?.map((m, i) => (
-                                          <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
-                                              {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
-                                              {m.type === 'video' && <MediaPlayer src={m.url} />}
-                                              {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium text-text truncate">{m.name}</p><p className="text-[10px] text-secondary">{formatBytes(m.size)}</p></div>}
+
+                                      {/* Message Content */}
+                                      <div className={`space-y-1 w-full`}>
+                                          {msg.replyToMessage && (
+                                              <div className="mb-1 opacity-70">
+                                                  <div className={clsx(
+                                                      "p-2 rounded-xl border text-xs relative flex items-center space-x-2",
+                                                      isMe ? "bg-black/10 border-black/5 text-text" : "bg-surface border-soft-border text-text"
+                                                  )}>
+                                                      <CornerUpLeft size={10} />
+                                                      <div className="truncate">
+                                                          <span className="font-bold mr-1">{msg.replyToMessage.sender}:</span>
+                                                          <span>{msg.replyToMessage.content}</span>
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          )}
+                                          {msg.media?.map((m, i) => (
+                                              <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
+                                                  {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
+                                                  {m.type === 'video' && <MediaPlayer src={m.url} />}
+                                                  {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium text-text truncate">{m.name}</p><p className="text-[10px] text-secondary">{formatBytes(m.size)}</p></div>}
+                                              </div>
+                                          ))}
+                                          {msg.sharedPost && <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>{renderSharedPost(msg.sharedPost, isMe)}</div>}
+                                          {msg.replyToQuote && <div className="mb-1"><div className={clsx("p-3 rounded-2xl border mb-1 max-w-sm relative", isMe ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text" : "bg-white dark:bg-slate-900 border-soft-border text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="text-secondary" /></div><div><p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600"><p className="text-sm font-serif italic text-text/80 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div></div>}
+                                          {msg.content && <div className={clsx("p-4 text-sm shadow-sm rounded-2xl", isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border")}><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
+                                          <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>{formatShortTime(msg.createdAt)}</div>
+                                      </div>
+
+                                      {/* Options - Right for Others */}
+                                      {!isMe && (
+                                          <div className="relative ml-2 flex-shrink-0">
+                                              <button
+                                                  onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === `msg-${msg._id}` ? null : `msg-${msg._id}`); }}
+                                                  className="text-secondary hover:text-text p-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                              >
+                                                  <MoreVertical size={14} />
+                                              </button>
+                                              <AnimatePresence>
+                                                  {activeMenuId === `msg-${msg._id}` && (
+                                                      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute top-full left-0 z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]">
+                                                          <button onClick={() => handleReply(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Reply size={12} /> <span>Reply</span></button>
+                                                          {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
+                                                          <button onClick={() => handleReportTrigger(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Flag size={12} /> <span>Report</span></button>
+                                                      </motion.div>
+                                                  )}
+                                              </AnimatePresence>
                                           </div>
-                                      ))}
-                                      {msg.sharedPost && <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>{renderSharedPost(msg.sharedPost, isMe)}</div>}
-                                      {msg.replyToQuote && <div className="mb-1"><div className={clsx("p-3 rounded-2xl border mb-1 max-w-sm relative", isMe ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text" : "bg-white dark:bg-slate-900 border-soft-border text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="text-secondary" /></div><div><p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600"><p className="text-sm font-serif italic text-text/80 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div></div>}
-                                      {msg.content && <div className={clsx("p-4 text-sm shadow-sm rounded-2xl", isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border")}><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
-                                      <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>{formatShortTime(msg.createdAt)}</div>
+                                      )}
                                   </div>
                               </div>
                           )
