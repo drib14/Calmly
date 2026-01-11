@@ -22,21 +22,9 @@ const Navbar = ({ highContrast }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        // Only close if we are in desktop view logic (assumed by ref presence)
-        // But since we share state, we should be careful.
-        // If the click is inside mobileProfileRef, don't close.
-        if (mobileProfileRef.current && mobileProfileRef.current.contains(event.target)) return;
-
-        setShowProfileMenu(false);
-      }
-      if (mobileProfileRef.current && !mobileProfileRef.current.contains(event.target)) {
-         if (profileMenuRef.current && profileMenuRef.current.contains(event.target)) return;
-         setShowProfileMenu(false);
-      }
+      // Logic managed by global click listener below
     };
 
-    // Simplification: Just check if target is in EITHER ref.
     const handleGlobalClick = (e) => {
         const inDesktop = profileMenuRef.current?.contains(e.target);
         const inMobile = mobileProfileRef.current?.contains(e.target);
@@ -71,13 +59,11 @@ const Navbar = ({ highContrast }) => {
     navigate('/login');
   };
 
-  // Ensure Navbar is hidden if user is not logged in OR if on Landing page
-  // The layout controls rendering, but double check here.
   if (!user || location.pathname === '/') return null;
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/feed' },
-    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true }, // Search is topbar on mobile
+    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true },
     { icon: PenTool, label: 'Create', path: '/create' },
     { icon: BookOpen, label: 'Journal', path: '/journal' },
     { icon: MessageCircle, label: 'Chat', path: '/chat', badge: unreadData?.count },
@@ -86,7 +72,7 @@ const Navbar = ({ highContrast }) => {
   return (
     <>
     {/* Bottom Bar (Mobile) */}
-    <nav className={clsx("md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe", highContrast && "contrast-125")}>
+    <nav className={clsx("md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe mb-safe", highContrast && "contrast-125")}>
         {navItems.filter(i => !i.mobileHidden).map((item) => {
             const isActive = location.pathname === item.path;
             return (

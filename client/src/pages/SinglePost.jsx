@@ -4,10 +4,13 @@ import axios from 'axios';
 import useSWR from 'swr';
 import PostCard from '../components/PostCard';
 import { ArrowLeft, Loader as LoaderIcon } from 'lucide-react';
+import { useIdentity } from '../context/IdentityContext';
 
 const SinglePost = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  // Ensure identity context is available, though PostCard handles it internally too.
+  const { currentIdentity } = useIdentity();
 
   const { data: post, error, isLoading, mutate } = useSWR(
     id ? `/posts/${id}` : null,
@@ -47,7 +50,7 @@ const SinglePost = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto pb-20 pt-4 px-4">
+    <div className="max-w-2xl mx-auto pt-4 px-2 md:px-4">
       <button
         onClick={() => navigate(-1)}
         className="flex items-center space-x-2 text-secondary hover:text-text mb-6 transition group"

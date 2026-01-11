@@ -78,7 +78,7 @@ const PostCard = ({ post, mutate }) => {
   }, [post.likes, currentIdentity]);
 
   const isReposted = post.reposts?.some(r => r.identity === currentIdentity?._id || r.identity?._id === currentIdentity?._id);
-  const isOwner = post.identity._id === currentIdentity?._id;
+  const isOwner = post.identity?._id === currentIdentity?._id;
 
   // Safe Mode Logic
   const triggeringMoods = ['Melancholy', 'Angry', 'Anxious', 'Numb'];
@@ -195,9 +195,9 @@ const PostCard = ({ post, mutate }) => {
   const handleProfileClick = (e) => {
       e.stopPropagation();
       const myRealIdentity = identities?.find(i => i.type === 'real');
-      const isMyPost = identities?.some(i => i._id === post.identity._id);
+      const isMyPost = identities?.some(i => i._id === post.identity?._id);
 
-      if (post.identity.type === 'anonymous') {
+      if (post.identity?.type === 'anonymous') {
           if (isMyPost && myRealIdentity) {
               navigate(`/profile/${myRealIdentity.handle.replace('@', '')}`);
               return;
@@ -207,13 +207,13 @@ const PostCard = ({ post, mutate }) => {
           }
       }
 
-      if (post.identity.handle) {
+      if (post.identity?.handle) {
           navigate(`/profile/${post.identity.handle.replace('@', '')}`);
       }
   };
 
   const handleCopyLink = () => {
-      const link = `${window.location.origin}/profile/${post.identity.handle?.replace('@', '') || 'anon'}`;
+      const link = `${window.location.origin}/profile/${post.identity?.handle?.replace('@', '') || 'anon'}`;
       navigator.clipboard.writeText(link);
       toast.success("Link copied to clipboard");
       setShowShareMenu(false);
@@ -316,10 +316,10 @@ const PostCard = ({ post, mutate }) => {
            </div>
            <div className="min-w-0 flex-1">
                <p onClick={handleProfileClick} className="text-sm font-bold text-text cursor-pointer hover:underline decoration-slate-400 underline-offset-2 truncate">
-                   {post.identity.name}
+                   {post.identity?.name || 'Unknown'}
                </p>
                <div className="text-[11px] text-secondary font-medium uppercase tracking-wide flex items-center flex-wrap gap-x-2 gap-y-1">
-                   <span>{post.identity.type}</span>
+                   <span>{post.identity?.type || 'Guest'}</span>
                    <span>•</span>
                    <span className="whitespace-nowrap">{formatShortTime(post.createdAt)}</span>
 
