@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
-import { PenTool } from 'lucide-react';
+import { PenTool, LayoutGrid, MessageSquare, Feather, Mail } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import PillSelection from '../components/PillSelection';
 import QuotesWidget from '../components/QuotesWidget';
@@ -33,10 +33,10 @@ const Feed = () => {
             <div className="flex space-x-2">
                 <PillSelection
                     options={[
-                        { value: '', label: 'All' },
-                        { value: 'confession', label: 'Post' },
-                        { value: 'poetry', label: 'Poetry' },
-                        { value: 'letter', label: 'Letter' },
+                        { value: '', label: 'All', icon: <LayoutGrid size={14} /> },
+                        { value: 'confession', label: 'Post', icon: <MessageSquare size={14} /> },
+                        { value: 'poetry', label: 'Poetry', icon: <Feather size={14} /> },
+                        { value: 'letter', label: 'Letter', icon: <Mail size={14} /> },
                     ]}
                     value={filter.type}
                     onChange={(val) => setFilter({...filter, type: val})}
