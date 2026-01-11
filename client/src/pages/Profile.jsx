@@ -46,7 +46,6 @@ const Profile = () => {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [replyQuote, setReplyQuote] = useState(null);
   const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
-  const [deletingQuote, setDeletingQuote] = useState(false);
 
   const [activeTab, setActiveTab] = useState('moments');
 
@@ -108,22 +107,6 @@ const Profile = () => {
       setViewerIndex(idx >= 0 ? idx : 0);
       setViewerType(null); // No specific type context from media grid (could be ambiguous)
       setViewerOpen(true);
-  };
-
-  const handleDeleteQuote = async () => {
-      if (!quote) return;
-      setDeletingQuote(true);
-      try {
-          await axios.delete(`/quotes/${quote._id}`);
-          toast.success("Quote removed");
-          mutate(`/profile/${handle}`);
-          mutate('/quotes/feed');
-          setShowMyQuoteOptions(false);
-      } catch (err) {
-          toast.error("Failed to remove quote");
-      } finally {
-          setDeletingQuote(false);
-      }
   };
 
   const handleSaveProfile = async () => {
@@ -478,7 +461,10 @@ const Profile = () => {
             setShowMyQuoteOptions(false);
             setReplyQuote(null);
         }}
-        isOwner={!!showMyQuoteOptions}
+        onCreateNew={() => {
+            setShowMyQuoteOptions(false);
+            setShowQuoteModal(true);
+        }}
       />
 
       {/* Edit Profile Modal */}

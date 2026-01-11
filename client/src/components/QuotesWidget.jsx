@@ -36,24 +36,6 @@ const QuotesWidget = () => {
 
   // My Quote Options Modal
   const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
-  const [deletingQuote, setDeletingQuote] = useState(false);
-
-  const handleDelete = async () => {
-      const myQuote = quotes?.find(q => q.identity?._id === currentIdentity?._id);
-      if (!myQuote) return;
-      setDeletingQuote(true);
-      try {
-          await axios.delete(`/quotes/${myQuote._id}`);
-          toast.success("Quote removed");
-          mutate('/quotes/feed');
-          mutate(`/profile/${currentIdentity.handle.replace('@','')}`); // Refresh profile quote
-          setShowMyQuoteOptions(false);
-      } catch (err) {
-          toast.error("Failed to remove quote");
-      } finally {
-          setDeletingQuote(false);
-      }
-  };
 
   // Avatar Click Handler
   const handleAvatarClick = (identity) => {
@@ -107,39 +89,17 @@ const QuotesWidget = () => {
             identityId={currentIdentity?._id}
         />
 
-        {/* My Quote Options Modal */}
-        <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
-             <div className="text-center space-y-4">
-                 <h3 className="text-lg font-bold text-text">Your Quote</h3>
-                 <div className="flex justify-center">
-                     {myQuote && (
-                        <div className={`relative p-4 rounded-2xl w-48 text-center text-sm shadow-sm border ${moodColors[myQuote.mood]} ${myQuote.font}`}>
-                            {myQuote.content}
-                        </div>
-                     )}
-                 </div>
-                 <div className="grid grid-cols-2 gap-3 pt-4">
-                     <button
-                        onClick={() => { setShowMyQuoteOptions(false); setShowCreateModal(true); }}
-                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text active:scale-95 transition-transform"
-                     >
-                         New quote
-                     </button>
-                     <button
-                        onClick={handleDelete}
-                        disabled={deletingQuote}
-                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50 active:scale-95 transition-transform"
-                     >
-                         {deletingQuote ? 'Deleting...' : 'Delete quote'}
-                     </button>
-                 </div>
-             </div>
-        </Modal>
-
-        {/* Reply Modal */}
+        {/* Reply Modal / View Modal */}
         <ReplyQuoteModal
-            quote={replyQuote}
-            onClose={() => setReplyQuote(null)}
+            quote={showMyQuoteOptions ? myQuote : replyQuote}
+            onClose={() => {
+                setReplyQuote(null);
+                setShowMyQuoteOptions(false);
+            }}
+            onCreateNew={() => {
+                setShowMyQuoteOptions(false);
+                setShowCreateModal(true);
+            }}
         />
     </div>
   );

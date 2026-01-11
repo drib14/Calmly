@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Modal from './Modal';
 import Avatar from './Avatar';
-import { Send, Globe, Users, Lock, Clock } from 'lucide-react';
+import { Send, Globe, Users, Lock, Clock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useIdentity } from '../context/IdentityContext';
 import { useNavigate } from 'react-router-dom';
+import { useSWRConfig } from 'swr';
 import clsx from 'clsx';
 
 const moodColors = {
@@ -21,11 +22,12 @@ const moodColors = {
     'Grateful': 'bg-orange-50 text-orange-900 border-orange-100 dark:bg-orange-950 dark:text-orange-100 dark:border-orange-900',
 };
 
-const ReplyQuoteModal = ({ quote, onClose }) => {
+const ReplyQuoteModal = ({ quote, onClose, onCreateNew }) => {
   const { currentIdentity, identities } = useIdentity();
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
   const navigate = useNavigate();
+  const { mutate } = useSWRConfig();
 
   const isOwner = identities?.some(id => id._id === quote?.identity?._id);
 
@@ -67,10 +69,9 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
     try {
         await axios.delete(`/quotes/${quote._id}`);
         toast.success("Quote deleted");
+        mutate('/quotes/feed');
+        mutate(key => typeof key === 'string' && key.startsWith('/profile/'), undefined, { revalidate: true });
         onClose();
-        // Assuming global mutate or refresh happens via SWR elsewhere,
-        // or we rely on the widget to refresh next poll.
-        window.location.reload(); // Quick refresh to update widgets
     } catch (err) {
         toast.error("Failed to delete");
     }
@@ -136,13 +137,22 @@ const ReplyQuoteModal = ({ quote, onClose }) => {
             {/* Bottom: Action Buttons */}
             <div>
                 {isOwner ? (
-                     <button
-                        onClick={handleDelete}
-                        className="w-full py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-bold transition flex items-center justify-center space-x-2"
-                    >
-                        <span className="h-5 w-5 rounded-full border-2 border-current flex items-center justify-center font-serif font-bold text-[10px]">✕</span>
-                        <span>Delete Quote</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => { onClose(); if (onCreateNew) onCreateNew(); }}
+                            className="py-3 bg-background border border-soft-border text-text hover:bg-surface rounded-xl font-bold transition flex items-center justify-center space-x-2 active:scale-95"
+                        >
+                            <Plus size={16} />
+                            <span>New Quote</span>
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="py-3 bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 rounded-xl font-bold transition flex items-center justify-center space-x-2 active:scale-95"
+                        >
+                            <Trash2 size={16} />
+                            <span>Delete</span>
+                        </button>
+                    </div>
                 ) : (
                     <div className="flex gap-2">
                         <div className="flex-1 bg-surface rounded-xl border border-soft-border p-1 pl-3 flex items-center shadow-sm focus-within:ring-2 ring-slate-200 dark:ring-slate-700 transition-all">
