@@ -51,7 +51,7 @@ const Landing = () => {
           <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-secondary/10 rounded-full blur-[120px] animate-breath delay-1000" />
       </div>
 
-      <nav className="relative z-10 container mx-auto px-6 py-8 flex justify-between items-center">
+      <nav className="relative z-10 w-full px-6 md:px-12 py-8 flex justify-between items-center">
           <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-surface rounded-lg flex items-center justify-center shadow-md border border-soft-border overflow-hidden p-1">
                   <img src="/favicon.png" alt="Logo" className="w-full h-full object-contain" />
@@ -75,7 +75,7 @@ const Landing = () => {
           </div>
       </nav>
 
-      <div className="relative z-10 container mx-auto px-6 pt-20 pb-32 text-center">
+      <div className="relative z-10 w-full px-6 md:px-12 pt-20 pb-32 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -130,7 +130,7 @@ const Landing = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="mt-20 max-w-5xl mx-auto"
+                className="mt-20 max-w-7xl mx-auto"
             >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
                     {/* Activity Graph */}
@@ -221,7 +221,7 @@ const Landing = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-20 max-w-6xl mx-auto"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-20 max-w-screen-2xl mx-auto"
           >
               {[
                   { icon: Ghost, title: "Total Anonymity", desc: "Post anonymously with our Incognito identity system. Your secrets are safe." },
