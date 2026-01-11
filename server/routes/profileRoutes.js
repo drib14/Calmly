@@ -72,20 +72,27 @@ router.get('/:handle', protect, async (req, res) => {
     };
 
     // Match Criteria
-    // Owner sees all non-deleted posts. Visitors see public posts.
-    // Ensure we are matching strictly by identity._id to avoid any population artifacts
+    // Owner sees all non-deleted posts from THIS identity.
+    // ADDITIONALLY: If Owner and this is the REAL identity, show posts from ALL linked identities (including Anonymous).
+    // Visitors see public posts only from THIS identity.
 
-    // Filtering:
-    // 1. Regular Feed:
-    //    - Owner: All posts (except hidden ones which go to archive, unless we want to show them everywhere? Prompt says "all hidden posts must be listed in archive tab". Usually they are hidden from main feed).
-    //    - Visitor: Public posts, not hidden.
-    // 2. Archive Feed (Owner only):
-    //    - Hidden posts.
+    let baseMatch;
 
-    const baseMatch = {
-        identity: new mongoose.Types.ObjectId(identity._id),
-        deletedAt: null
-    };
+    if (isOwner && identity.type === 'real') {
+         // Fetch all identities belonging to this user
+         const userIdentities = await Identity.find({ user: req.user._id }).select('_id');
+         const identityIds = userIdentities.map(i => i._id);
+
+         baseMatch = {
+             identity: { $in: identityIds },
+             deletedAt: null
+         };
+    } else {
+         baseMatch = {
+             identity: new mongoose.Types.ObjectId(identity._id),
+             deletedAt: null
+         };
+    }
 
     const regularPostMatch = isOwner
         ? { ...baseMatch, hidden: { $ne: true } }
@@ -97,17 +104,13 @@ router.get('/:handle', protect, async (req, res) => {
 
     // Get Authored Posts
     const authoredPosts = await fetchWithComments(regularPostMatch);
+
     let archives = [];
     if (archiveMatch) {
         archives = await fetchWithComments(archiveMatch);
     }
 
     // Get Reposted Posts (Where this identity is in the reposts array)
-    // Reposts should probably respect visibility of the original post?
-    // Usually reposts are public actions. We'll filter public visibility for the original post unless owner.
-    // Actually, reposts array contains identities. We find posts where 'reposts.identity' has this ID.
-    // And the post itself must be public (or visible to viewer).
-    // For simplicity/safety, usually only public posts are repostable/visible.
     const repostMatch = {
         'reposts.identity': identity._id,
         visibility: 'public',
