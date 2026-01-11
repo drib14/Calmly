@@ -25,6 +25,15 @@ const fontOptions = [
     { value: 'font-[system-ui]', label: 'System', fontClass: 'font-[system-ui]' },
 ];
 
+const placeholders = [
+    "What's on your mind?",
+    "Share a fleeting thought...",
+    "How are you feeling?",
+    "A quote for the day...",
+    "Whisper into the void...",
+    "Something to remember..."
+];
+
 const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
   const { mutate } = useSWRConfig();
   const [content, setContent] = useState('');
@@ -34,6 +43,7 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
   const [duration, setDuration] = useState(24);
   const [customDuration, setCustomDuration] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [placeholder] = useState(() => placeholders[Math.floor(Math.random() * placeholders.length)]);
 
   const handleCreate = async () => {
       if (!content.trim()) return;
@@ -104,7 +114,7 @@ const CreateQuoteModal = ({ isOpen, onClose, identityId }) => {
             <textarea
                 className="w-full bg-background border border-soft-border rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-text resize-none"
                 rows="2"
-                placeholder="What's on your mind? (Max 60 chars)"
+                placeholder={`${placeholder} (Max 60 chars)`}
                 maxLength={60}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

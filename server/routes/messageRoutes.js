@@ -227,6 +227,8 @@ router.put('/:id', protect, async (req, res) => {
 // Mark Conversation as Read
 router.put('/read', protect, async (req, res) => {
     const { otherIdentityId } = req.body;
+    if (!otherIdentityId) return res.status(400).json({ message: 'Other identity ID required' });
+
     try {
         const userIdentities = await Identity.find({ user: req.user._id });
         const identityIds = userIdentities.map(i => i._id);
@@ -282,6 +284,7 @@ router.delete('/:id', protect, async (req, res) => {
         } else {
             // Delete for me
             const myId = isSender ? message.sender : message.recipient;
+            if (!message.deletedBy) message.deletedBy = [];
             if (!message.deletedBy.includes(myId)) {
                 message.deletedBy.push(myId);
                 await message.save();

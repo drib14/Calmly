@@ -51,7 +51,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState('moments');
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
-  if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
+  if (error || !data) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
   const { identity, posts, quote, archives } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
@@ -256,7 +256,11 @@ const Profile = () => {
                     size="xl"
                     onQuoteClick={() => {
                         if (isOwner) {
-                            setShowMyQuoteOptions(true);
+                            if (quote) {
+                                setShowMyQuoteOptions(true);
+                            } else {
+                                setShowQuoteModal(true);
+                            }
                         } else if (quote) {
                             setReplyQuote(quote);
                         }
