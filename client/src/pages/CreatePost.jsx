@@ -11,6 +11,7 @@ import PillSelection from '../components/PillSelection';
 import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
 import FeedbackModal from '../components/FeedbackModal';
+import ColorWallpaperModal from '../components/ColorWallpaperModal';
 
 const moods = [
     { value: 'Melancholy', label: 'Melancholy', icon: <CloudRain size={16} /> },
@@ -88,10 +89,11 @@ const CreatePost = () => {
   const [showDeleteIdentityModal, setShowDeleteIdentityModal] = useState(false);
   const [identityToDelete, setIdentityToDelete] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showStyleModal, setShowStyleModal] = useState(false);
 
   // Specialized Fields
   const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
-  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
+  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left', texture: '', textColor: '', backgroundImage: '' });
 
   useEffect(() => {
       if (settings) {
@@ -276,6 +278,26 @@ const CreatePost = () => {
       }
   };
 
+  const handleStyleSelect = (style) => {
+    if (type === 'letter') {
+      if (style.type === 'texture') {
+        setLetterFields({ ...letterFields, paperType: style.id });
+      } else if (style.type === 'color') {
+        // Letters are mostly texture based, but we could map colors if desired.
+        // For now, only textures are supported for letters in the UI.
+        toast.error("Please select a texture for letters.");
+      }
+    } else if (type === 'poetry') {
+      if (style.type === 'color') {
+        setPoemStyle({ ...poemStyle, backgroundColor: style.class, texture: '', backgroundImage: '', textColor: '' });
+      } else if (style.type === 'texture') {
+        setPoemStyle({ ...poemStyle, backgroundColor: style.class, texture: style.texture, backgroundImage: '', textColor: '' });
+      } else if (style.type === 'image') {
+        setPoemStyle({ ...poemStyle, backgroundImage: style.url, backgroundColor: 'bg-black/50', texture: '', textColor: style.textClass });
+      }
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto bg-surface p-8 rounded-lg shadow-sm">
       <h2 className="text-2xl font-serif mb-6 text-text">Share a Moment</h2>
@@ -360,15 +382,12 @@ const CreatePost = () => {
                 )}
 
                 <div className="flex justify-end space-x-2 mb-2 relative z-10">
-                    {paperStyles.map(s => (
-                        <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setLetterFields({...letterFields, paperType: s.id})}
-                            className={`w-6 h-6 rounded-full border border-slate-300 ${s.class.split(' ')[0]} ${letterFields.paperType === s.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
-                            title={s.label}
-                        />
-                    ))}
+                   <button
+                        type="button"
+                        onClick={() => setShowStyleModal(true)}
+                        className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 shadow-sm border border-white/20 hover:scale-105 transition-transform"
+                        title="Change Style"
+                    />
                 </div>
                 <input
                     type="text"
@@ -393,17 +412,30 @@ const CreatePost = () => {
                 />
             </div>
         ) : type === 'poetry' ? (
-            <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
-                <div className="flex space-x-4 mb-4 justify-between items-center">
+            <div
+                className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${poemStyle.backgroundColor}`}
+                style={poemStyle.backgroundImage ? { backgroundImage: `url(${poemStyle.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+            >
+                {/* Texture overlay */}
+                {poemStyle.texture && (
+                     <div
+                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                        style={{ backgroundImage: `url(${poemStyle.texture})` }}
+                     ></div>
+                )}
+                {/* Overlay for images to ensure text readability */}
+                {poemStyle.backgroundImage && (
+                    <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+                )}
+
+                <div className="flex space-x-4 mb-4 justify-between items-center relative z-10">
                     <div className="flex space-x-2 flex-wrap gap-y-2">
-                        {poemBackgrounds.map(bg => (
-                            <button
-                                key={bg.id}
-                                type="button"
-                                onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
-                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.preview} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
-                            />
-                        ))}
+                         <button
+                            type="button"
+                            onClick={() => setShowStyleModal(true)}
+                            className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 shadow-sm border border-white/20 hover:scale-105 transition-transform"
+                            title="Change Style"
+                        />
                     </div>
                     <div className="flex flex-col space-y-2">
                         {/* Font Selection */}
@@ -430,14 +462,14 @@ const CreatePost = () => {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 ${poemStyle.align} ${poemStyle.font}`}
+                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 relative z-10 ${poemStyle.align} ${poemStyle.font} ${poemStyle.textColor || ''}`}
                     placeholder="Untitled Poem"
                 />
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={10}
-                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} ${poemStyle.align} placeholder-current/40`}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none relative z-10 ${poemStyle.font} ${poemStyle.align} placeholder-current/40 ${poemStyle.textColor || ''}`}
                     placeholder="Verses go here..."
                 />
             </div>
@@ -531,6 +563,14 @@ const CreatePost = () => {
             setShowFeedbackModal(false);
             navigate('/feed');
         }}
+      />
+
+      {/* Style Modal */}
+      <ColorWallpaperModal
+        isOpen={showStyleModal}
+        onClose={() => setShowStyleModal(false)}
+        onSelect={handleStyleSelect}
+        currentType={type}
       />
     </div>
   );

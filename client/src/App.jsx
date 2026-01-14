@@ -104,11 +104,12 @@ function App() {
                           </ProtectedRoute>
                         } />
 
-                        <Route path="/chat" element={
+                        <Route path="/messages" element={
                           <ProtectedRoute>
                             <Messages />
                           </ProtectedRoute>
                         } />
+                        <Route path="/chat" element={<Navigate to="/messages" replace />} />
 
                         <Route path="/profile/:handle" element={
                           <ProtectedRoute>

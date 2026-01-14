@@ -251,14 +251,14 @@ router.put('/read', protect, async (req, res) => {
 router.delete('/:id', protect, async (req, res) => {
     const { mode } = req.query; // 'me' or 'everyone'
     try {
-        const message = await Message.findById(req.params.id);
+        const message = await Message.findById(req.params.id).populate('recipient');
         if (!message) return res.status(404).json({ message: 'Message not found' });
 
         const userIdentities = await Identity.find({ user: req.user._id });
         const identityIds = userIdentities.map(i => i._id.toString());
 
         const isSender = identityIds.includes(message.sender.toString());
-        const isRecipient = identityIds.includes(message.recipient.toString());
+        const isRecipient = identityIds.includes(message.recipient._id.toString());
 
         if (!isSender && !isRecipient) {
             return res.status(403).json({ message: 'Not authorized' });
@@ -276,14 +276,20 @@ router.delete('/:id', protect, async (req, res) => {
             await message.save();
 
             // Trigger Pusher update
-            const channel1 = `user-${message.recipient.user || message.recipient}`; // Need user ID, might need populate or simpler assumption
-            // Actually recipient is ID. We need to fetch recipient to get User ID for Pusher channel if not populated.
-            // But 'new_message' event might be enough if frontend handles update?
-            // Or 'update_message' event?
-            // For now, simple save.
+             try {
+                // Determine channel for recipient
+                // Recipient is populated Identity. Identity has 'user' field which is ObjectId.
+                if (message.recipient.user) {
+                   await pusher.trigger(`user-${message.recipient.user}`, 'message_update', { messageId: message._id, isUnsent: true });
+                }
+            } catch (pErr) { console.error("Pusher delete error:", pErr); }
+
         } else {
             // Delete for me
-            const myId = isSender ? message.sender : message.recipient;
+            // If I am sender, myId is message.sender
+            // If I am recipient, myId is message.recipient._id
+            const myId = isSender ? message.sender : message.recipient._id;
+
             if (!message.deletedBy) message.deletedBy = [];
             if (!message.deletedBy.includes(myId)) {
                 message.deletedBy.push(myId);

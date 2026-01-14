@@ -430,14 +430,30 @@ const PostCard = ({ post, mutate }) => {
               <div
                 onClick={() => handleTap()}
                 className={clsx(
-                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden cursor-pointer",
+                    "p-6 md:p-10 rounded-2xl mb-4 shadow-inner min-h-[200px] flex flex-col justify-center overflow-hidden cursor-pointer relative",
                     post.style?.backgroundColor,
                     post.style?.align,
-                    post.style?.font
+                    post.style?.font,
+                    post.style?.textColor
                 )}
+                style={post.style?.backgroundImage ? { backgroundImage: `url(${post.style.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
               >
-                  {post.title && <h3 className="text-2xl font-bold mb-6 opacity-80">{post.title}</h3>}
-                  <div className="whitespace-pre-wrap leading-loose text-lg opacity-90">{post.content}</div>
+                  {/* Texture overlay */}
+                  {post.style?.texture && (
+                      <div
+                          className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                          style={{ backgroundImage: `url(${post.style.texture})` }}
+                      ></div>
+                  )}
+                  {/* Overlay for images to ensure text readability */}
+                  {post.style?.backgroundImage && (
+                      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+                  )}
+
+                  <div className="relative z-10">
+                    {post.title && <h3 className="text-2xl font-bold mb-6 opacity-90">{post.title}</h3>}
+                    <div className="whitespace-pre-wrap leading-loose text-lg opacity-90">{post.content}</div>
+                  </div>
               </div>
           ) : (
               <>

@@ -14,6 +14,8 @@ import QuotesWidget from '../components/QuotesWidget';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ForwardModal from '../components/ForwardModal';
+import DeleteMessageOptionsModal from '../components/DeleteMessageOptionsModal';
 
 // Utility to format bytes
 const formatBytes = (bytes, decimals = 2) => {
@@ -502,7 +504,7 @@ const Messages = () => {
                                                       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute top-full right-0 z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]">
                                                           <button onClick={() => handleReply(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Reply size={12} /> <span>Reply</span></button>
                                                           {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
-                                                          <button onClick={() => handleDeleteMessage(msg._id)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>
+                                                          <button onClick={() => initiateDeleteMessage(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>
                                                       </motion.div>
                                                   )}
                                               </AnimatePresence>
@@ -511,30 +513,38 @@ const Messages = () => {
 
                                       {/* Message Content */}
                                       <div className={`space-y-1 w-full`}>
-                                          {msg.replyToMessage && (
-                                              <div className="mb-1 opacity-70">
-                                                  <div className={clsx(
-                                                      "p-2 rounded-xl border text-xs relative flex items-center space-x-2",
-                                                      isMe ? "bg-black/10 border-black/5 text-text" : "bg-surface border-soft-border text-text"
-                                                  )}>
-                                                      <CornerUpLeft size={10} />
-                                                      <div className="truncate">
-                                                          <span className="font-bold mr-1">{msg.replyToMessage.sender}:</span>
-                                                          <span>{msg.replyToMessage.content}</span>
+                                          {msg.isUnsent ? (
+                                              <div className={clsx("p-3 rounded-2xl text-xs italic border", isMe ? "bg-surface/50 border-soft-border text-secondary" : "bg-surface border-soft-border text-secondary")}>
+                                                  Message unsent
+                                              </div>
+                                          ) : (
+                                              <>
+                                                  {msg.replyToMessage && (
+                                                      <div className="mb-1 opacity-70">
+                                                          <div className={clsx(
+                                                              "p-2 rounded-xl border text-xs relative flex items-center space-x-2",
+                                                              isMe ? "bg-black/10 border-black/5 text-text" : "bg-surface border-soft-border text-text"
+                                                          )}>
+                                                              <CornerUpLeft size={10} />
+                                                              <div className="truncate">
+                                                                  <span className="font-bold mr-1">{msg.replyToMessage.sender}:</span>
+                                                                  <span>{msg.replyToMessage.content}</span>
+                                                              </div>
+                                                          </div>
                                                       </div>
-                                                  </div>
-                                              </div>
+                                                  )}
+                                                  {msg.media?.map((m, i) => (
+                                                      <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
+                                                          {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
+                                                          {m.type === 'video' && <MediaPlayer src={m.url} />}
+                                                          {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium text-text truncate">{m.name}</p><p className="text-[10px] text-secondary">{formatBytes(m.size)}</p></div>}
+                                                      </div>
+                                                  ))}
+                                                  {msg.sharedPost && <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>{renderSharedPost(msg.sharedPost, isMe)}</div>}
+                                                  {msg.replyToQuote && <div className="mb-1"><div className={clsx("p-3 rounded-2xl border mb-1 max-w-sm relative", isMe ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text" : "bg-white dark:bg-slate-900 border-soft-border text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="text-secondary" /></div><div><p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600"><p className="text-sm font-serif italic text-text/80 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div></div>}
+                                                  {msg.content && <div className={clsx("p-4 text-sm shadow-sm rounded-2xl", isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border")}><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
+                                              </>
                                           )}
-                                          {msg.media?.map((m, i) => (
-                                              <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
-                                                  {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
-                                                  {m.type === 'video' && <MediaPlayer src={m.url} />}
-                                                  {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium text-text truncate">{m.name}</p><p className="text-[10px] text-secondary">{formatBytes(m.size)}</p></div>}
-                                              </div>
-                                          ))}
-                                          {msg.sharedPost && <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>{renderSharedPost(msg.sharedPost, isMe)}</div>}
-                                          {msg.replyToQuote && <div className="mb-1"><div className={clsx("p-3 rounded-2xl border mb-1 max-w-sm relative", isMe ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text" : "bg-white dark:bg-slate-900 border-soft-border text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="text-secondary" /></div><div><p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600"><p className="text-sm font-serif italic text-text/80 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div></div>}
-                                          {msg.content && <div className={clsx("p-4 text-sm shadow-sm rounded-2xl", isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border")}><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
                                           <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>{formatShortTime(msg.createdAt)}</div>
                                       </div>
 
