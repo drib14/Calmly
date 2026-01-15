@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { useIdentity } from '../context/IdentityContext';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useClickOutside } from '../hooks/useClickOutside';
-import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy, Unlock, Flag } from 'lucide-react';
+import { Send, Image, Mic, User, Plus, X, Search, FileText, Download, ChevronLeft, Shield, Lock, Reply, CornerUpLeft, Layers, MoreVertical, Trash2, ShieldAlert, BellOff, Copy, Unlock, Flag, Edit2 } from 'lucide-react';
 import ReportMessageModal from '../components/ReportMessageModal';
 import { formatShortTime } from '../utils/dateUtils';
 import clsx from 'clsx';
@@ -503,6 +503,7 @@ const Messages = () => {
                                                   {activeMenuId === `msg-${msg._id}` && (
                                                       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="absolute top-full right-0 z-30 bg-surface border border-soft-border shadow-lg rounded-xl p-1 min-w-[120px]">
                                                           <button onClick={() => handleReply(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Reply size={12} /> <span>Reply</span></button>
+                                                          {msg.content && <button onClick={() => handleEdit(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Edit2 size={12} /> <span>Edit</span></button>}
                                                           {msg.content && <button onClick={() => handleCopy(msg.content)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-text hover:bg-background rounded-lg text-left"><Copy size={12} /> <span>Copy</span></button>}
                                                           <button onClick={() => initiateDeleteMessage(msg)} className="flex items-center space-x-2 w-full px-3 py-2 text-xs font-medium text-red-500 hover:bg-background rounded-lg text-left"><Trash2 size={12} /> <span>Delete</span></button>
                                                       </motion.div>
@@ -518,32 +519,37 @@ const Messages = () => {
                                                   Message unsent
                                               </div>
                                           ) : (
-                                              <>
+                                              <div className={clsx("rounded-2xl overflow-hidden shadow-sm border", isMe ? "bg-accent text-white rounded-br-none border-transparent" : "bg-surface text-text rounded-bl-none border-soft-border")}>
+                                                  {/* Reply Preview integrated inside bubble */}
                                                   {msg.replyToMessage && (
-                                                      <div className="mb-1 opacity-70">
-                                                          <div className={clsx(
-                                                              "p-2 rounded-xl border text-xs relative flex items-center space-x-2",
-                                                              isMe ? "bg-black/10 border-black/5 text-text" : "bg-surface border-soft-border text-text"
-                                                          )}>
-                                                              <CornerUpLeft size={10} />
-                                                              <div className="truncate">
-                                                                  <span className="font-bold mr-1">{msg.replyToMessage.sender}:</span>
-                                                                  <span>{msg.replyToMessage.content}</span>
-                                                              </div>
-                                                          </div>
+                                                      <div className={clsx("p-2 mx-2 mt-2 rounded-lg text-xs flex flex-col mb-1 border-l-4", isMe ? "bg-black/20 border-white/40 text-white/90" : "bg-black/5 border-slate-400 text-text/80")}>
+                                                           <div className="flex items-center space-x-1 mb-0.5">
+                                                                <CornerUpLeft size={10} className="opacity-70" />
+                                                                <span className="font-bold">{msg.replyToMessage.sender}</span>
+                                                           </div>
+                                                           <span className="truncate opacity-80">{msg.replyToMessage.content}</span>
                                                       </div>
                                                   )}
-                                                  {msg.media?.map((m, i) => (
-                                                      <div key={i} className={clsx("overflow-hidden shadow-sm border", m.type === 'file' ? "p-3 rounded-2xl flex items-center space-x-3 bg-surface border-soft-border" : "rounded-2xl border-transparent")}>
-                                                          {m.type === 'image' && <img src={m.url} className="max-w-full rounded-2xl" />}
-                                                          {m.type === 'video' && <MediaPlayer src={m.url} />}
-                                                          {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium text-text truncate">{m.name}</p><p className="text-[10px] text-secondary">{formatBytes(m.size)}</p></div>}
+
+                                                  {/* Media */}
+                                                  {msg.media?.length > 0 && (
+                                                      <div className="space-y-1">
+                                                          {msg.media.map((m, i) => (
+                                                              <div key={i} className={clsx("overflow-hidden", m.type === 'file' && "p-3 flex items-center space-x-3")}>
+                                                                  {m.type === 'image' && <img src={m.url} className="w-full object-cover" />}
+                                                                  {m.type === 'video' && <MediaPlayer src={m.url} />}
+                                                                  {m.type === 'file' && <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{m.name}</p><p className="text-[10px] opacity-70">{formatBytes(m.size)}</p></div>}
+                                                              </div>
+                                                          ))}
                                                       </div>
-                                                  ))}
-                                                  {msg.sharedPost && <div className={clsx("mb-1", isMe ? "ml-auto" : "mr-auto")}>{renderSharedPost(msg.sharedPost, isMe)}</div>}
-                                                  {msg.replyToQuote && <div className="mb-1"><div className={clsx("p-3 rounded-2xl border mb-1 max-w-sm relative", isMe ? "bg-slate-100 dark:bg-slate-800 border-transparent text-text" : "bg-white dark:bg-slate-900 border-soft-border text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="text-secondary" /></div><div><p className="text-[10px] font-bold text-secondary uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-slate-300 dark:border-slate-600"><p className="text-sm font-serif italic text-text/80 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div></div>}
-                                                  {msg.content && <div className={clsx("p-4 text-sm shadow-sm rounded-2xl", isMe ? "bg-accent text-white rounded-br-none" : "bg-surface text-text rounded-bl-none border border-soft-border")}><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
-                                              </>
+                                                  )}
+
+                                                  {msg.sharedPost && <div className="p-2">{renderSharedPost(msg.sharedPost, isMe)}</div>}
+
+                                                  {msg.replyToQuote && <div className={clsx("mx-2 mt-2 p-3 rounded-xl border mb-1 relative", isMe ? "bg-white/10 border-white/20 text-white" : "bg-slate-100 dark:bg-slate-800 border-transparent text-text")}><div className="flex items-start space-x-2"><div className="mt-0.5"><CornerUpLeft size={12} className="opacity-70" /></div><div><p className="text-[10px] font-bold opacity-70 uppercase tracking-wide mb-1">Replying to Note</p><div className="pl-2 border-l-2 border-current/30"><p className="text-sm font-serif italic opacity-90 line-clamp-3">"{msg.replyToQuote.content}"</p></div></div></div></div>}
+
+                                                  {msg.content && <div className="p-3 px-4 text-sm"><p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>}
+                                              </div>
                                           )}
                                           <div className={`text-[9px] mt-1 text-right ${isMe ? 'opacity-50' : 'text-secondary'}`}>{formatShortTime(msg.createdAt)}</div>
                                       </div>
