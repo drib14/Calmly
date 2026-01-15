@@ -68,10 +68,11 @@ const alignOptions = [
 ];
 
 const CreatePost = () => {
-  const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
+  const { identities, currentIdentity, createPseudonym, deleteIdentity } = useIdentity();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
+  const [postingIdentityId, setPostingIdentityId] = useState(currentIdentity?._id);
   const [type, setType] = useState('confession');
   const [mood, setMood] = useState('Neutral');
   const [content, setContent] = useState('');
@@ -93,7 +94,13 @@ const CreatePost = () => {
 
   // Specialized Fields
   const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
-  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left', texture: '', textColor: '', backgroundImage: '' });
+  const [postStyle, setPostStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left', texture: '', textColor: '', backgroundImage: '' });
+
+  useEffect(() => {
+      if (currentIdentity && !postingIdentityId) {
+          setPostingIdentityId(currentIdentity._id);
+      }
+  }, [currentIdentity]);
 
   useEffect(() => {
       if (settings) {
@@ -165,7 +172,7 @@ const CreatePost = () => {
             toast.error("Failed to save journal entry");
         }
     } else {
-        if (!currentIdentity) return toast.error("Select an identity");
+        if (!postingIdentityId) return toast.error("Select an identity");
 
         setUploading(true);
 
@@ -203,14 +210,14 @@ const CreatePost = () => {
             }
 
             const postData = {
-                identityId: currentIdentity._id,
+                identityId: postingIdentityId,
                 type,
                 mood,
                 content,
                 visibility,
                 title: ((type === 'poetry' || type === 'letter') && title) ? title : undefined,
                 letterFields: type === 'letter' ? letterFields : undefined,
-                style: type === 'poetry' ? poemStyle : undefined,
+                style: (type === 'poetry' || type === 'confession') ? postStyle : undefined,
                 media: uploadedMedia
             };
 
@@ -283,17 +290,15 @@ const CreatePost = () => {
       if (style.type === 'texture') {
         setLetterFields({ ...letterFields, paperType: style.id });
       } else if (style.type === 'color') {
-        // Letters are mostly texture based, but we could map colors if desired.
-        // For now, only textures are supported for letters in the UI.
         toast.error("Please select a texture for letters.");
       }
-    } else if (type === 'poetry') {
+    } else if (type === 'poetry' || type === 'confession') {
       if (style.type === 'color') {
-        setPoemStyle({ ...poemStyle, backgroundColor: style.class, texture: '', backgroundImage: '', textColor: '' });
+        setPostStyle({ ...postStyle, backgroundColor: style.class, texture: '', backgroundImage: '', textColor: '' });
       } else if (style.type === 'texture') {
-        setPoemStyle({ ...poemStyle, backgroundColor: style.class, texture: style.texture, backgroundImage: '', textColor: '' });
+        setPostStyle({ ...postStyle, backgroundColor: style.class, texture: style.texture, backgroundImage: '', textColor: '' });
       } else if (style.type === 'image') {
-        setPoemStyle({ ...poemStyle, backgroundImage: style.url, backgroundColor: 'bg-black/50', texture: '', textColor: style.textClass });
+        setPostStyle({ ...postStyle, backgroundImage: style.url, backgroundColor: 'bg-black/50', texture: '', textColor: style.textClass });
       }
     }
   };
@@ -309,8 +314,8 @@ const CreatePost = () => {
               {identities.map(id => (
                   <div key={id._id} className="relative group">
                       <button
-                        onClick={() => selectIdentity(id._id)}
-                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
+                        onClick={() => setPostingIdentityId(id._id)}
+                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${postingIdentityId === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
                       >
                           <Avatar identity={id} size="sm" />
                           <div className="flex flex-col items-start leading-none">
@@ -413,18 +418,18 @@ const CreatePost = () => {
             </div>
         ) : type === 'poetry' ? (
             <div
-                className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${poemStyle.backgroundColor}`}
-                style={poemStyle.backgroundImage ? { backgroundImage: `url(${poemStyle.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${postStyle.backgroundColor}`}
+                style={postStyle.backgroundImage ? { backgroundImage: `url(${postStyle.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
             >
                 {/* Texture overlay */}
-                {poemStyle.texture && (
+                {postStyle.texture && (
                      <div
                         className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
-                        style={{ backgroundImage: `url(${poemStyle.texture})` }}
+                        style={{ backgroundImage: `url(${postStyle.texture})` }}
                      ></div>
                 )}
                 {/* Overlay for images to ensure text readability */}
-                {poemStyle.backgroundImage && (
+                {postStyle.backgroundImage && (
                     <div className="absolute inset-0 bg-black/30 pointer-events-none" />
                 )}
 
@@ -442,8 +447,8 @@ const CreatePost = () => {
                         <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm">
                              <SelectionCard
                                 options={fontOptions}
-                                value={poemStyle.font}
-                                onChange={(val) => setPoemStyle({...poemStyle, font: val})}
+                                value={postStyle.font}
+                                onChange={(val) => setPostStyle({...postStyle, font: val})}
                                 columns={2}
                                 layout="grid"
                              />
@@ -452,8 +457,8 @@ const CreatePost = () => {
                          <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm flex justify-center">
                             <PillSelection
                                 options={alignOptions}
-                                value={poemStyle.align}
-                                onChange={(val) => setPoemStyle({...poemStyle, align: val})}
+                                value={postStyle.align}
+                                onChange={(val) => setPostStyle({...postStyle, align: val})}
                             />
                         </div>
                     </div>
@@ -462,25 +467,49 @@ const CreatePost = () => {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 relative z-10 ${poemStyle.align} ${poemStyle.font} ${poemStyle.textColor || ''}`}
+                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 relative z-10 ${postStyle.align} ${postStyle.font} ${postStyle.textColor || ''}`}
                     placeholder="Untitled Poem"
                 />
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={10}
-                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none relative z-10 ${poemStyle.font} ${poemStyle.align} placeholder-current/40 ${poemStyle.textColor || ''}`}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none relative z-10 ${postStyle.font} ${postStyle.align} placeholder-current/40 ${postStyle.textColor || ''}`}
                     placeholder="Verses go here..."
                 />
             </div>
         ) : (
-            <div>
+            <div
+                className={`p-4 rounded-lg transition-colors shadow-sm relative overflow-hidden ${postStyle.backgroundColor !== 'bg-white' ? postStyle.backgroundColor : 'bg-surface'} ${postStyle.backgroundColor === 'bg-white' ? 'border border-soft-border' : ''}`}
+                style={postStyle.backgroundImage ? { backgroundImage: `url(${postStyle.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+            >
+                 {/* Texture overlay */}
+                 {postStyle.texture && (
+                     <div
+                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                        style={{ backgroundImage: `url(${postStyle.texture})` }}
+                     ></div>
+                )}
+                {/* Overlay for images */}
+                {postStyle.backgroundImage && (
+                    <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+                )}
+
+                <div className="flex justify-end mb-2 relative z-10">
+                    <button
+                        type="button"
+                        onClick={() => setShowStyleModal(true)}
+                        className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 shadow-sm border border-white/20 hover:scale-105 transition-transform"
+                        title="Change Style"
+                    />
+                </div>
+
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     required={files.length === 0}
                     rows={6}
-                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none font-serif text-lg"
+                    className={`w-full bg-transparent border-none focus:ring-0 font-serif text-lg resize-none relative z-10 placeholder-current/50 ${postStyle.textColor || 'text-text'}`}
                     placeholder="Write here..."
                 />
             </div>

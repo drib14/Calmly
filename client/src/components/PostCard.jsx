@@ -456,13 +456,35 @@ const PostCard = ({ post, mutate }) => {
                   </div>
               </div>
           ) : (
-              <>
-                  {post.title && <h3 className="text-lg font-serif font-bold mb-2 text-text">{post.title}</h3>}
-                  <div
-                      onClick={() => handleTap()}
-                      className="text-text leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4 cursor-pointer"
-                  >
-                      {post.content}
+              <div
+                className={clsx(
+                    "relative",
+                    post.style?.backgroundColor !== 'bg-white' && "p-6 rounded-xl mb-4 shadow-sm overflow-hidden",
+                    post.style?.backgroundColor !== 'bg-white' && post.style?.backgroundColor,
+                    post.style?.textColor
+                )}
+                style={post.style?.backgroundImage ? { backgroundImage: `url(${post.style.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+              >
+                  {/* Texture overlay */}
+                  {post.style?.texture && (
+                      <div
+                          className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                          style={{ backgroundImage: `url(${post.style.texture})` }}
+                      ></div>
+                  )}
+                  {/* Overlay for images */}
+                  {post.style?.backgroundImage && (
+                      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+                  )}
+
+                  <div className="relative z-10">
+                    {post.title && <h3 className="text-lg font-serif font-bold mb-2 opacity-90">{post.title}</h3>}
+                    <div
+                        onClick={() => handleTap()}
+                        className="leading-relaxed whitespace-pre-wrap font-serif text-[15px] mb-4 cursor-pointer opacity-90"
+                    >
+                        {post.content}
+                    </div>
                   </div>
 
                   {/* Media Display */}
