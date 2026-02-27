@@ -26,6 +26,9 @@ const postSchema = new mongoose.Schema({
       backgroundColor: String, // For poetry
       font: String, // For poetry
       align: String, // For poetry
+      texture: String, // For paper texture URL
+      textColor: String, // For text color class
+      backgroundImage: String, // For image backgrounds
   },
   mood: {
     type: String,
