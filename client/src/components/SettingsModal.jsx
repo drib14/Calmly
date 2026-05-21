@@ -18,11 +18,17 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
   // Specific state for journal lock
   const [journalPassword, setJournalPassword] = useState('');
 
+  // Specific state for support
+  const [supportMessage, setSupportMessage] = useState('');
+  const [supportEmail, setSupportEmail] = useState('');
+
   useEffect(() => {
       if (isOpen && setting) {
           setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
           setJournalPassword('');
           setFormData({});
+          setSupportMessage('');
+          setSupportEmail('');
 
           if (setting.type === 'toggle') {
               setToggleState(!!currentValue);
@@ -147,6 +153,22 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
       onClose();
   };
 
+  const handleSupportSubmit = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      try {
+          // Simulate support API call
+          await new Promise(r => setTimeout(r, 1000));
+          // In real app: axios.post('/support', { email: supportEmail, message: supportMessage });
+          toast.success("Support request sent. We'll be in touch.");
+          onClose();
+      } catch (err) {
+          toast.error("Failed to send request");
+      } finally {
+          setLoading(false);
+      }
+  };
+
   const renderContent = () => {
       return (
         <>
@@ -238,6 +260,41 @@ const SettingsModal = ({ isOpen, onClose, setting, onUpdate, currentValue }) => 
                       </button>
                   </div>
               );
+
+                case 'contact_support':
+                    return (
+                        <form onSubmit={handleSupportSubmit} className="space-y-4 text-left">
+                           <div>
+                               <label className="text-xs font-bold text-secondary uppercase">Contact Email</label>
+                               <input
+                                   type="email"
+                                   required
+                                   className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text"
+                                   placeholder="Your email address"
+                                   value={supportEmail}
+                                   onChange={e => setSupportEmail(e.target.value)}
+                               />
+                           </div>
+                           <div>
+                               <label className="text-xs font-bold text-secondary uppercase">How can we help?</label>
+                               <textarea
+                                   required
+                                   rows="4"
+                                   className="w-full border border-soft-border rounded-xl p-3 mt-1 bg-background text-text resize-none"
+                                   placeholder="Describe your issue or suggestion..."
+                                   value={supportMessage}
+                                   onChange={e => setSupportMessage(e.target.value)}
+                               />
+                           </div>
+                           <button
+                               type="submit"
+                               disabled={loading}
+                               className="w-full bg-slate-900 text-white py-3 rounded-xl mt-4 font-bold disabled:opacity-50 hover:bg-slate-800"
+                           >
+                               {loading ? 'Sending...' : 'Send Message'}
+                           </button>
+                        </form>
+                    );
 
                 default:
                     if (setting.id === 'journalLocked') {

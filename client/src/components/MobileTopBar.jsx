@@ -1,12 +1,13 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import clsx from 'clsx';
 
-const MobileTopBar = () => {
+const MobileTopBar = ({ highContrast }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="md:hidden fixed top-0 left-0 right-0 bg-surface/80 backdrop-blur-md border-b border-soft-border z-40 px-4 py-3 flex items-center justify-between h-16">
+    <div className={clsx("md:hidden fixed top-0 left-0 right-0 bg-surface/80 backdrop-blur-md border-b border-soft-border z-40 px-4 py-3 flex items-center justify-between h-16", highContrast && "contrast-125")}>
         {/* Logo Icon & Text */}
         <div className="flex items-center gap-2 flex-shrink-0" onClick={() => navigate('/feed')}>
             <div className="w-8 h-8 rounded-lg bg-surface border border-soft-border text-text flex items-center justify-center font-serif font-bold text-lg shadow-sm overflow-hidden">

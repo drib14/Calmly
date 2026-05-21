@@ -5,6 +5,24 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 const { welcomeEmail, passwordResetEmail } = require('../utils/emailTemplates');
+const pusher = require('../utils/pusher');
+
+const pusherAuth = async (req, res) => {
+    const socketId = req.body.socket_id;
+    const channel = req.body.channel_name;
+    const presenceData = {
+        user_id: req.user._id.toString(),
+        user_info: {
+            name: req.user.email,
+        }
+    };
+    try {
+        const auth = pusher.authenticate(socketId, channel, presenceData);
+        res.send(auth);
+    } catch (error) {
+        res.status(500).send({ message: error.message });
+    }
+};
 
 const registerUser = async (req, res) => {
   const { email, password, realName } = req.body;
@@ -55,6 +73,7 @@ const registerUser = async (req, res) => {
       res.status(201).json({
           _id: user._id,
           email: user.email,
+          role: user.role,
           message: 'Registration successful! Welcome.',
       });
 
@@ -111,6 +130,7 @@ const loginUser = async (req, res) => {
       res.json({
         _id: user._id,
         email: user.email,
+        role: user.role,
         accessToken,
       });
     } else {
@@ -249,4 +269,24 @@ const logoutUser = async (req, res) => {
     res.sendStatus(204);
 }
 
-module.exports = { registerUser, loginUser, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword };
+const getUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        if (user) {
+            res.json({
+                _id: user._id,
+                email: user.email,
+                role: user.role, // Explicitly include role
+                isAdmin: user.role === 'admin', // Keep legacy if needed
+                settings: user.settings,
+                // Add any other user fields needed
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { registerUser, loginUser, logoutUser, refreshToken, forgotPassword, verifyCode, resetPassword, getUserProfile, pusherAuth };

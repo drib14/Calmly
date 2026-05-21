@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import useSWR from 'swr';
-import { PenTool } from 'lucide-react';
+import { PenTool, LayoutGrid, MessageSquare, Feather, Mail } from 'lucide-react';
 import PostCard from '../components/PostCard';
 import PillSelection from '../components/PillSelection';
 import QuotesWidget from '../components/QuotesWidget';
+import AnnouncementModal from '../components/AnnouncementModal';
 
 const fetcher = url => axios.get(url).then(res => res.data);
 
@@ -19,6 +20,7 @@ const Feed = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
+      <AnnouncementModal />
       {/* Main Feed */}
       <div className="lg:col-span-8 lg:col-start-2 max-w-[470px] mx-auto w-full">
 
@@ -31,10 +33,10 @@ const Feed = () => {
             <div className="flex space-x-2">
                 <PillSelection
                     options={[
-                        { value: '', label: 'All' },
-                        { value: 'confession', label: 'Post' },
-                        { value: 'poetry', label: 'Poetry' },
-                        { value: 'letter', label: 'Letter' },
+                        { value: '', label: 'All', icon: <LayoutGrid size={14} /> },
+                        { value: 'confession', label: 'Post', icon: <MessageSquare size={14} /> },
+                        { value: 'poetry', label: 'Poetry', icon: <Feather size={14} /> },
+                        { value: 'letter', label: 'Letter', icon: <Mail size={14} /> },
                     ]}
                     value={filter.type}
                     onChange={(val) => setFilter({...filter, type: val})}

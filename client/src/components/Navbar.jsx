@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User } from 'lucide-react';
+import { Home, Search, PenTool, MessageCircle, BookOpen, LogOut, ChevronRight, ChevronLeft, Settings, User, Shield } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
 import { useIdentity } from '../context/IdentityContext';
@@ -9,7 +9,7 @@ import axios from 'axios';
 import useSWR from 'swr';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const Navbar = () => {
+const Navbar = ({ highContrast }) => {
   const { user, logout } = useAuth();
   const { currentIdentity } = useIdentity();
   const location = useLocation();
@@ -22,21 +22,9 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        // Only close if we are in desktop view logic (assumed by ref presence)
-        // But since we share state, we should be careful.
-        // If the click is inside mobileProfileRef, don't close.
-        if (mobileProfileRef.current && mobileProfileRef.current.contains(event.target)) return;
-
-        setShowProfileMenu(false);
-      }
-      if (mobileProfileRef.current && !mobileProfileRef.current.contains(event.target)) {
-         if (profileMenuRef.current && profileMenuRef.current.contains(event.target)) return;
-         setShowProfileMenu(false);
-      }
+      // Logic managed by global click listener below
     };
 
-    // Simplification: Just check if target is in EITHER ref.
     const handleGlobalClick = (e) => {
         const inDesktop = profileMenuRef.current?.contains(e.target);
         const inMobile = mobileProfileRef.current?.contains(e.target);
@@ -71,12 +59,11 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  // Ensure Navbar is hidden if user is not logged in
-  if (!user) return null;
+  if (!user || location.pathname === '/') return null;
 
   const navItems = [
     { icon: Home, label: 'Home', path: '/feed' },
-    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true }, // Search is topbar on mobile
+    { icon: Search, label: 'Explore', path: '/search', mobileHidden: true },
     { icon: PenTool, label: 'Create', path: '/create' },
     { icon: BookOpen, label: 'Journal', path: '/journal' },
     { icon: MessageCircle, label: 'Chat', path: '/chat', badge: unreadData?.count },
@@ -85,14 +72,14 @@ const Navbar = () => {
   return (
     <>
     {/* Bottom Bar (Mobile) */}
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe">
+    <nav className={clsx("md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-soft-border z-50 flex justify-around items-center px-2 py-2 pb-safe mb-safe", highContrast && "contrast-125")}>
         {navItems.filter(i => !i.mobileHidden).map((item) => {
             const isActive = location.pathname === item.path;
             return (
                 <NavLink
                     key={item.path}
                     to={item.path}
-                    className={clsx("p-3 rounded-xl relative", isActive ? "text-text" : "text-secondary")}
+                    className={clsx("p-3 rounded-xl relative active:scale-95 transition-transform", isActive ? "text-text" : "text-secondary")}
                 >
                     <div className="relative">
                         <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
@@ -146,6 +133,15 @@ const Navbar = () => {
                         <Settings size={18} />
                         <span>Settings</span>
                     </button>
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={() => { navigate('/admin'); setShowProfileMenu(false); }}
+                            className="flex items-center space-x-3 w-full p-3 hover:bg-background rounded-xl text-sm text-text transition"
+                        >
+                            <Shield size={18} className="text-blue-500" />
+                            <span className="text-blue-500 font-bold">Admin Panel</span>
+                        </button>
+                    )}
                     <div className="h-px bg-soft-border my-1"></div>
                         <button
                             onClick={handleLogout}
@@ -163,8 +159,9 @@ const Navbar = () => {
     {/* Sidebar (Desktop) */}
     <nav
       className={clsx(
-        "hidden md:flex fixed top-0 left-0 bottom-0 border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300",
-        isExpanded ? "w-64" : "w-20"
+        "hidden md:flex sticky top-0 h-screen border-r border-soft-border bg-surface z-50 flex-col justify-between py-6 px-4 shadow-none transition-all duration-300 flex-shrink-0",
+        isExpanded ? "w-64" : "w-20",
+        highContrast && "contrast-125"
       )}
     >
 
@@ -301,6 +298,15 @@ const Navbar = () => {
                         <Settings size={18} />
                         <span>Settings</span>
                     </button>
+                    {user?.role === 'admin' && (
+                        <button
+                            onClick={() => { navigate('/admin'); setShowProfileMenu(false); }}
+                            className="flex items-center space-x-3 w-full p-2 hover:bg-background rounded-lg text-sm text-text transition"
+                        >
+                            <Shield size={18} className="text-blue-500" />
+                            <span className="text-blue-500 font-bold">Admin Panel</span>
+                        </button>
+                    )}
                     <div className="h-px bg-soft-border my-1"></div>
                     <button
                         onClick={handleLogout}

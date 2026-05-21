@@ -13,9 +13,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
   isVerified: {
     type: Boolean,
     default: true,
+  },
+  isBanned: {
+    type: Boolean,
+    default: false
+  },
+  restrictions: {
+    post: { type: Boolean, default: false },
+    comment: { type: Boolean, default: false }
   },
   verificationToken: String,
   resetPasswordToken: String,
@@ -34,6 +47,7 @@ const userSchema = new mongoose.Schema({
   settings: {
     // Account
     loginHistory: [{ date: Date, ip: String, device: String }],
+    hasGivenFeedback: { type: Boolean, default: false },
 
     // Identity & Privacy
     defaultIdentityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' },

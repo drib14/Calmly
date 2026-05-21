@@ -22,12 +22,33 @@ import Legal from './pages/Legal';
 import Settings from './pages/Settings';
 import SinglePost from './pages/SinglePost';
 import NotFound from './pages/NotFound';
+import LearnMore from './pages/LearnMore';
+
+// Admin Pages
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import ReportManagement from './pages/admin/ReportManagement';
+import SupportInbox from './pages/admin/SupportInbox';
+import ContentManagement from './pages/admin/ContentManagement';
+import AdminSettings from './pages/admin/AdminSettings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <Loader />;
   if (!user) return <Navigate to="/login" />;
+  // Prevent admin from accessing user feed, redirect to admin panel
+  if (user.role === 'admin' && !window.location.pathname.startsWith('/admin')) {
+      return <Navigate to="/admin" />;
+  }
   return children;
+};
+
+const AdminRoute = ({ children }) => {
+    const { user, loading } = useAuth();
+    if (loading) return <Loader />;
+    if (!user || user.role !== 'admin') return <Navigate to="/feed" />;
+    return children;
 };
 
 function App() {
@@ -37,68 +58,89 @@ function App() {
         <IdentityProvider>
           <SocketProvider>
             <Toaster position="top-center" toastOptions={{ duration: 3000, style: { background: '#1e293b', color: '#fff' } }} />
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/verify-email/:token" element={<VerifyEmail />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/legal" element={<Legal />} />
+            <Routes>
+                {/* Admin Routes - Outside standard Layout for full control */}
+                <Route path="/admin" element={
+                    <AdminRoute>
+                        <AdminLayout />
+                    </AdminRoute>
+                }>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<UserManagement />} />
+                    <Route path="posts" element={<ContentManagement />} />
+                    <Route path="reports" element={<ReportManagement />} />
+                    <Route path="support" element={<SupportInbox />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                </Route>
 
-                <Route path="/feed" element={
-                  <ProtectedRoute>
-                    <Feed />
-                  </ProtectedRoute>
+                {/* Main App Routes */}
+                <Route path="*" element={
+                    <Layout>
+                      <Routes>
+                        <Route path="/" element={<Landing />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/legal" element={<Legal />} />
+                        <Route path="/learn-more" element={<LearnMore />} />
+
+                        <Route path="/feed" element={
+                          <ProtectedRoute>
+                            <Feed />
+                          </ProtectedRoute>
+                        } />
+
+                        <Route path="/search" element={
+                          <ProtectedRoute>
+                            <SearchPage />
+                          </ProtectedRoute>
+                        } />
+
+                        <Route path="/journal" element={
+                          <ProtectedRoute>
+                            <Journal />
+                          </ProtectedRoute>
+                        } />
+
+                        <Route path="/messages" element={
+                          <ProtectedRoute>
+                            <Messages />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/chat" element={<Navigate to="/messages" replace />} />
+
+                        <Route path="/profile/:handle" element={
+                          <ProtectedRoute>
+                            <Profile />
+                          </ProtectedRoute>
+                        } />
+
+                        <Route path="/settings" element={
+                          <ProtectedRoute>
+                            <Settings />
+                          </ProtectedRoute>
+                        } />
+
+                        <Route path="/create" element={
+                          <ProtectedRoute>
+                            <CreatePost />
+                          </ProtectedRoute>
+                        } />
+
+                        <Route path="/post/:id" element={
+                          <ProtectedRoute>
+                            <SinglePost />
+                          </ProtectedRoute>
+                        } />
+
+                        {/* Catch-all 404 */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Layout>
                 } />
-
-                <Route path="/search" element={
-                  <ProtectedRoute>
-                    <SearchPage />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/journal" element={
-                  <ProtectedRoute>
-                    <Journal />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/chat" element={
-                  <ProtectedRoute>
-                    <Messages />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/profile/:handle" element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/create" element={
-                  <ProtectedRoute>
-                    <CreatePost />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/post/:id" element={
-                  <ProtectedRoute>
-                    <SinglePost />
-                  </ProtectedRoute>
-                } />
-
-                {/* Catch-all 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Layout>
+            </Routes>
           </SocketProvider>
         </IdentityProvider>
       </AuthProvider>

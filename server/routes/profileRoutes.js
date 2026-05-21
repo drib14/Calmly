@@ -17,10 +17,17 @@ router.get('/:handle', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (identity.type === 'anonymous') {
-        if (identity.user.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
-        }
+    // Robust Ownership Check (Handle orphaned identities)
+    const isOwner = identity.user && identity.user.toString() === req.user._id.toString();
+
+    // If orphaned identity (no user), return 404 or treat as unavailable
+    if (!identity.user) {
+         console.warn(`Orphaned Identity Accessed: ${handle} (ID: ${identity._id})`);
+         return res.status(404).json({ message: 'User not active' });
+    }
+
+    if (identity.type === 'anonymous' && !isOwner) {
+        return res.status(403).json({ message: 'Anonymous profiles cannot be viewed.' });
     }
 
     // Helper to fetch posts with Aggregated Comment Count
@@ -57,17 +64,59 @@ router.get('/:handle', protect, async (req, res) => {
 
         // Populate Reposts manually after aggregation (Mongoose specific population on plain objects)
         await Post.populate(posts, [
-            { path: 'reposts.identity', select: 'name type handle avatar' }
+            { path: 'reposts.identity', select: 'name type handle avatar' },
+            { path: 'likes.identity', select: 'name type handle avatar' }
         ]);
 
         return posts;
     };
 
+    // Match Criteria
+    // Owner sees all non-deleted posts from THIS identity.
+    // ADDITIONALLY: If Owner and this is the REAL identity, show posts from ALL linked identities (including Anonymous).
+    // Visitors see public posts only from THIS identity.
+
+    let baseMatch;
+
+    if (isOwner && identity.type === 'real') {
+         // Fetch all identities belonging to this user
+         const userIdentities = await Identity.find({ user: req.user._id }).select('_id');
+         const identityIds = userIdentities.map(i => i._id);
+
+         baseMatch = {
+             identity: { $in: identityIds },
+             deletedAt: null
+         };
+    } else {
+         baseMatch = {
+             identity: new mongoose.Types.ObjectId(identity._id),
+             deletedAt: null
+         };
+    }
+
+    const regularPostMatch = isOwner
+        ? { ...baseMatch, hidden: { $ne: true } }
+        : { ...baseMatch, visibility: 'public', hidden: { $ne: true } };
+
+    const archiveMatch = isOwner
+        ? { ...baseMatch, hidden: true }
+        : null;
+
     // Get Authored Posts
-    const authoredPosts = await fetchWithComments({ identity: identity._id, visibility: 'public', deletedAt: null });
+    const authoredPosts = await fetchWithComments(regularPostMatch);
+
+    let archives = [];
+    if (archiveMatch) {
+        archives = await fetchWithComments(archiveMatch);
+    }
 
     // Get Reposted Posts (Where this identity is in the reposts array)
-    const repostedPosts = await fetchWithComments({ 'reposts.identity': identity._id, visibility: 'public', deletedAt: null });
+    const repostMatch = {
+        'reposts.identity': identity._id,
+        visibility: 'public',
+        deletedAt: null
+    };
+    const repostedPosts = await fetchWithComments(repostMatch);
 
     // Get Active Quote and POPULATE IDENTITY
     const activeQuote = await Quote.findOne({ identity: identity._id })
@@ -78,7 +127,9 @@ router.get('/:handle', protect, async (req, res) => {
         identity,
         quote: activeQuote,
         posts: authoredPosts,
-        reposts: repostedPosts
+        reposts: repostedPosts,
+        archives,
+        isOwner // Helper for frontend
     });
   } catch (error) {
     console.error("Profile Fetch Error:", error);

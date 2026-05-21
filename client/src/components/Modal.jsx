@@ -24,16 +24,22 @@ const Modal = ({ isOpen, onClose, children }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-6"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-end md:items-center justify-center p-0 md:p-6"
           onClick={onClose} // Close on backdrop click
         >
+          {/* Mobile Drawer / Desktop Modal */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-surface rounded-3xl p-6 w-full max-w-sm shadow-xl relative border border-soft-border max-h-[90vh] overflow-y-auto custom-scrollbar"
+            initial={{ y: "100%", opacity: 0, scale: 1 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: "100%", opacity: 0, scale: 1 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-surface w-full md:w-full md:max-w-sm shadow-xl relative border-t md:border border-soft-border max-h-[85vh] md:max-h-[90vh] overflow-y-auto custom-scrollbar rounded-t-3xl md:rounded-3xl p-6 pb-safe md:pb-6"
             onClick={(e) => e.stopPropagation()} // Prevent close when clicking content
+            style={{ marginBottom: 0 }} // Ensure it sits at bottom on mobile
           >
+            {/* Mobile Drag Indicator */}
+            <div className="md:hidden w-12 h-1.5 bg-soft-border rounded-full mx-auto mb-6 opacity-50" />
+
             {children}
           </motion.div>
         </motion.div>

@@ -33,7 +33,7 @@ router.get('/feed', protect, async (req, res) => {
 
 // Create a Quote
 router.post('/', protect, async (req, res) => {
-  const { content, mood, font, identityId } = req.body;
+  const { content, mood, font, identityId, audience = 'public', duration = 24 } = req.body;
 
   if (!identityId) return res.status(400).json({ message: 'Identity required' });
 
@@ -45,12 +45,19 @@ router.post('/', protect, async (req, res) => {
     // Optional: Delete previous active quote for this identity to avoid duplicates
     await Quote.deleteMany({ identity: identityId });
 
+    // Calculate Expiration
+    const expireAt = new Date();
+    expireAt.setHours(expireAt.getHours() + Number(duration));
+
     const quote = await Quote.create({
       user: req.user._id,
       identity: identityId,
       content,
       mood,
-      font
+      font,
+      audience,
+      duration,
+      expireAt
     });
 
     res.status(201).json(quote);

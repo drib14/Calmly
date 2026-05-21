@@ -29,7 +29,7 @@ const PillSelection = ({ options, value, onChange }) => {
                     {icon}
                 </span>
             )}
-            <span>{label}</span>
+            {(!icon || isSelected) && <span>{label}</span>}
           </button>
         );
       })}
