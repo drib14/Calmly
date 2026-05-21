@@ -29,6 +29,12 @@ const messageSchema = new mongoose.Schema({
         avatar: String
     }
   },
+  // Added replyToMessage for chat replies
+  replyToMessage: {
+      id: String,
+      content: String,
+      sender: String // Name of original sender
+  },
   media: [{
     url: String,
     type: { type: String, enum: ['image', 'video', 'audio', 'file'] },
@@ -37,6 +43,14 @@ const messageSchema = new mongoose.Schema({
   read: {
     type: Boolean,
     default: false,
+  },
+  deletedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Identity'
+  }],
+  isUnsent: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,

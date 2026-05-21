@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }) => {
                 } catch (refreshError) {
                     // If refresh fails (403/401), clear everything and redirect
                     localStorage.removeItem('accessToken');
-                    localStorage.removeItem('user');
                     setUser(null);
                     return Promise.reject(refreshError);
                 }
@@ -59,12 +58,16 @@ export const AuthProvider = ({ children }) => {
     const checkUser = async () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        // Here we would ideally validate the token or fetch user profile
-        // For simplicity, we assume token means logged in, but we need user data.
-        // Let's assume we stored user data in localStorage too, or fetch it.
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        // Attempt to fetch fresh user data
+        try {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            const res = await axios.get('/auth/me');
+            setUser(res.data);
+        } catch (err) {
+            console.error("Failed to fetch user profile", err);
+            // If failed, do NOT fallback to local storage. Clear session.
+            localStorage.removeItem('accessToken');
+            setUser(null);
         }
       }
       setLoading(false);
@@ -77,7 +80,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.post('/auth/login', { email, password });
       const { accessToken, ...userData } = res.data;
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(userData));
+      // Do NOT store user object in local storage
       setUser(userData);
       return { success: true };
     } catch (error) {
@@ -104,7 +107,6 @@ export const AuthProvider = ({ children }) => {
       console.error(err);
     }
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
     setUser(null);
   };
 

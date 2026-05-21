@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import Pusher from 'pusher-js';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
 
 const SocketContext = createContext();
@@ -11,39 +12,73 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
-    const { user } = useAuth(); // Contains token info if structured right?
-    // AuthContext stores accessToken in localStorage. useAuth provides user data.
-    // We need to pass token explicitly.
+    const { user } = useAuth();
 
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
-            if (socket) socket.close();
+        if (!user) {
+            if (socket) {
+                socket.disconnect();
+                setSocket(null);
+            }
             return;
         }
 
-        // Determine socket URL: Use Env var, or localhost if dev, or relative '/' if prod
-        const socketUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5080' : '/');
+        const pusherKey = import.meta.env.VITE_PUSHER_KEY;
+        const pusherCluster = import.meta.env.VITE_PUSHER_CLUSTER;
 
-        const newSocket = io(socketUrl, {
-            auth: { token },
-            // If strictly using Vercel rewrites to /api, we might need path adjustment,
-            // but usually /socket.io on root works if rewrite handles it or if separate backend.
-            // Assuming same origin or configured CORS.
+        if (!pusherKey) {
+            // console.warn("Pusher Key not found.");
+            return;
+        }
+
+        // Configure Pusher with Auth
+        // Pusher-js uses 'auth' option to set headers. We need the JWT token.
+        const token = localStorage.getItem('accessToken');
+
+        const pusher = new Pusher(pusherKey, {
+            cluster: pusherCluster,
+            authEndpoint: '/api/auth/pusher/auth',
+            auth: {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
         });
 
-        newSocket.on('connect', () => {
-            // console.log('Connected to socket');
-        });
+        // 1. Subscribe to User Channel (Messages)
+        const userChannel = pusher.subscribe(`user-${user._id}`);
 
-        newSocket.on('online_users', (users) => {
+        // 2. Subscribe to Presence Channel (Online Status)
+        const presenceChannel = pusher.subscribe('presence-global');
+
+        presenceChannel.bind('pusher:subscription_succeeded', (members) => {
+            const users = [];
+            members.each((member) => users.push(member.id));
             setOnlineUsers(users);
         });
 
-        setSocket(newSocket);
+        presenceChannel.bind('pusher:member_added', (member) => {
+            setOnlineUsers((prev) => [...prev, member.id]);
+        });
 
-        return () => newSocket.close();
-    }, [user]); // Re-connect if user changes (login/logout)
+        presenceChannel.bind('pusher:member_removed', (member) => {
+            setOnlineUsers((prev) => prev.filter((id) => id !== member.id));
+        });
+
+        // Add a helper method to 'socket' (pusher instance) to emulate socket.io's .on for the user channel
+        pusher.io_on = (event, callback) => {
+            userChannel.bind(event, callback);
+        };
+        pusher.io_off = (event) => {
+            userChannel.unbind(event);
+        };
+
+        setSocket(pusher);
+
+        return () => {
+            pusher.disconnect();
+        };
+    }, [user]);
 
     return (
         <SocketContext.Provider value={{ socket, onlineUsers }}>

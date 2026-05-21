@@ -6,11 +6,18 @@ const reportSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  post: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Post',
-    required: true
+  // Polymorphic References
+  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
+  comment: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment' },
+  identity: { type: mongoose.Schema.Types.ObjectId, ref: 'Identity' }, // For reporting a user profile
+  message: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+
+  targetType: {
+      type: String,
+      enum: ['Post', 'Comment', 'Identity', 'Message'],
+      required: true
   },
+
   reason: {
     type: String,
     required: true
@@ -19,6 +26,10 @@ const reportSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'resolved', 'dismissed'],
     default: 'pending'
+  },
+  resolvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   createdAt: {
     type: Date,

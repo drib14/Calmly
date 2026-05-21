@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
 import axios from 'axios';
-import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat } from 'lucide-react';
+import { Calendar, MessageCircle, Edit2, Camera, Trash2, X, Image as ImageIcon, Grid, Repeat, Heart, Archive, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PostCard from '../components/PostCard';
 import Avatar from '../components/Avatar';
 import NoteBubble from '../components/NoteBubble';
-import ImageViewer from '../components/ImageViewer';
+import MediaViewer from '../components/MediaViewer';
 import QuotesWidget from '../components/QuotesWidget';
 import { useIdentity } from '../context/IdentityContext';
 import Modal from '../components/Modal';
@@ -46,14 +46,13 @@ const Profile = () => {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [replyQuote, setReplyQuote] = useState(null);
   const [showMyQuoteOptions, setShowMyQuoteOptions] = useState(false);
-  const [deletingQuote, setDeletingQuote] = useState(false);
 
   const [activeTab, setActiveTab] = useState('moments');
 
   if (isLoading) return <div className="text-center py-20 text-secondary">Loading profile...</div>;
-  if (error) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
+  if (error || !data) return <div className="text-center py-20 text-red-400">User not found or private.</div>;
 
-  const { identity, posts, quote } = data;
+  const { identity, posts, quote, archives } = data;
   const isOwner = identities?.some(i => i._id === identity._id);
   const canMessage = identity.user?.settings?.enablePrivateMessaging !== false;
 
@@ -101,28 +100,13 @@ const Profile = () => {
   };
 
   const openMediaViewer = (mediaUrl) => {
-      const allMedia = posts.flatMap(p => p.media).filter(Boolean);
-      setViewerImages(allMedia);
-      const idx = allMedia.indexOf(mediaUrl);
+      // Reconstruct all media list from the unified list
+      const allUrls = allMedia.map(m => m.url);
+      setViewerImages(allUrls);
+      const idx = allUrls.indexOf(mediaUrl);
       setViewerIndex(idx >= 0 ? idx : 0);
       setViewerType(null); // No specific type context from media grid (could be ambiguous)
       setViewerOpen(true);
-  };
-
-  const handleDeleteQuote = async () => {
-      if (!quote) return;
-      setDeletingQuote(true);
-      try {
-          await axios.delete(`/quotes/${quote._id}`);
-          toast.success("Quote removed");
-          mutate(`/profile/${handle}`);
-          mutate('/quotes/feed');
-          setShowMyQuoteOptions(false);
-      } catch (err) {
-          toast.error("Failed to remove quote");
-      } finally {
-          setDeletingQuote(false);
-      }
   };
 
   const handleSaveProfile = async () => {
@@ -183,14 +167,49 @@ const Profile = () => {
   };
 
   // Aggregate Media for Gallery (Posts + Profile History)
-  const postMedia = posts.filter(p => p.media && p.media.length > 0).flatMap(p => p.media);
-  const avatarMedia = identity.avatarHistory || [];
-  if (identity.avatar) avatarMedia.unshift(identity.avatar);
-  const coverMedia = identity.coverHistory || [];
-  if (identity.coverPhoto) coverMedia.unshift(identity.coverPhoto);
+  // Normalize to object: { url, type, stats: { likes, comments, reposts } }
+  const postMediaItems = posts.flatMap(p => {
+      if (!p.media || p.media.length === 0) return [];
+      return p.media.map(m => ({
+          url: m.url,
+          type: m.type,
+          stats: {
+              likes: p.likes?.length || 0,
+              comments: p.commentCount || 0,
+              reposts: p.reposts?.length || 0
+          }
+      }));
+  });
 
-  // Combine unique
-  const allMedia = [...new Set([...postMedia, ...avatarMedia, ...coverMedia])].filter(Boolean);
+  const avatarMediaItems = (identity.avatarHistory || []).map(url => ({
+      url, type: 'image', stats: null
+  }));
+  if (identity.avatar) avatarMediaItems.unshift({ url: identity.avatar, type: 'image', stats: null });
+
+  const coverMediaItems = (identity.coverHistory || []).map(url => ({
+      url, type: 'image', stats: null
+  }));
+  if (identity.coverPhoto) coverMediaItems.unshift({ url: identity.coverPhoto, type: 'image', stats: null });
+
+  // Combine and Deduplicate by URL
+  const allMediaRaw = [...postMediaItems, ...avatarMediaItems, ...coverMediaItems];
+  const uniqueMediaMap = new Map();
+  allMediaRaw.forEach(item => {
+      if (item.url && !uniqueMediaMap.has(item.url)) {
+          uniqueMediaMap.set(item.url, item);
+      }
+  });
+  const allMedia = Array.from(uniqueMediaMap.values());
+
+  // Sort Oldest to Newest ("FIFO stack" based on user request)
+  // Note: 'posts' are Newest First. 'postMediaItems' respects that.
+  // So 'allMedia' is currently roughly Newest First (because map iterates in order).
+  // We need to reverse it or sort by date if we had date attached.
+  // Since we stripped date in 'postMediaItems', we can rely on index if we reverse it?
+  // No, let's attach date in postMediaItems to be safe.
+  // Actually, 'posts' is Newest First. So postMediaItems is Newest First.
+  // To get Oldest First, we just reverse the array.
+  allMedia.reverse();
 
   return (
     <div className="max-w-2xl mx-auto pb-20">
@@ -220,7 +239,11 @@ const Profile = () => {
                     size="xl"
                     onQuoteClick={() => {
                         if (isOwner) {
-                            setShowMyQuoteOptions(true);
+                            if (quote) {
+                                setShowMyQuoteOptions(true);
+                            } else {
+                                setShowQuoteModal(true);
+                            }
                         } else if (quote) {
                             setReplyQuote(quote);
                         }
@@ -285,28 +308,37 @@ const Profile = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-soft-border mb-6">
+      <div className="flex border-b border-soft-border mb-6 sticky top-0 md:top-16 bg-background/95 backdrop-blur z-20 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('moments')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'moments' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Grid size={16} />
-              <span>Moments</span>
+              <span className="hidden md:inline">Moments</span>
           </button>
           <button
             onClick={() => setActiveTab('media')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'media' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <ImageIcon size={16} />
-              <span>Media</span>
+              <span className="hidden md:inline">Media</span>
           </button>
           <button
             onClick={() => setActiveTab('reposts')}
-            className={clsx("px-4 py-3 text-sm font-bold transition flex items-center space-x-2", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'reposts' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
           >
               <Repeat size={16} />
-              <span>Reposts</span>
+              <span className="hidden md:inline">Reposts</span>
           </button>
+          {isOwner && (
+            <button
+                onClick={() => setActiveTab('archives')}
+                className={clsx("flex-1 md:flex-none justify-center md:justify-start px-4 py-3 text-sm font-bold transition flex items-center space-x-2 whitespace-nowrap", activeTab === 'archives' ? "text-text border-b-2 border-text" : "text-secondary hover:text-text")}
+            >
+                <Archive size={16} />
+                <span className="hidden md:inline">Archives</span>
+            </button>
+          )}
       </div>
 
       {/* Tab Content */}
@@ -333,12 +365,33 @@ const Profile = () => {
                       </div>
                   ) : (
                       allMedia.map((media, idx) => (
-                          <div key={idx} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer hover:opacity-90 transition" onClick={() => openMediaViewer(media)}>
-                              {media.match(/\.(mp4|webm)$/) ? (
-                                  <video src={media} className="w-full h-full object-cover" />
+                          <div key={idx} className="aspect-square bg-slate-100 overflow-hidden cursor-pointer relative group" onClick={() => openMediaViewer(media.url)}>
+                              {/* Media Content */}
+                              {media.type === 'video' || (media.url && media.url.match(/\.(mp4|webm)$/)) ? (
+                                  <video src={media.url} className="w-full h-full object-cover" />
                               ) : (
-                                  <img src={media} className="w-full h-full object-cover" loading="lazy" />
+                                  <img src={media.url} className="w-full h-full object-cover" loading="lazy" />
                               )}
+
+                              {/* Hover Overlay with Stats */}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white">
+                                  {media.stats && (
+                                      <>
+                                          <div className="flex items-center gap-1 font-bold text-sm">
+                                              <Heart size={16} className="fill-white" />
+                                              <span>{media.stats.likes}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 font-bold text-sm">
+                                              <MessageCircle size={16} className="fill-white" />
+                                              <span>{media.stats.comments}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 font-bold text-sm">
+                                              <Repeat size={16} />
+                                              <span>{media.stats.reposts}</span>
+                                          </div>
+                                      </>
+                                  )}
+                              </div>
                           </div>
                       ))
                   )}
@@ -350,6 +403,48 @@ const Profile = () => {
                   <p className="text-secondary">No reposts yet.</p>
               </div>
           )}
+
+          {activeTab === 'archives' && isOwner && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {!archives || archives.length === 0 ? (
+                      <div className="col-span-full text-center py-10 opacity-50">
+                          <p className="text-secondary">No archived moments.</p>
+                      </div>
+                  ) : (
+                      archives.map(post => (
+                          <div
+                              key={post._id}
+                              className="bg-surface border border-soft-border rounded-xl p-4 cursor-pointer hover:shadow-md transition relative group overflow-hidden"
+                              onClick={() => navigate(`/post/${post._id}`)}
+                          >
+                              <div className="flex justify-between items-start mb-2 opacity-50">
+                                  <span className="text-[10px] font-bold uppercase">{post.type}</span>
+                                  <EyeOff size={14} />
+                              </div>
+                              <p className="text-sm font-serif line-clamp-3 mb-2">{post.content || (post.media ? 'Media content' : '')}</p>
+                              {post.media?.length > 0 && (
+                                  <div className="h-20 bg-background rounded-lg mb-2 overflow-hidden">
+                                      {post.media[0].type === 'video' ? (
+                                        <div className="w-full h-full flex items-center justify-center bg-black"><ImageIcon className="text-white"/></div>
+                                      ) : (
+                                        <img src={post.media[0].url} className="w-full h-full object-cover" />
+                                      )}
+                                  </div>
+                              )}
+
+                              {/* Hover Stats */}
+                              <div className="absolute inset-0 bg-surface/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex space-x-4 text-xs font-bold text-text">
+                                      <div className="flex items-center space-x-1"><Heart size={14}/> <span>{post.likes?.length || 0}</span></div>
+                                      <div className="flex items-center space-x-1"><MessageCircle size={14}/> <span>{post.commentCount || 0}</span></div>
+                                      <div className="flex items-center space-x-1"><Repeat size={14}/> <span>{post.reposts?.length || 0}</span></div>
+                                  </div>
+                              </div>
+                          </div>
+                      ))
+                  )}
+              </div>
+          )}
       </div>
 
       {/* Create Quote Modal */}
@@ -359,39 +454,17 @@ const Profile = () => {
         identityId={currentIdentity?._id}
       />
 
-      {/* My Quote Options Modal */}
-      <Modal isOpen={showMyQuoteOptions} onClose={() => setShowMyQuoteOptions(false)}>
-             <div className="text-center space-y-4">
-                 <h3 className="text-lg font-bold text-text">Your Quote</h3>
-                 {quote && (
-                     <div className="py-4 px-6 bg-surface rounded-2xl border border-soft-border italic text-secondary relative mb-4">
-                        <span className="text-2xl text-slate-300 absolute top-2 left-2">"</span>
-                        <p className="font-serif text-lg text-text">{quote.content}</p>
-                        <span className="text-2xl text-slate-300 absolute bottom-2 right-2">"</span>
-                     </div>
-                 )}
-                 <div className="grid grid-cols-2 gap-3 pt-4">
-                     <button
-                        onClick={() => { setShowMyQuoteOptions(false); setShowQuoteModal(true); }}
-                        className="py-3 rounded-xl bg-background border border-soft-border font-medium hover:bg-surface text-text"
-                     >
-                         New quote
-                     </button>
-                     <button
-                        onClick={handleDeleteQuote}
-                        disabled={deletingQuote}
-                        className="py-3 rounded-xl bg-red-50 text-red-500 font-medium hover:bg-red-100 disabled:opacity-50"
-                     >
-                         {deletingQuote ? 'Deleting...' : 'Delete'}
-                     </button>
-                 </div>
-             </div>
-      </Modal>
-
-      {/* Reply Modal */}
+      {/* Unified Reply/View Modal */}
       <ReplyQuoteModal
-        quote={replyQuote}
-        onClose={() => setReplyQuote(null)}
+        quote={showMyQuoteOptions ? quote : replyQuote}
+        onClose={() => {
+            setShowMyQuoteOptions(false);
+            setReplyQuote(null);
+        }}
+        onCreateNew={() => {
+            setShowMyQuoteOptions(false);
+            setShowQuoteModal(true);
+        }}
       />
 
       {/* Edit Profile Modal */}
@@ -481,7 +554,7 @@ const Profile = () => {
         isDanger={true}
       />
 
-      <ImageViewer
+      <MediaViewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         images={viewerImages}

@@ -71,11 +71,23 @@ router.get('/public', async (req, res) => {
 router.post('/feedback', protect, async (req, res) => {
     const { rating, comment } = req.body;
     try {
+        if (req.user.settings?.hasGivenFeedback) {
+            return res.status(403).json({ message: 'You have already provided feedback. Thank you!' });
+        }
+
         const feedback = await Feedback.create({
             user: req.user._id,
             rating,
             comment
         });
+
+        if (!req.user.settings) {
+            req.user.settings = {};
+        }
+
+        req.user.settings.hasGivenFeedback = true;
+        await req.user.save();
+
         res.status(201).json(feedback);
     } catch (error) {
         res.status(500).json({ message: error.message });

@@ -11,8 +11,15 @@ const {
   getSessions,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  blockUser,
+  muteUser,
+  hidePost,
+  createSupportTicket,
+  getSystemAnnouncement
 } = require('../controllers/settingsController');
+
+router.get('/system', getSystemAnnouncement); // Public
 
 // All routes are protected
 router.use(protect);
@@ -25,7 +32,12 @@ router.post('/logout-all', logoutAllDevices);
 router.get('/sessions', getSessions);
 router.delete('/account', deleteAccount);
 
+router.post('/block-user', blockUser);
+router.post('/mute-user', muteUser);
+router.post('/hide-post', hidePost);
+
 router.get('/download-data', downloadUserData);
+router.post('/support', createSupportTicket);
 
 // Journal Lock Routes
 router.put('/journal-lock', toggleJournalLock);

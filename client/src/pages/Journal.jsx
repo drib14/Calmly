@@ -127,7 +127,7 @@ const Journal = () => {
         setIsWriting(false);
         setTitle('');
         setContent('');
-        mutate('/journal');
+        mutate(['/journal', journalPin]);
         setView('list');
     } catch (err) {
         console.error(err);
@@ -149,7 +149,7 @@ const Journal = () => {
       try {
           await axios.delete(`/journal/${entryToDelete}`);
           toast.success("Entry deleted");
-          mutate('/journal');
+          mutate(['/journal', journalPin]);
           if (selectedEntry?._id === entryToDelete) {
               setSelectedEntry(null);
               setView('list');

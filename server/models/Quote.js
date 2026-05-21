@@ -24,10 +24,22 @@ const quoteSchema = new mongoose.Schema({
     type: String,
     default: 'font-serif',
   },
+  audience: {
+    type: String,
+    enum: ['public', 'followers', 'me'],
+    default: 'public',
+  },
+  duration: {
+    type: Number, // In hours, for reference
+    default: 24,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 86400, // Auto-expire after 24 hours
+  },
+  expireAt: {
+    type: Date,
+    index: { expires: 0 }, // Documents expire at this time
   },
 });
 

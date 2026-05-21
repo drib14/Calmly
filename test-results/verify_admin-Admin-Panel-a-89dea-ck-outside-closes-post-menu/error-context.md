@@ -1,0 +1,95 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e9]: CALMLY ADMIN
+    - navigation [ref=e10]:
+      - link "Overview" [ref=e11] [cursor=pointer]:
+        - /url: /admin
+        - img [ref=e12]
+        - generic [ref=e17]: Overview
+      - link "Users" [ref=e18] [cursor=pointer]:
+        - /url: /admin/users
+        - img [ref=e19]
+        - generic [ref=e24]: Users
+      - link "Content" [ref=e25] [cursor=pointer]:
+        - /url: /admin/posts
+        - img [ref=e26]
+        - generic [ref=e29]: Content
+      - link "Reports" [ref=e30] [cursor=pointer]:
+        - /url: /admin/reports
+        - img [ref=e31]
+        - generic [ref=e33]: Reports
+      - link "Support Inbox" [ref=e34] [cursor=pointer]:
+        - /url: /admin/support
+        - img [ref=e35]
+        - generic [ref=e37]: Support Inbox
+      - link "Settings" [ref=e38] [cursor=pointer]:
+        - /url: /admin/settings
+        - img [ref=e39]
+        - generic [ref=e41]: Settings
+    - generic [ref=e42]:
+      - button "Back to App" [ref=e43] [cursor=pointer]:
+        - img [ref=e44]
+        - generic [ref=e46]: Back to App
+      - button "Logout" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+        - generic [ref=e51]: Logout
+  - generic [ref=e54]:
+    - generic [ref=e55]:
+      - heading "Dashboard" [level=1] [ref=e56]
+      - paragraph [ref=e57]: Platform overview and real-time metrics.
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - img [ref=e61]
+        - generic [ref=e66]:
+          - img [ref=e68]
+          - heading "Total Users" [level=3] [ref=e73]
+          - paragraph [ref=e74]: "9"
+      - generic [ref=e75]:
+        - img [ref=e77]
+        - generic [ref=e80]:
+          - img [ref=e82]
+          - heading "Total Posts" [level=3] [ref=e85]
+          - paragraph [ref=e86]: "13"
+      - generic [ref=e87]:
+        - img [ref=e89]
+        - generic [ref=e91]:
+          - img [ref=e93]
+          - heading "Pending Reports" [level=3] [ref=e95]
+          - paragraph [ref=e96]: "1"
+      - generic [ref=e97]:
+        - img [ref=e99]
+        - generic [ref=e106]:
+          - img [ref=e108]
+          - heading "Open Tickets" [level=3] [ref=e115]
+          - paragraph [ref=e116]: "0"
+    - generic [ref=e117]:
+      - heading "System Activity" [level=3] [ref=e118]:
+        - img [ref=e119]
+        - text: System Activity
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - generic [ref=e124]:
+            - paragraph [ref=e125]: "UNBAN USERUser: 696059835a7bda1f75eecea0"
+            - paragraph [ref=e126]: "Admin: drib@admin.com"
+          - generic [ref=e127]: about 1 hour ago
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - paragraph [ref=e130]: "BAN USERUser: 696059835a7bda1f75eecea0"
+            - paragraph [ref=e131]: "Admin: drib@admin.com"
+          - generic [ref=e132]: about 1 hour ago
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - paragraph [ref=e135]: "RESTRICT USERUser: 696059835a7bda1f75eecea0"
+            - paragraph [ref=e136]: "Admin: drib@admin.com"
+          - generic [ref=e137]: about 1 hour ago
+        - generic [ref=e138]:
+          - generic [ref=e139]:
+            - paragraph [ref=e140]: "RESTRICT USERUser: 696059835a7bda1f75eecea0"
+            - paragraph [ref=e141]: "Admin: drib@admin.com"
+          - generic [ref=e142]: about 1 hour ago
+```

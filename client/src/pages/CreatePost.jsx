@@ -3,13 +3,15 @@ import { useIdentity } from '../context/IdentityContext';
 import { useSettings } from '../hooks/useSettings';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Image, X, Globe, Lock, EyeOff, Smile, Frown, Meh, CloudRain, Heart, Zap, Coffee, AlignLeft, AlignCenter, AlignRight, ShieldAlert } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import SelectionCard from '../components/SelectionCard';
 import PillSelection from '../components/PillSelection';
 import { toast } from 'react-hot-toast';
 import Modal from '../components/Modal';
 import FeedbackModal from '../components/FeedbackModal';
+import ColorWallpaperModal from '../components/ColorWallpaperModal';
 
 const moods = [
     { value: 'Melancholy', label: 'Melancholy', icon: <CloudRain size={16} /> },
@@ -66,10 +68,11 @@ const alignOptions = [
 ];
 
 const CreatePost = () => {
-  const { identities, currentIdentity, selectIdentity, createPseudonym, deleteIdentity } = useIdentity();
+  const { identities, currentIdentity, createPseudonym, deleteIdentity } = useIdentity();
   const { settings } = useSettings();
   const navigate = useNavigate();
 
+  const [postingIdentityId, setPostingIdentityId] = useState(currentIdentity?._id);
   const [type, setType] = useState('confession');
   const [mood, setMood] = useState('Neutral');
   const [content, setContent] = useState('');
@@ -87,42 +90,24 @@ const CreatePost = () => {
   const [showDeleteIdentityModal, setShowDeleteIdentityModal] = useState(false);
   const [identityToDelete, setIdentityToDelete] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showStyleModal, setShowStyleModal] = useState(false);
 
   // Specialized Fields
   const [letterFields, setLetterFields] = useState({ header: 'Dear...', footer: 'Sincerely,', paperType: 'classic' });
-  const [poemStyle, setPoemStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left' });
+  const [postStyle, setPostStyle] = useState({ backgroundColor: 'bg-white', font: 'font-serif', align: 'text-left', texture: '', textColor: '', backgroundImage: '' });
+
+  useEffect(() => {
+      if (currentIdentity && !postingIdentityId) {
+          setPostingIdentityId(currentIdentity._id);
+      }
+  }, [currentIdentity]);
 
   useEffect(() => {
       if (settings) {
           if (settings.defaultPostType) setType(settings.defaultPostType);
           if (settings.defaultMood) setMood(settings.defaultMood);
-
-          // Load Draft
-          if (settings.enableDrafts) {
-              const savedDraft = localStorage.getItem('post_draft');
-              if (savedDraft) {
-                  const draft = JSON.parse(savedDraft);
-                  if (draft.content) setContent(draft.content);
-                  if (draft.title) setTitle(draft.title);
-                  if (draft.type) setType(draft.type);
-                  if (draft.mood) setMood(draft.mood);
-              }
-          }
       }
   }, [settings]);
-
-  // Save Draft
-  useEffect(() => {
-      if (settings?.enableDrafts) {
-          const timeoutId = setTimeout(() => {
-              const draft = { content, title, type, mood };
-              if (content || title) {
-                localStorage.setItem('post_draft', JSON.stringify(draft));
-              }
-          }, 1000);
-          return () => clearTimeout(timeoutId);
-      }
-  }, [content, title, type, mood, settings]);
 
   const handleFileChange = (e) => {
       const selectedFiles = Array.from(e.target.files);
@@ -148,19 +133,23 @@ const CreatePost = () => {
   };
 
   const checkFeedbackEligibility = () => {
-      const postsCount = parseInt(localStorage.getItem('calmly_posts_count') || '0', 10) + 1;
-      localStorage.setItem('calmly_posts_count', postsCount.toString());
+      // Check user settings directly
+      if (settings?.hasGivenFeedback) return false;
 
-      // Trigger on 1st, then every 3rd (1, 4, 7, 10...)
-      if (postsCount === 1 || (postsCount - 1) % 3 === 0) {
-          setShowFeedbackModal(true);
-          return true;
-      }
+      // Removed local counting logic. Could check post count from identity if needed,
+      // but for now we simply don't force the modal based on local storage counts.
+      // Maybe show it occasionally or on first post if we tracked it in DB.
+      // For now, disabling the automatic popup to rely on settings.
+
       return false;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (currentIdentity?.user?.restrictions?.post) {
+        return toast.error("Account restricted from posting");
+    }
 
     if (!content.trim() && files.length === 0) {
         return toast.error("Please add text or media to your post.");
@@ -183,7 +172,7 @@ const CreatePost = () => {
             toast.error("Failed to save journal entry");
         }
     } else {
-        if (!currentIdentity) return toast.error("Select an identity");
+        if (!postingIdentityId) return toast.error("Select an identity");
 
         setUploading(true);
 
@@ -221,20 +210,18 @@ const CreatePost = () => {
             }
 
             const postData = {
-                identityId: currentIdentity._id,
+                identityId: postingIdentityId,
                 type,
                 mood,
                 content,
                 visibility,
                 title: ((type === 'poetry' || type === 'letter') && title) ? title : undefined,
                 letterFields: type === 'letter' ? letterFields : undefined,
-                style: type === 'poetry' ? poemStyle : undefined,
+                style: (type === 'poetry' || type === 'confession') ? postStyle : undefined,
                 media: uploadedMedia
             };
 
             await axios.post('/posts', postData); // JSON Request
-
-            localStorage.removeItem('post_draft'); // Clear draft
 
             const needsFeedback = checkFeedbackEligibility();
             if (!needsFeedback) {
@@ -298,6 +285,24 @@ const CreatePost = () => {
       }
   };
 
+  const handleStyleSelect = (style) => {
+    if (type === 'letter') {
+      if (style.type === 'texture') {
+        setLetterFields({ ...letterFields, paperType: style.id });
+      } else if (style.type === 'color') {
+        toast.error("Please select a texture for letters.");
+      }
+    } else if (type === 'poetry' || type === 'confession') {
+      if (style.type === 'color') {
+        setPostStyle({ ...postStyle, backgroundColor: style.class, texture: '', backgroundImage: '', textColor: '' });
+      } else if (style.type === 'texture') {
+        setPostStyle({ ...postStyle, backgroundColor: style.class, texture: style.texture, backgroundImage: '', textColor: '' });
+      } else if (style.type === 'image') {
+        setPostStyle({ ...postStyle, backgroundImage: style.url, backgroundColor: 'bg-black/50', texture: '', textColor: style.textClass });
+      }
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto bg-surface p-8 rounded-lg shadow-sm">
       <h2 className="text-2xl font-serif mb-6 text-text">Share a Moment</h2>
@@ -309,8 +314,8 @@ const CreatePost = () => {
               {identities.map(id => (
                   <div key={id._id} className="relative group">
                       <button
-                        onClick={() => selectIdentity(id._id)}
-                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${currentIdentity?._id === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
+                        onClick={() => setPostingIdentityId(id._id)}
+                        className={`flex items-center space-x-3 pr-4 pl-2 py-2 rounded-full border transition whitespace-nowrap ${postingIdentityId === id._id ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-offset-2 ring-slate-200' : 'bg-surface text-secondary border-soft-border hover:border-slate-300'}`}
                       >
                           <Avatar identity={id} size="sm" />
                           <div className="flex flex-col items-start leading-none">
@@ -382,15 +387,12 @@ const CreatePost = () => {
                 )}
 
                 <div className="flex justify-end space-x-2 mb-2 relative z-10">
-                    {paperStyles.map(s => (
-                        <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setLetterFields({...letterFields, paperType: s.id})}
-                            className={`w-6 h-6 rounded-full border border-slate-300 ${s.class.split(' ')[0]} ${letterFields.paperType === s.id ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
-                            title={s.label}
-                        />
-                    ))}
+                   <button
+                        type="button"
+                        onClick={() => setShowStyleModal(true)}
+                        className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 shadow-sm border border-white/20 hover:scale-105 transition-transform"
+                        title="Change Style"
+                    />
                 </div>
                 <input
                     type="text"
@@ -415,25 +417,38 @@ const CreatePost = () => {
                 />
             </div>
         ) : type === 'poetry' ? (
-            <div className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm ${poemStyle.backgroundColor}`}>
-                <div className="flex space-x-4 mb-4 justify-between items-center">
+            <div
+                className={`space-y-4 p-8 rounded-lg transition-colors shadow-sm relative overflow-hidden ${postStyle.backgroundColor}`}
+                style={postStyle.backgroundImage ? { backgroundImage: `url(${postStyle.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+            >
+                {/* Texture overlay */}
+                {postStyle.texture && (
+                     <div
+                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                        style={{ backgroundImage: `url(${postStyle.texture})` }}
+                     ></div>
+                )}
+                {/* Overlay for images to ensure text readability */}
+                {postStyle.backgroundImage && (
+                    <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+                )}
+
+                <div className="flex space-x-4 mb-4 justify-between items-center relative z-10">
                     <div className="flex space-x-2 flex-wrap gap-y-2">
-                        {poemBackgrounds.map(bg => (
-                            <button
-                                key={bg.id}
-                                type="button"
-                                onClick={() => setPoemStyle({...poemStyle, backgroundColor: bg.class})}
-                                className={`w-6 h-6 rounded-full border border-black/10 ${bg.preview} ${poemStyle.backgroundColor === bg.class ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
-                            />
-                        ))}
+                         <button
+                            type="button"
+                            onClick={() => setShowStyleModal(true)}
+                            className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 shadow-sm border border-white/20 hover:scale-105 transition-transform"
+                            title="Change Style"
+                        />
                     </div>
                     <div className="flex flex-col space-y-2">
                         {/* Font Selection */}
                         <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm">
                              <SelectionCard
                                 options={fontOptions}
-                                value={poemStyle.font}
-                                onChange={(val) => setPoemStyle({...poemStyle, font: val})}
+                                value={postStyle.font}
+                                onChange={(val) => setPostStyle({...postStyle, font: val})}
                                 columns={2}
                                 layout="grid"
                              />
@@ -442,8 +457,8 @@ const CreatePost = () => {
                          <div className="bg-white/80 backdrop-blur-md rounded-xl p-2 border border-slate-200 shadow-sm flex justify-center">
                             <PillSelection
                                 options={alignOptions}
-                                value={poemStyle.align}
-                                onChange={(val) => setPoemStyle({...poemStyle, align: val})}
+                                value={postStyle.align}
+                                onChange={(val) => setPostStyle({...postStyle, align: val})}
                             />
                         </div>
                     </div>
@@ -452,25 +467,49 @@ const CreatePost = () => {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 ${poemStyle.align} ${poemStyle.font}`}
+                    className={`w-full bg-transparent border-b border-current/20 focus:outline-none text-2xl mb-4 placeholder-current/40 relative z-10 ${postStyle.align} ${postStyle.font} ${postStyle.textColor || ''}`}
                     placeholder="Untitled Poem"
                 />
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={10}
-                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none ${poemStyle.font} ${poemStyle.align} placeholder-current/40`}
+                    className={`w-full bg-transparent border-none focus:ring-0 text-lg leading-relaxed resize-none relative z-10 ${postStyle.font} ${postStyle.align} placeholder-current/40 ${postStyle.textColor || ''}`}
                     placeholder="Verses go here..."
                 />
             </div>
         ) : (
-            <div>
+            <div
+                className={`p-4 rounded-lg transition-colors shadow-sm relative overflow-hidden ${postStyle.backgroundColor !== 'bg-white' ? postStyle.backgroundColor : 'bg-surface'} ${postStyle.backgroundColor === 'bg-white' ? 'border border-soft-border' : ''}`}
+                style={postStyle.backgroundImage ? { backgroundImage: `url(${postStyle.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+            >
+                 {/* Texture overlay */}
+                 {postStyle.texture && (
+                     <div
+                        className="absolute inset-0 opacity-10 pointer-events-none bg-repeat"
+                        style={{ backgroundImage: `url(${postStyle.texture})` }}
+                     ></div>
+                )}
+                {/* Overlay for images */}
+                {postStyle.backgroundImage && (
+                    <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+                )}
+
+                <div className="flex justify-end mb-2 relative z-10">
+                    <button
+                        type="button"
+                        onClick={() => setShowStyleModal(true)}
+                        className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 shadow-sm border border-white/20 hover:scale-105 transition-transform"
+                        title="Change Style"
+                    />
+                </div>
+
                 <textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     required={files.length === 0}
                     rows={6}
-                    className="w-full border border-soft-border bg-surface text-text rounded-md px-3 py-2 focus:ring-1 focus:ring-sage focus:outline-none font-serif text-lg"
+                    className={`w-full bg-transparent border-none focus:ring-0 font-serif text-lg resize-none relative z-10 placeholder-current/50 ${postStyle.textColor || 'text-text'}`}
                     placeholder="Write here..."
                 />
             </div>
@@ -514,13 +553,21 @@ const CreatePost = () => {
                  )}
              </div>
 
-             <button
-                type="submit"
-                disabled={uploading}
-                className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2 font-medium"
-             >
-                 {uploading ? <span>Publishing...</span> : <span>Post</span>}
-             </button>
+             {currentIdentity?.user?.restrictions?.post ? (
+                 <div className="bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-lg flex items-center gap-2 text-sm text-red-400 font-bold">
+                     <ShieldAlert size={16} />
+                     <span>Restricted</span>
+                     <Link to="/learn-more" className="text-xs font-normal underline ml-1">Why?</Link>
+                 </div>
+             ) : (
+                 <button
+                    type="submit"
+                    disabled={uploading}
+                    className="bg-slate-900 text-white px-8 py-2 rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center space-x-2 font-medium"
+                 >
+                     {uploading ? <span>Publishing...</span> : <span>Post</span>}
+                 </button>
+             )}
         </div>
       </form>
 
@@ -545,6 +592,14 @@ const CreatePost = () => {
             setShowFeedbackModal(false);
             navigate('/feed');
         }}
+      />
+
+      {/* Style Modal */}
+      <ColorWallpaperModal
+        isOpen={showStyleModal}
+        onClose={() => setShowStyleModal(false)}
+        onSelect={handleStyleSelect}
+        currentType={type}
       />
     </div>
   );

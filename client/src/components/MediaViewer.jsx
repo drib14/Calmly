@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { X, Download, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import MediaPlayer from './MediaPlayer';
+import { toast } from 'react-hot-toast';
 
-const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0, altText = "Image", actions = [] }) => {
+const MediaViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0, altText = "Media", actions = [] }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [showOptions, setShowOptions] = useState(false);
 
@@ -18,7 +21,26 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
       }
   }, [isOpen, initialIndex, images]);
 
-  const currentImage = images.length > 0 ? images[currentIndex] : imageSrc;
+  // Determine current item (URL or Object)
+  // Logic from Profile.jsx: normalized media items are objects or strings
+  const rawCurrent = images.length > 0 ? images[currentIndex] : imageSrc;
+
+  // Normalize to { url, type }
+  let currentMedia = { url: '', type: 'image' };
+  if (typeof rawCurrent === 'string') {
+      currentMedia.url = rawCurrent;
+      // Simple detection
+      if (rawCurrent.match(/\.(mp4|webm|mov)$/i)) {
+          currentMedia.type = 'video';
+      }
+  } else if (rawCurrent && typeof rawCurrent === 'object') {
+      currentMedia = rawCurrent;
+      // Fallback detection if type not explicitly set in object but URL exists
+      if (!currentMedia.type && currentMedia.url && currentMedia.url.match(/\.(mp4|webm|mov)$/i)) {
+          currentMedia.type = 'video';
+      }
+  }
+
   const hasMultiple = images.length > 1;
 
   useEffect(() => {
@@ -35,7 +57,7 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose, hasMultiple, currentIndex]); // depend on currentIndex for proper next/prev
+  }, [isOpen, onClose, hasMultiple, currentIndex]);
 
   const handleNext = (e) => {
       if(e) e.stopPropagation();
@@ -47,9 +69,51 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
       setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  if (!isOpen || !currentImage) return null;
+  const handleDownload = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-  return (
+      const url = currentMedia.url;
+      if (!url) return;
+
+      const toastId = toast.loading('Downloading...');
+
+      try {
+          // Attempt to fetch blob to force download
+          const response = await fetch(url);
+          if (!response.ok) throw new Error('Download failed');
+
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          // Extract filename from URL or default
+          const filename = url.split('/').pop().split('?')[0] || `download-${Date.now()}`;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+
+          toast.success('Downloaded', { id: toastId });
+      } catch (err) {
+          console.error("Download Error:", err);
+          // Fallback to direct link opening if fetch fails (e.g. CORS)
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = '';
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          toast.error('Started download (fallback)', { id: toastId });
+      }
+  };
+
+  if (!isOpen || !currentMedia.url) return null;
+
+  return ReactDOM.createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -77,7 +141,7 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
                             {actions.map((action, i) => (
                                 <button
                                     key={i}
-                                    onClick={() => { action.onClick(currentImage); setShowOptions(false); }}
+                                    onClick={() => { action.onClick(currentMedia.url); setShowOptions(false); }}
                                     className="w-full text-left px-4 py-2 text-sm text-text hover:bg-background transition"
                                 >
                                     {action.label}
@@ -88,14 +152,13 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
                 </div>
             )}
 
-            <a
-              href={currentImage}
-              download
+            <button
+              onClick={handleDownload}
               className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"
               title="Download"
             >
               <Download size={20} />
-            </a>
+            </button>
             <button
               onClick={onClose}
               className="p-2 text-secondary hover:text-text hover:bg-background/10 rounded-full transition"
@@ -123,24 +186,31 @@ const ImageViewer = ({ isOpen, onClose, imageSrc, images = [], initialIndex = 0,
             </>
         )}
 
-        {/* Image */}
+        {/* Media Content */}
         <motion.div
-            key={currentImage} // Force re-render for animation on change
+            key={currentMedia.url} // Force re-render for animation on change
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.2 }}
-            className="relative max-w-full max-h-full flex items-center justify-center overflow-hidden"
+            className="relative max-w-full max-h-full flex items-center justify-center overflow-hidden w-full h-full"
             onClick={(e) => { e.stopPropagation(); setShowOptions(false); }}
         >
-            <img
-              src={currentImage}
-              alt={altText}
-              className="max-w-[95vw] max-h-[90vh] object-contain rounded-md shadow-2xl"
-            />
+            {currentMedia.type === 'video' ? (
+                <div className="w-full max-w-5xl max-h-[85vh] aspect-video">
+                    <MediaPlayer src={currentMedia.url} />
+                </div>
+            ) : (
+                <img
+                  src={currentMedia.url}
+                  alt={altText}
+                  className="max-w-[95vw] max-h-[85vh] object-contain rounded-md shadow-2xl"
+                />
+            )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 
-export default ImageViewer;
+export default MediaViewer;

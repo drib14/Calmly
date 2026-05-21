@@ -3,12 +3,13 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
+const checkMaintenanceMode = require('./middleware/maintenanceMiddleware');
 
 // Load env vars
 dotenv.config();
 
 // Connect to database
-connectDB();
+// connectDB(); // Moved to index.js to await it
 
 const app = express();
 app.set('trust proxy', 1);
@@ -30,6 +31,10 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+// Apply maintenance check to subsequent routes (except admin/auth which are handled inside or via order)
+// Actually middleware logic handles the path check.
+app.use(checkMaintenanceMode);
+
 app.use('/api/identities', require('./routes/identityRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
@@ -41,6 +46,7 @@ app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/quotes', require('./routes/quoteRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Calmly API is running...');

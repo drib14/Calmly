@@ -1,5 +1,19 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const Support = require('../models/Support');
+const SystemSetting = require('../models/SystemSetting');
+
+// @desc    Get System Announcement
+// @route   GET /api/settings/system
+// @access  Public/Private
+const getSystemAnnouncement = async (req, res) => {
+    try {
+        const setting = await SystemSetting.findOne({ key: 'systemAnnouncement' });
+        res.json(setting ? setting.value : { active: false, text: '' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
 // @desc    Get user settings
 // @route   GET /api/settings
@@ -21,12 +35,76 @@ const updateSettings = async (req, res) => {
 
   if (user) {
     // Merge new settings with existing ones
-    user.settings = { ...user.settings, ...req.body };
+    // Handle nested updates if needed or specific arrays?
+    // For arrays like hiddenPosts, we usually have specific endpoints, but generic update works for booleans.
+    Object.keys(req.body).forEach(key => {
+        user.settings[key] = req.body[key];
+    });
     await user.save();
     res.json({ message: 'Settings updated', settings: user.settings });
   } else {
     res.status(404).json({ message: 'User not found' });
   }
+};
+
+// @desc    Block User
+// @route   POST /api/settings/block-user
+// @access  Private
+const blockUser = async (req, res) => {
+    const { identityId } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!user.settings.blockedUsers) user.settings.blockedUsers = [];
+
+    const index = user.settings.blockedUsers.indexOf(identityId);
+    let blocked = false;
+
+    if (index > -1) {
+        // Unblock
+        user.settings.blockedUsers.splice(index, 1);
+        blocked = false;
+    } else {
+        // Block
+        user.settings.blockedUsers.push(identityId);
+        blocked = true;
+    }
+
+    await user.save();
+    res.json({ message: blocked ? 'User blocked' : 'User unblocked', blocked });
+};
+
+// @desc    Mute User/Conversation
+// @route   POST /api/settings/mute-user
+// @access  Private
+const muteUser = async (req, res) => {
+    const { identityId } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (!user.settings.mutedUsers.includes(identityId)) {
+        user.settings.mutedUsers.push(identityId);
+        await user.save();
+    }
+    res.json({ message: 'Conversation muted' });
+};
+
+// @desc    Hide Post (Viewer)
+// @route   POST /api/settings/hide-post
+// @access  Private
+const hidePost = async (req, res) => {
+    const { postId } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Initialize hiddenPosts if undefined (schema update might be needed if not default [])
+    if (!user.settings.hiddenPosts) user.settings.hiddenPosts = [];
+
+    if (!user.settings.hiddenPosts.includes(postId)) {
+        user.settings.hiddenPosts.push(postId);
+        await user.save();
+    }
+    res.json({ message: 'Post hidden' });
 };
 
 // @desc    Change Password
@@ -261,6 +339,32 @@ const downloadUserData = async (req, res) => {
   }
 };
 
+// @desc    Create Support Ticket
+// @route   POST /api/settings/support
+// @access  Private
+const createSupportTicket = async (req, res) => {
+    try {
+        const { email, subject, message } = req.body;
+        const user = req.user;
+
+        const ticket = await Support.create({
+            user: user._id,
+            email: email || user.email,
+            subject: subject || 'Support Request',
+            message
+        });
+
+        // Simulate Email to Admin
+        console.log(`[EMAIL SENT] To: support@calmly.app`);
+        console.log(`[EMAIL SUBJECT] New Support Ticket: ${subject}`);
+        console.log(`[EMAIL BODY] From: ${ticket.email}\nMessage: ${message}`);
+
+        res.status(201).json(ticket);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -271,5 +375,10 @@ module.exports = {
   deleteAccount,
   toggleJournalLock,
   verifyJournalPassword,
-  downloadUserData
+  downloadUserData,
+  blockUser,
+  muteUser,
+  hidePost,
+  createSupportTicket,
+  getSystemAnnouncement
 };
