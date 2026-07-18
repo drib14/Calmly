@@ -5,9 +5,20 @@ dist/
 build
 build/
 .DS_Store
-.env
-server/node_modules
-server/node_modules/
-client/node_modules
-client/node_modules/
 *.log
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.sample
+.env.example
+
+# OS files
+Thumbs.db
+db.sqlite3
