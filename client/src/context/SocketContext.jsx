@@ -23,7 +23,14 @@ export const SocketProvider = ({ children }) => {
         }
 
         // Determine socket URL: Use Env var, or localhost if dev, or relative '/' if prod
-        const socketUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5080' : '/');
+        let socketUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5080' : '/');
+
+        // If socketUrl ends with '/api' or '/api/', strip it to connect to the root server path
+        if (socketUrl.endsWith('/api')) {
+            socketUrl = socketUrl.slice(0, -4);
+        } else if (socketUrl.endsWith('/api/')) {
+            socketUrl = socketUrl.slice(0, -5);
+        }
 
         const newSocket = io(socketUrl, {
             auth: { token },
