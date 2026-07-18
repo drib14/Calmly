@@ -70,8 +70,22 @@ router.post('/', protect, upload.array('media', 4), async (req, res) => {
 
       const message = await Message.create(messageData);
 
-      // Populate for immediate return (so frontend can render cards)
-      await message.populate('sharedPost');
+      // Populate sender, recipient, and sharedPost details for frontend
+      await message.populate([
+          { path: 'sharedPost' },
+          { path: 'sender', select: 'name type handle avatar' },
+          { path: 'recipient', select: 'name type handle avatar' }
+      ]);
+
+      const io = req.app.get('io');
+      if (io) {
+          if (recipient.user && recipient.user._id) {
+              io.to(`user_${recipient.user._id.toString()}`).emit('new_message', message);
+          }
+          if (req.user && req.user._id) {
+              io.to(`user_${req.user._id.toString()}`).emit('new_message', message);
+          }
+      }
 
       res.status(201).json(message);
   } catch (error) {

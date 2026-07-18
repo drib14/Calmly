@@ -18,6 +18,9 @@ const io = new Server(server, {
     }
 });
 
+// Expose io instance to Express routes
+app.set('io', io);
+
 // Online Users Map (userId -> socketId)
 const onlineUsers = new Map();
 
@@ -28,6 +31,10 @@ io.on('connection', (socket) => {
             const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
             if (decoded && decoded.id) {
                 onlineUsers.set(decoded.id, socket.id);
+                
+                // Join a room unique to the user (allows targeting all tabs/sessions of this user)
+                socket.join(`user_${decoded.id}`);
+                
                 io.emit('online_users', Array.from(onlineUsers.keys()));
 
                 socket.on('disconnect', () => {

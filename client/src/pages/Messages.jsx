@@ -10,6 +10,7 @@ import Avatar from '../components/Avatar';
 import MediaPlayer from '../components/MediaPlayer';
 import QuotesWidget from '../components/QuotesWidget';
 import { toast } from 'react-hot-toast';
+import { useSocket } from '../context/SocketContext';
 
 // Utility to format bytes
 const formatBytes = (bytes, decimals = 2) => {
@@ -23,6 +24,7 @@ const formatBytes = (bytes, decimals = 2) => {
 
 const Messages = () => {
   const { currentIdentity, identities } = useIdentity();
+  const { socket } = useSocket() || {};
   const location = useLocation();
   const navigate = useNavigate();
   const [activeConversation, setActiveConversation] = useState(null);
@@ -78,6 +80,37 @@ const Messages = () => {
       },
       { refreshInterval: 3000 }
   );
+
+  // Listen for new messages via Socket.io
+  useEffect(() => {
+      if (!socket) return;
+
+      const handleNewMessage = (message) => {
+          // Always mutate inbox to refresh sidebar badges and previews
+          mutateInbox();
+
+          // Mutate conversation if the incoming message belongs to it
+          if (activeConversation && currentIdentity) {
+              const senderId = message.sender?._id || message.sender;
+              const recipientId = message.recipient?._id || message.recipient;
+              const activeId = activeConversation._id;
+              const currentId = currentIdentity._id;
+
+              const isCurrentChat = 
+                  (senderId === activeId && recipientId === currentId) ||
+                  (senderId === currentId && recipientId === activeId);
+
+              if (isCurrentChat) {
+                  mutateMessages();
+              }
+          }
+      };
+
+      socket.on('new_message', handleNewMessage);
+      return () => {
+          socket.off('new_message', handleNewMessage);
+      };
+  }, [socket, activeConversation, currentIdentity, mutateInbox, mutateMessages]);
 
   // Mark as Read Effect
   useEffect(() => {
