@@ -30,7 +30,7 @@ services:
 
   # Frontend Static Site
   - type: web
-    name: calmly-frontend
+    name: calmly
     env: static
     plan: free
     buildCommand: cd client && npm install && npm run build
